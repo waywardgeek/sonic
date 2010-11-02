@@ -51,10 +51,12 @@ static void runSonic(
 	    return;
 	}
         sonicWriteToStream(stream, inBuffer, numSamples);
-        numSamples = sonicReadFromStream(stream, outBuffer, BUFFER_SIZE);
-	if(numSamples > 0) {
-	    writeToWaveFile(outFile, outBuffer, numSamples);
-	}
+	do {
+	    numSamples = sonicReadFromStream(stream, outBuffer, BUFFER_SIZE);
+	    if(numSamples > 0) {
+		writeToWaveFile(outFile, outBuffer, numSamples);
+	    }
+	} while(numSamples > 0);
     }
 }
 

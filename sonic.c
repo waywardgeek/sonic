@@ -16,6 +16,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program; if not, write to the Free Software
 Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston, MA 02110-1301, USA.  */
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include "sonic.h"
@@ -134,11 +135,21 @@ static int resamplePitchPeriod(
     double speed,
     int period)
 {
-    int newSamples = period/(speed - 1.0); /* Note that speed is >= 2.0 */
-    double scale = 1.0/newSamples;
+    int t, newSamples, extraLength;
+    double scale;
     float *out;
-    int t;
 
+    if(speed >= 2.0) {
+	newSamples = period/(speed - 1.0);
+	extraLength = 0;
+    } else if(speed > 1.0) {
+	newSamples = period;
+	stream->remainingInputToCopy = period*(2.0 - speed)/(speed - 1.0);
+    } else {
+	fprintf(stderr, "Speed currently must be > 1\n");
+	exit(1);
+    }
+    scale = 1.0/newSamples;
     if(!enlargeOutputBufferIfNeeded(stream, newSamples)) {
 	return 0;
     }
@@ -198,6 +209,27 @@ static void removeInputSamples(
     stream->numInputSamples = remainingSamples;
 }
 
+/* Just copy from the input buffer to the output buffer.  Return 0 if we fail to
+   resize the output buffer.  Otherwise, return numSamples */
+static int copyInputToOutput(
+    sonicStream stream,
+    int position)
+{
+    int numSamples = stream->remainingInputToCopy;
+
+    if(numSamples > stream->maxRequired) {
+	numSamples = stream->maxRequired;
+    }
+    if(!enlargeOutputBufferIfNeeded(stream, numSamples)) {
+	return 0;
+    }
+    memcpy(stream->outputBuffer + stream->numOutputSamples, stream->inputBuffer + position,
+        numSamples*sizeof(float));
+    stream->numOutputSamples += numSamples;
+    stream->remainingInputToCopy -= numSamples;
+    return numSamples;
+}
+
 /* Resample as many pitch periods as we have buffered on the input.  Return 0 if
    we fail to resize an input or output buffer */
 int sonicWriteToStream(
@@ -218,8 +250,13 @@ int sonicWriteToStream(
     samples = stream->inputBuffer;
     numSamples = stream->numInputSamples;
     do {
-	period = findPitchPeriod(stream, samples + position);
-        newSamples = resamplePitchPeriod(stream, samples + position, speed, period);
+	if(stream->remainingInputToCopy > 0) {
+	    period = 0;
+            newSamples = copyInputToOutput(stream, position);
+	} else {
+	    period = findPitchPeriod(stream, samples + position);
+	    newSamples = resamplePitchPeriod(stream, samples + position, speed, period);
+	}
 	if(newSamples == 0) {
 	    return 0; /* Failed to resize output buffer */
 	}
