@@ -51,7 +51,7 @@ waveFile openInputWaveFile(
     file->numValues = 42;
     file->values = (short *)calloc(file->numValues, sizeof(short));
     *sampleRate = info.samplerate;
-    printf("Frames = %ld, sample rate = %d, channels = %d, format = %d",
+    printf("Frames = %ld, sample rate = %d, channels = %d, format = %d\n",
         info.frames, info.samplerate, info.channels, info.format);
     return file;
 }
@@ -128,7 +128,7 @@ int writeToWaveFile(
 	file->values = (short *)realloc(file->values, file->numValues*sizeof(short));
     }
     for(xValue = 0; xValue < numSamples; xValue++) {
-	value = (int)(file->values[xValue]*32768.0 + 0.5);
+	value = (int)(buffer[xValue]*32768.0 + 0.5);
 	if(value > SHRT_MAX) {
 	    file->values[xValue] = SHRT_MAX;
 	} else if (value < SHRT_MIN) {

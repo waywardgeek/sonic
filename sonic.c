@@ -180,6 +180,7 @@ static int addSamplesToInputBuffer(
 	return 0;
     }
     memcpy(stream->inputBuffer + stream->numInputSamples, samples, numSamples*sizeof(float));
+    stream->numInputSamples += numSamples;
     return 1;
 }
 
