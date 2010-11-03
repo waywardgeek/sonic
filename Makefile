@@ -1,5 +1,5 @@
-#CFLAGS=-Wall -g -c -ansi
-CFLAGS=-Wall -O2 -c -ansi
+CFLAGS=-Wall -g -c -ansi
+#CFLAGS=-Wall -O2 -c -ansi
 LFLAGS= -Wall -g -ansi -lsndfile
 
 sonic: sonic.o wave.o main.o

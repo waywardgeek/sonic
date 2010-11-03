@@ -83,34 +83,6 @@ sonicStream sonicCreateStream(
     return stream;
 }
 
-/* Find the pitch period.  This is a critical step, and we may have to try
-   multiple ways to get a good answer.  This version uses AMDF. */
-static int findPitchPeriod(
-    sonicStream stream,
-    float *samples)
-{
-    int minPeriod = stream->minPeriod;
-    int maxPeriod = stream->maxPeriod;
-    int period, bestPeriod = 0;
-    double minDiff = 0.0;
-    double diff, value;
-    int xSample;
-
-    for(period = minPeriod; period <= maxPeriod; period++) {
-	diff = 0.0;
-	for(xSample = 0; xSample < period; xSample++) {
-	    value = samples[xSample] - samples[xSample + period];
-	    diff += value >= 0.0? value : -value;
-	}
-	diff /= period;
-	if(bestPeriod == 0 || diff < minDiff) {
-	    minDiff = diff;
-	    bestPeriod = period;
-	}
-    }
-    return bestPeriod;
-}
-
 /* Enlarge the output buffer if needed. */
 static int enlargeOutputBufferIfNeeded(
     sonicStream stream,
@@ -126,38 +98,6 @@ static int enlargeOutputBufferIfNeeded(
 	}
     }
     return 1;
-}
-
-/* Do the pitch based resampling for one pitch period of the input. */
-static int resamplePitchPeriod(
-    sonicStream stream,
-    float *samples,
-    double speed,
-    int period)
-{
-    int t, newSamples;
-    double scale;
-    float *out;
-
-    if(speed >= 2.0) {
-	newSamples = period/(speed - 1.0);
-    } else if(speed > 1.0) {
-	newSamples = period;
-	stream->remainingInputToCopy = period*(2.0 - speed)/(speed - 1.0);
-    } else {
-	fprintf(stderr, "Speed currently must be > 1\n");
-	exit(1);
-    }
-    scale = 1.0/newSamples;
-    if(!enlargeOutputBufferIfNeeded(stream, newSamples)) {
-	return 0;
-    }
-    out = stream->outputBuffer + stream->numOutputSamples;
-    for(t = 0; t < newSamples; t++) {
-        out[t] = scale*(samples[t]*(newSamples - t) + samples[t + period]*t);
-    }
-    stream->numOutputSamples += newSamples;
-    return newSamples;
 }
 
 /* Enlarge the input buffer if needed. */
@@ -229,42 +169,6 @@ static int copyInputToOutput(
     return numSamples;
 }
 
-/* Resample as many pitch periods as we have buffered on the input.  Return 0 if
-   we fail to resize an input or output buffer */
-int sonicWriteToStream(
-    sonicStream stream,
-    float *samples,
-    int numSamples)
-{
-    double speed = stream->speed;
-    int position = 0, period, newSamples;
-    int maxRequired = stream->maxRequired;
-
-    if(!addSamplesToInputBuffer(stream, samples, numSamples)) {
-	return 0;
-    }
-    if(stream->numInputSamples < maxRequired) {
-	return 1;
-    }
-    samples = stream->inputBuffer;
-    numSamples = stream->numInputSamples;
-    do {
-	if(stream->remainingInputToCopy > 0) {
-	    period = 0;
-            newSamples = copyInputToOutput(stream, position);
-	} else {
-	    period = findPitchPeriod(stream, samples + position);
-	    newSamples = resamplePitchPeriod(stream, samples + position, speed, period);
-	}
-	if(newSamples == 0) {
-	    return 0; /* Failed to resize output buffer */
-	}
-        position += period + newSamples;
-    } while(position + maxRequired <= numSamples);
-    removeInputSamples(stream, position);
-    return 1;
-}
-
 /* Read data out of the stream.  Sometimes no data will be available, and zero
    is returned, which is not an error condition. */
 int sonicReadFromStream(
@@ -279,8 +183,8 @@ int sonicReadFromStream(
 	return 0;
     }
     if(numSamples > maxSamples) {
-	numSamples = maxSamples;
 	remainingSamples = numSamples - maxSamples;
+	numSamples = maxSamples;
     }
     memcpy(samples, stream->outputBuffer, numSamples*sizeof(float));
     if(remainingSamples > 0) {
@@ -320,4 +224,100 @@ int sonicSamplesAvailale(
    sonicStream stream)
 {
     return stream->numOutputSamples;
+}
+
+/* Find the pitch period.  This is a critical step, and we may have to try
+   multiple ways to get a good answer.  This version uses AMDF. */
+static int findPitchPeriod(
+    sonicStream stream,
+    float *samples)
+{
+    int minPeriod = stream->minPeriod;
+    int maxPeriod = stream->maxPeriod;
+    int period, bestPeriod = 0;
+    double minDiff = 0.0;
+    double diff, value;
+    int xSample;
+
+    for(period = minPeriod; period <= maxPeriod; period++) {
+	diff = 0.0;
+	for(xSample = 0; xSample < period; xSample++) {
+	    value = samples[xSample] - samples[xSample + period];
+	    diff += value >= 0.0? value : -value;
+	}
+	diff /= period;
+	if(bestPeriod == 0 || diff < minDiff) {
+	    minDiff = diff;
+	    bestPeriod = period;
+	}
+    }
+    return bestPeriod;
+}
+
+/* Do the pitch based resampling for one pitch period of the input. */
+static int resamplePitchPeriod(
+    sonicStream stream,
+    float *samples,
+    double speed,
+    int period)
+{
+    int t, newSamples;
+    double scale;
+    float *out;
+
+    if(speed >= 2.0) {
+	newSamples = period/(speed - 1.0);
+    } else if(speed > 1.0) {
+	newSamples = period;
+	stream->remainingInputToCopy = period*(2.0 - speed)/(speed - 1.0);
+    } else {
+	fprintf(stderr, "Speed currently must be > 1\n");
+	exit(1);
+    }
+    scale = 1.0/newSamples;
+    if(!enlargeOutputBufferIfNeeded(stream, newSamples)) {
+	return 0;
+    }
+    out = stream->outputBuffer + stream->numOutputSamples;
+    for(t = 0; t < newSamples; t++) {
+        out[t] = scale*(samples[t]*(newSamples - t) + samples[t + period]*t);
+    }
+    stream->numOutputSamples += newSamples;
+    return newSamples;
+}
+
+/* Resample as many pitch periods as we have buffered on the input.  Return 0 if
+   we fail to resize an input or output buffer */
+int sonicWriteToStream(
+    sonicStream stream,
+    float *samples,
+    int numSamples)
+{
+    double speed = stream->speed;
+    int position = 0, period, newSamples;
+    int maxRequired = stream->maxRequired;
+
+    if(!addSamplesToInputBuffer(stream, samples, numSamples)) {
+	return 0;
+    }
+    if(stream->numInputSamples < maxRequired) {
+	return 1;
+    }
+    samples = stream->inputBuffer;
+    numSamples = stream->numInputSamples;
+    do {
+	if(stream->remainingInputToCopy > 0) {
+	    period = 0;
+            newSamples = copyInputToOutput(stream, position);
+	} else {
+	    period = findPitchPeriod(stream, samples + position);
+	    newSamples = resamplePitchPeriod(stream, samples + position, speed, period);
+	}
+	if(newSamples == 0) {
+	    return 0; /* Failed to resize output buffer */
+	}
+        position += period + newSamples;
+    } while(position + maxRequired <= numSamples);
+    removeInputSamples(stream, position);
+    return 1;
 }

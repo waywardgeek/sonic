@@ -26,7 +26,7 @@ Read wave files and speed them up or slow them down.
 #include "sonic.h"
 #include "wave.h"
 
-#define BUFFER_SIZE 8192
+#define BUFFER_SIZE 32
 
 /* Run sonic. */
 static void runSonic(
