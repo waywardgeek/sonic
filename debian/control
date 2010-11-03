@@ -8,7 +8,7 @@ Homepage: http://vinux-project.org
 
 Package: sonic
 Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}
+Depends: libsonic (= ${binary:Version}), ${shlibs:Depends}, ${misc:Depends}
 Description: Simple utility to speed up or slow down speech
  Sonic is a very simple utility that reads and writes wav files,
  and speeds them up or slows them down, with low distortion.
