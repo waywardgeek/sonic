@@ -1,0 +1,30 @@
+.TH SONIC LOCAL 
+
+.SH NAME 
+sonic \- Speech speed manipulator
+
+.SH SYNOPSIS 
+.B sonic rate inFile outFile 
+
+.SH DESCRIPTION 
+Sonic is used to make wav files of speech faster or slower.  The primary advance
+in sonic is the ability to speed speech up by much more than 2X, with minimal
+distortion.  However, sonic can be used for both speeding up and slowing down
+speech files.
+
+.SH EXAMPLES
+.BR
+.B sonic 3.2 book.wav book_fast.wav
+.BR
+The above command would increase the speed of an audio book called book.wav by a
+factor of 3.2, and write the result in book_fast.wav.
+.P
+.B sonic 0.5 spanish.wav spanish_slow.wav
+.BR
+This would slow down the file spanish.wav by a factor of 2, and write the result
+to spanish_slow.wav.
+.BR
+.SH AUTHOR 
+Bill Cox waywardgeek@gmail.com
+.BR
+Sonic Version 0.1, Copyright 2010, Bill Cox, GPL license

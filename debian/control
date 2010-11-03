@@ -1,0 +1,35 @@
+Source: sonic
+Section: sound
+Priority: extra
+Maintainer: Bill Cox <waywardgeek@gmail.com>
+Build-Depends: debhelper (>= 7.0.50~)
+Standards-Version: 3.8.4
+Homepage: http://vinux-project.org
+
+Package: sonic
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: Simple utility to speed up or slow down speech
+ Sonic is a very simple utility that reads and writes wav files,
+ and speeds them up or slows them down, with low distortion.
+ The key new feature in Sonic versus other libraries is very
+ high quality at speed up factors well over 2X.
+
+Package: libsonic
+Architecture: all
+Section: libs
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: Simple library to speed up or slow down speech
+ libsonic is a very simple library that can speed up or slow
+ down speech.  The key new feature in Sonic versus other
+ libraries is very high quality at speed up factors well over 2X.
+
+Package: libsonic-dev
+Architecture: all
+Section: libdevel
+Depends: libsonic (= ${binary:Version}), ${misc:Depends}
+Suggests: sonic
+Description: Header file for linking to libsonic
+ libsonic is a very simple library that can speed up or slow
+ down speech.  The key new feature in Sonic versus other
+ libraries is very high quality at speed up factors well over 2X.
