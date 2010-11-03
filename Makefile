@@ -25,4 +25,4 @@ install: sonic libsonic.so sonic.h
 	install libsonic.so $(DESTDIR)/usr/lib
 
 clean:
-	rm *.o
+	rm -f *.o sonic libsonic.so
