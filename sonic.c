@@ -135,13 +135,12 @@ static int resamplePitchPeriod(
     double speed,
     int period)
 {
-    int t, newSamples, extraLength;
+    int t, newSamples;
     double scale;
     float *out;
 
     if(speed >= 2.0) {
 	newSamples = period/(speed - 1.0);
-	extraLength = 0;
     } else if(speed > 1.0) {
 	newSamples = period;
 	stream->remainingInputToCopy = period*(2.0 - speed)/(speed - 1.0);
