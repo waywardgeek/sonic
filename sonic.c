@@ -148,6 +148,20 @@ static void removeInputSamples(
     stream->numInputSamples = remainingSamples;
 }
 
+/* Just copy from the array to the output buffer */
+static int copyToOutput(
+    sonicStream stream,
+    float *samples,
+    int numSamples)
+{
+    if(!enlargeOutputBufferIfNeeded(stream, numSamples)) {
+	return 0;
+    }
+    memcpy(stream->outputBuffer + stream->numOutputSamples, samples, numSamples*sizeof(float));
+    stream->numOutputSamples += numSamples;
+    return numSamples;
+}
+
 /* Just copy from the input buffer to the output buffer.  Return 0 if we fail to
    resize the output buffer.  Otherwise, return numSamples */
 static int copyInputToOutput(
@@ -159,12 +173,9 @@ static int copyInputToOutput(
     if(numSamples > stream->maxRequired) {
 	numSamples = stream->maxRequired;
     }
-    if(!enlargeOutputBufferIfNeeded(stream, numSamples)) {
+    if(!copyToOutput(stream, stream->inputBuffer + position, numSamples)) {
 	return 0;
     }
-    memcpy(stream->outputBuffer + stream->numOutputSamples, stream->inputBuffer + position,
-        numSamples*sizeof(float));
-    stream->numOutputSamples += numSamples;
     stream->remainingInputToCopy -= numSamples;
     return numSamples;
 }
@@ -254,8 +265,8 @@ static int findPitchPeriod(
     return bestPeriod;
 }
 
-/* Do the pitch based resampling for one pitch period of the input. */
-static int resamplePitchPeriod(
+/* Skip over a pitch period, and copy period/speed samples to the output */
+static int skipPitchPeriod(
     sonicStream stream,
     float *samples,
     double speed,
@@ -270,9 +281,6 @@ static int resamplePitchPeriod(
     } else if(speed > 1.0) {
 	newSamples = period;
 	stream->remainingInputToCopy = period*(2.0 - speed)/(speed - 1.0);
-    } else {
-	fprintf(stderr, "Speed currently must be > 1\n");
-	exit(1);
     }
     scale = 1.0/newSamples;
     if(!enlargeOutputBufferIfNeeded(stream, newSamples)) {
@@ -283,6 +291,37 @@ static int resamplePitchPeriod(
         out[t] = scale*(samples[t]*(newSamples - t) + samples[t + period]*t);
     }
     stream->numOutputSamples += newSamples;
+    return newSamples;
+}
+
+/* Insert a pitch period, and determine how much input to copy directly. */
+static int insertPitchPeriod(
+    sonicStream stream,
+    float *samples,
+    double speed,
+    int period)
+{
+    int t, newSamples;
+    double scale;
+    float *out;
+
+    if(speed < 0.5) {
+        newSamples = period*speed/(1.0 - speed);
+    } else {
+        newSamples = period;
+	stream->remainingInputToCopy = period*(2.0*speed - 1.0)/(1.0 - speed);
+    }
+    if(!enlargeOutputBufferIfNeeded(stream, period + newSamples)) {
+	return 0;
+    }
+    out = stream->outputBuffer + stream->numOutputSamples;
+    memcpy(out, samples, period*sizeof(float));
+    out += period;
+    scale = 1.0/newSamples;
+    for(t = 0; t < newSamples; t++) {
+        out[t] = scale*(samples[t]*t + samples[t + period]*(newSamples - t));
+    }
+    stream->numOutputSamples += period + newSamples;
     return newSamples;
 }
 
@@ -297,6 +336,10 @@ int sonicWriteToStream(
     int position = 0, period, newSamples;
     int maxRequired = stream->maxRequired;
 
+    if(speed > 0.999999 && speed < 1.000001) {
+	/* No speed change - just copy to the output */
+	return copyToOutput(stream, samples, numSamples);
+    }
     if(!addSamplesToInputBuffer(stream, samples, numSamples)) {
 	return 0;
     }
@@ -307,16 +350,21 @@ int sonicWriteToStream(
     numSamples = stream->numInputSamples;
     do {
 	if(stream->remainingInputToCopy > 0) {
-	    period = 0;
             newSamples = copyInputToOutput(stream, position);
+	    position += newSamples;
 	} else {
 	    period = findPitchPeriod(stream, samples + position);
-	    newSamples = resamplePitchPeriod(stream, samples + position, speed, period);
+	    if(speed > 1.0) {
+		newSamples = skipPitchPeriod(stream, samples + position, speed, period);
+		position += period + newSamples;
+	    } else {
+		newSamples = insertPitchPeriod(stream, samples + position, speed, period);
+		position += newSamples;
+	    }
 	}
 	if(newSamples == 0) {
 	    return 0; /* Failed to resize output buffer */
 	}
-        position += period + newSamples;
     } while(position + maxRequired <= numSamples);
     removeInputSamples(stream, position);
     return 1;
