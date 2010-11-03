@@ -93,7 +93,6 @@ static int enlargeOutputBufferIfNeeded(
 	stream->outputBuffer = (float *)realloc(stream->outputBuffer,
 	    stream->outputBufferSize*sizeof(float));
 	if(stream->outputBuffer == NULL) {
-            sonicDestroyStream(stream);
 	    return 0;
 	}
     }
@@ -110,7 +109,6 @@ static int enlargeInputBufferIfNeeded(
 	stream->inputBuffer = (float *)realloc(stream->inputBuffer,
 	    stream->inputBufferSize*sizeof(float));
 	if(stream->inputBuffer == NULL) {
-            sonicDestroyStream(stream);
 	    return 0;
 	}
     }
@@ -237,32 +235,66 @@ int sonicSamplesAvailale(
     return stream->numOutputSamples;
 }
 
+/* Find the best frequency match in the range, and given a sample skip multiple. */
+static int findPitchPeriodInRange(
+    sonicStream stream,
+    float *samples,
+    int minPeriod,
+    int maxPeriod,
+    int skip)
+{
+    int period, bestPeriod = 0;
+    double minDiff = 0.0;
+    double diff;
+    float value, *s, *p;
+    int xSample;
+
+    for(period = minPeriod; period <= maxPeriod; period += skip) {
+	diff = 0.0;
+	s = samples;
+	p = samples + period;
+	for(xSample = 0; xSample < period; xSample += skip) {
+	    value = *s - *p;
+	    s += skip;
+	    p += skip;
+	    diff += value >= 0.0? value : -value;
+	}
+	if(bestPeriod == 0 || diff < minDiff*period) {
+	    diff /= period;
+	    minDiff = diff;
+	    bestPeriod = period;
+	}
+    }
+    return bestPeriod;
+}
+
 /* Find the pitch period.  This is a critical step, and we may have to try
-   multiple ways to get a good answer.  This version uses AMDF. */
+   multiple ways to get a good answer.  This version uses AMDF.  To improve
+   speed, we down sample by an integer factor get in the 11KHz range, and then
+   do it again with a narrower frequency range without down sampling */
 static int findPitchPeriod(
     sonicStream stream,
     float *samples)
 {
     int minPeriod = stream->minPeriod;
     int maxPeriod = stream->maxPeriod;
-    int period, bestPeriod = 0;
-    double minDiff = 0.0;
-    double diff, value;
-    int xSample;
+    int sampleRate = stream->sampleRate;
+    int skip = 1;
+    int period;
 
-    for(period = minPeriod; period <= maxPeriod; period++) {
-	diff = 0.0;
-	for(xSample = 0; xSample < period; xSample++) {
-	    value = samples[xSample] - samples[xSample + period];
-	    diff += value >= 0.0? value : -value;
-	}
-	diff /= period;
-	if(bestPeriod == 0 || diff < minDiff) {
-	    minDiff = diff;
-	    bestPeriod = period;
-	}
+    if(sampleRate > SONIC_AMDF_FREQ) {
+	skip = sampleRate/SONIC_AMDF_FREQ;
     }
-    return bestPeriod;
+    period = findPitchPeriodInRange(stream, samples, minPeriod, maxPeriod, skip);
+    minPeriod = period*(1.0 - SONIC_AMDF_RANGE);
+    maxPeriod = period*(1.0 + SONIC_AMDF_RANGE);
+    if(minPeriod < stream->minPeriod) {
+	minPeriod = stream->minPeriod;
+    }
+    if(maxPeriod > stream->maxPeriod) {
+	maxPeriod = stream->maxPeriod;
+    }
+    return findPitchPeriodInRange(stream, samples, minPeriod, maxPeriod, 1);
 }
 
 /* Skip over a pitch period, and copy period/speed samples to the output */

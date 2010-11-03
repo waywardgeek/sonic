@@ -59,8 +59,12 @@ similar to high speed factors is used.
 */
 
 /* This specifies the range of voice pitches we try to match. */
-#define SONIC_MIN_PITCH 50
-#define SONIC_MAX_PITCH 400
+#define SONIC_MIN_PITCH 60
+#define SONIC_MAX_PITCH 300
+
+/* These are used to down-sample some inputs to improve speed */
+#define SONIC_AMDF_FREQ 8000
+#define SONIC_AMDF_RANGE 0.05
 
 struct sonicStreamStruct;
 typedef struct sonicStreamStruct *sonicStream;
