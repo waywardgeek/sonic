@@ -1,3 +1,9 @@
+sonic (0.1.1) lucid; urgency=low
+
+  * Added build dependency on libsndfile for sonic executable.
+
+ -- Bill Cox <waywardgeek@gmail.com>  Wed, 03 Nov 2010 14:34:19 -0400
+
 sonic (0.1) lucid; urgency=low
 
   * Initial release.
