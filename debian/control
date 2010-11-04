@@ -2,13 +2,13 @@ Source: sonic
 Section: sound
 Priority: extra
 Maintainer: Bill Cox <waywardgeek@gmail.com>
-Build-Depends: debhelper (>= 7.0.50~)
+Build-Depends: libsndfile1-dev, debhelper (>= 7.0.50~)
 Standards-Version: 3.8.4
 Homepage: http://vinux-project.org
 
 Package: sonic
 Architecture: any
-Depends: libsndfile1-dev, libsonic (= ${binary:Version}), ${shlibs:Depends}, ${misc:Depends}
+Depends: libsonic (= ${binary:Version}), ${shlibs:Depends}, ${misc:Depends}
 Description: Simple utility to speed up or slow down speech
  Sonic is a very simple utility that reads and writes wav files,
  and speeds them up or slows them down, with low distortion.
