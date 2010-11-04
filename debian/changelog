@@ -1,3 +1,9 @@
+sonic (0.1.3) maverick; urgency=low
+
+  * Added a README and some samples.
+
+ -- Bill Cox <waywardgeek@gmail.com>  Thu, 04 Nov 2010 09:21:28 -0400
+
 sonic (0.1.2) lucid; urgency=low
 
   * One more try on that build dependency.
