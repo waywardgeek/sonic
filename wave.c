@@ -29,6 +29,7 @@ struct waveFileStruct {
     SNDFILE *soundFile;
     short *values;
     int numValues;
+    int numChannels;
 };
 
 /* Open the file for reading.  Also determine it's sample rate. */
@@ -48,6 +49,7 @@ waveFile openInputWaveFile(
     }
     file = (waveFile)calloc(1, sizeof(struct waveFileStruct));
     file->soundFile = soundFile;
+    file->numChannels = info.channels;
     file->numValues = 42;
     file->values = (short *)calloc(file->numValues, sizeof(short));
     *sampleRate = info.samplerate;
@@ -96,19 +98,28 @@ int readFromWaveFile(
     int maxSamples)
 {
     SNDFILE *soundFile = file->soundFile;
+    float value;
+    short *values;
     int samplesRead;
-    int i;
+    int numChannels = file->numChannels;
+    int i, j;
 
     if(maxSamples > file->numValues) {
 	file->numValues = maxSamples;
 	file->values = (short *)realloc(file->values, maxSamples*sizeof(short));
     }
-    samplesRead = sf_read_short(soundFile, file->values, maxSamples);
+    values = file->values;
+    samplesRead = sf_read_short(soundFile, values, maxSamples);
     if(samplesRead <= 0) {
 	return 0;
     }
+    samplesRead /= numChannels;
     for(i = 0; i < samplesRead; i++) {
-	buffer[i] = file->values[i]/32768.0;
+	value = 0.0f;
+	for(j = 0; j < numChannels; j++) {
+	    value += values[i*numChannels + j];
+	}
+	buffer[i] = value/(numChannels*32768.0f);
     }
     return samplesRead;
 }
