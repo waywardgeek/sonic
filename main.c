@@ -63,7 +63,8 @@ static void runSonic(
 /* Print the usage. */
 static void usage(void)
 {
-    fprintf(stderr, "Usage: sonic speed infile outfile");
+    fprintf(stderr, "Usage: sonic speed infile outfile\n");
+    exit(1);
 }
 
 int main(

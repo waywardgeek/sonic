@@ -86,4 +86,4 @@ int sonicReadFromStream(sonicStream stream, float *samples, int maxSamples);
    stream before destroying the stream. */
 int sonicFlushStream(sonicStream stream);
 /* Return the number of samples in the output buffer */
-int sonicSamplesAvailale(sonicStream stream);
+int sonicSamplesAvailable(sonicStream stream);

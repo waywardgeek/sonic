@@ -229,7 +229,7 @@ int sonicFlushStream(
 }
 
 /* Return the number of samples in the output buffer */
-int sonicSamplesAvailale(
+int sonicSamplesAvailable(
    sonicStream stream)
 {
     return stream->numOutputSamples;
