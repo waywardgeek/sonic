@@ -1,3 +1,9 @@
+sonic (0.1.5) lucid; urgency=low
+
+  * Added .install files.
+
+ -- Bill Cox <waywardgeek@gmail.com>  Mon, 08 Nov 2010 10:10:06 -0500
+
 sonic (0.1.4) lucid; urgency=low
 
   * Minor fixes, added minor functions.
