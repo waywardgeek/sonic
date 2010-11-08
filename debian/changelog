@@ -1,3 +1,9 @@
+sonic (0.1.6) maverick; urgency=low
+
+  * Added interface for using short data.
+
+ -- Bill Cox <waywardgeek@gmail.com>  Mon, 08 Nov 2010 11:43:41 -0500
+
 sonic (0.1.5) lucid; urgency=low
 
   * Added .install files.

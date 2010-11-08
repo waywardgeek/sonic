@@ -74,12 +74,18 @@ typedef struct sonicStreamStruct *sonicStream;
 sonicStream sonicCreateStream(double speed, int sampleRate);
 /* Destroy the sonic stream. */
 void sonicDestroyStream(sonicStream stream);
-/* Use this to write data to be speed up or down into the stream.  Return 0 if
-   memory realloc failed, otherwise 1 */
-int sonicWriteToStream(sonicStream stream, float *samples, int numSamples);
-/* Use this to read data out of the stream.  Sometimes no data will be
-   available, and zero is returned, which is not an error condition. */
-int sonicReadFromStream(sonicStream stream, float *samples, int maxSamples);
+/* Use this to write floating point data to be speed up or down into the stream.
+   Return 0 if memory realloc failed, otherwise 1 */
+int sonicWriteFloatToStream(sonicStream stream, float *samples, int numSamples);
+/* Use this to write 16-bit data to be speed up or down into the stream.
+   Return 0 if memory realloc failed, otherwise 1 */
+int sonicWriteShortToStream(sonicStream stream, short *samples, int numSamples);
+/* Use this to read floating point data out of the stream.  Sometimes no data
+   will be available, and zero is returned, which is not an error condition. */
+int sonicReadFloatFromStream(sonicStream stream, float *samples, int maxSamples);
+/* Use this to read 16-bit data out of the stream.  Sometimes no data will
+   be available, and zero is returned, which is not an error condition. */
+int sonicReadShortFromStream(sonicStream stream, short *samples, int maxSamples);
 /* Force the sonic stream to generate output using whatever data it currently
    has.  Zeros will be appended to the input data if there is not enough data
    in the stream's input buffer.  Use this, followed by a final read from the

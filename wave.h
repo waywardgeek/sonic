@@ -24,5 +24,5 @@ typedef struct waveFileStruct *waveFile;
 waveFile openInputWaveFile(char *fileName, int *sampleRate);
 waveFile openOutputWaveFile(char *fileName, int sampleRate);
 void closeWaveFile(waveFile file);
-int readFromWaveFile(waveFile file, float *buffer, int maxSamples);
-int writeToWaveFile(waveFile file, float *buffer, int numSamples);
+int readFromWaveFile(waveFile file, short *buffer, int maxSamples);
+int writeToWaveFile(waveFile file, short *buffer, int numSamples);

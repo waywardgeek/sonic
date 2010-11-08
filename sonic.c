@@ -130,7 +130,7 @@ static int enlargeInputBufferIfNeeded(
 }
 
 /* Add the input samples to the input buffer. */
-static int addSamplesToInputBuffer(
+static int addFloatSamplesToInputBuffer(
     sonicStream stream,
     float *samples,
     int numSamples)
@@ -142,6 +142,29 @@ static int addSamplesToInputBuffer(
 	return 0;
     }
     memcpy(stream->inputBuffer + stream->numInputSamples, samples, numSamples*sizeof(float));
+    stream->numInputSamples += numSamples;
+    return 1;
+}
+
+/* Add the input samples to the input buffer. */
+static int addShortSamplesToInputBuffer(
+    sonicStream stream,
+    short *samples,
+    int numSamples)
+{
+    float *buffer;
+    int count = numSamples;
+
+    if(numSamples == 0) {
+	return 1;
+    }
+    if(!enlargeInputBufferIfNeeded(stream, numSamples)) {
+	return 0;
+    }
+    buffer = stream->inputBuffer + stream->numInputSamples;
+    while(count--) {
+        *buffer++ = *samples++;
+    }
     stream->numInputSamples += numSamples;
     return 1;
 }
@@ -161,7 +184,7 @@ static void removeInputSamples(
 }
 
 /* Just copy from the array to the output buffer */
-static int copyToOutput(
+static int copyFloatToOutput(
     sonicStream stream,
     float *samples,
     int numSamples)
@@ -170,6 +193,26 @@ static int copyToOutput(
 	return 0;
     }
     memcpy(stream->outputBuffer + stream->numOutputSamples, samples, numSamples*sizeof(float));
+    stream->numOutputSamples += numSamples;
+    return numSamples;
+}
+
+/* Just copy from the array to the output buffer */
+static int copyShortToOutput(
+    sonicStream stream,
+    short *samples,
+    int numSamples)
+{
+    float *buffer;
+    int count = numSamples;
+
+    if(!enlargeOutputBufferIfNeeded(stream, numSamples)) {
+	return 0;
+    }
+    buffer = stream->outputBuffer + stream->numOutputSamples;
+    while(count--) {
+        *buffer++ = *samples++;
+    }
     stream->numOutputSamples += numSamples;
     return numSamples;
 }
@@ -185,7 +228,7 @@ static int copyInputToOutput(
     if(numSamples > stream->maxRequired) {
 	numSamples = stream->maxRequired;
     }
-    if(!copyToOutput(stream, stream->inputBuffer + position, numSamples)) {
+    if(!copyFloatToOutput(stream, stream->inputBuffer + position, numSamples)) {
 	return 0;
     }
     stream->remainingInputToCopy -= numSamples;
@@ -194,7 +237,7 @@ static int copyInputToOutput(
 
 /* Read data out of the stream.  Sometimes no data will be available, and zero
    is returned, which is not an error condition. */
-int sonicReadFromStream(
+int sonicReadFloatFromStream(
     sonicStream stream,
     float *samples,
     int maxSamples)
@@ -218,6 +261,37 @@ int sonicReadFromStream(
     return numSamples;
 }
 
+/* Read short data out of the stream.  Sometimes no data will be available, and zero
+   is returned, which is not an error condition. */
+int sonicReadShortFromStream(
+    sonicStream stream,
+    short *samples,
+    int maxSamples)
+{
+    int numSamples = stream->numOutputSamples;
+    int remainingSamples = 0;
+    float *buffer;
+    int i;
+
+    if(numSamples == 0) {
+	return 0;
+    }
+    if(numSamples > maxSamples) {
+	remainingSamples = numSamples - maxSamples;
+	numSamples = maxSamples;
+    }
+    buffer = stream->outputBuffer;
+    for(i = 0; i < numSamples; i++) {
+	*samples++ = *buffer++;
+    }
+    if(remainingSamples > 0) {
+	memmove(stream->outputBuffer, stream->outputBuffer + numSamples,
+	    remainingSamples*sizeof(float));
+    }
+    stream->numOutputSamples = remainingSamples;
+    return numSamples;
+}
+
 /* Force the sonic stream to generate output using whatever data it currently
    has.  Zeros will be appended to the input data if there is not enough data
    in the stream's input buffer.  Use this, followed by a final read from the
@@ -232,14 +306,14 @@ int sonicFlushStream(
     if(numSamples == 0) {
 	return 1;
     }
-    if(numSamples >= maxRequired && !sonicWriteToStream(stream, NULL, 0)) {
+    if(numSamples >= maxRequired && !sonicWriteFloatToStream(stream, NULL, 0)) {
 	return 0;
     }
     numSamples = stream->numInputSamples; /* Now numSamples < maxRequired */
     remainingSpace = maxRequired - numSamples;
     memset(stream->inputBuffer + numSamples, 0, remainingSpace*sizeof(float));
     stream->numInputSamples = maxRequired;
-    return sonicWriteToStream(stream, NULL, 0);
+    return sonicWriteFloatToStream(stream, NULL, 0);
 }
 
 /* Return the number of samples in the output buffer */
@@ -373,27 +447,18 @@ static int insertPitchPeriod(
 
 /* Resample as many pitch periods as we have buffered on the input.  Return 0 if
    we fail to resize an input or output buffer */
-int sonicWriteToStream(
-    sonicStream stream,
-    float *samples,
-    int numSamples)
+static int processStreamInput(
+    sonicStream stream)
 {
+    float *samples = stream->inputBuffer;
+    int numSamples = stream->numInputSamples;
     double speed = stream->speed;
     int position = 0, period, newSamples;
     int maxRequired = stream->maxRequired;
 
-    if(speed > 0.999999 && speed < 1.000001) {
-	/* No speed change - just copy to the output */
-	return copyToOutput(stream, samples, numSamples);
-    }
-    if(!addSamplesToInputBuffer(stream, samples, numSamples)) {
-	return 0;
-    }
     if(stream->numInputSamples < maxRequired) {
 	return 1;
     }
-    samples = stream->inputBuffer;
-    numSamples = stream->numInputSamples;
     do {
 	if(stream->remainingInputToCopy > 0) {
             newSamples = copyInputToOutput(stream, position);
@@ -415,3 +480,41 @@ int sonicWriteToStream(
     removeInputSamples(stream, position);
     return 1;
 }
+
+/* Write floating point data to the input buffer and process it. */
+int sonicWriteFloatToStream(
+    sonicStream stream,
+    float *samples,
+    int numSamples)
+{
+    double speed = stream->speed;
+
+    if(speed > 0.999999 && speed < 1.000001) {
+	/* No speed change - just copy to the output */
+	return copyFloatToOutput(stream, samples, numSamples);
+    }
+    if(!addFloatSamplesToInputBuffer(stream, samples, numSamples)) {
+	return 0;
+    }
+    return processStreamInput(stream);
+}
+
+/* Simple wrapper around sonicWriteFloatToStream that does the short to float
+   conversion for you. */
+int sonicWriteShortToStream(
+    sonicStream stream,
+    short *samples,
+    int numSamples)
+{
+    double speed = stream->speed;
+
+    if(speed > 0.999999 && speed < 1.000001) {
+	/* No speed change - just copy to the output */
+	return copyShortToOutput(stream, samples, numSamples);
+    }
+    if(!addShortSamplesToInputBuffer(stream, samples, numSamples)) {
+	return 0;
+    }
+    return processStreamInput(stream);
+}
+

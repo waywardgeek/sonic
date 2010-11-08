@@ -22,6 +22,7 @@ This file supports read/write wave files.
 */
 #include <stdlib.h>
 #include <limits.h>
+#include <string.h>
 #include <sndfile.h>
 #include "wave.h"
 
@@ -94,7 +95,7 @@ void closeWaveFile(
 /* Read from the wave file. */
 int readFromWaveFile(
     waveFile file,
-    float *buffer,
+    short *buffer,
     int maxSamples)
 {
     SNDFILE *soundFile = file->soundFile;
@@ -114,12 +115,16 @@ int readFromWaveFile(
 	return 0;
     }
     samplesRead /= numChannels;
-    for(i = 0; i < samplesRead; i++) {
-	value = 0.0f;
-	for(j = 0; j < numChannels; j++) {
-	    value += values[i*numChannels + j];
+    if(numChannels > 1) {
+	for(i = 0; i < samplesRead; i++) {
+	    value = 0.0f;
+	    for(j = 0; j < numChannels; j++) {
+		value += values[i*numChannels + j];
+	    }
+	    buffer[i] = (short)(value/(numChannels*32768.0f) + 0.5);
 	}
-	buffer[i] = value/(numChannels*32768.0f);
+    } else {
+	memcpy(buffer, values, samplesRead*sizeof(short));
     }
     return samplesRead;
 }
@@ -127,28 +132,17 @@ int readFromWaveFile(
 /* Write to the wave file. */
 int writeToWaveFile(
     waveFile file,
-    float *buffer,
+    short *buffer,
     int numSamples)
 {
     SNDFILE *soundFile = file->soundFile;
-    int value;
-    int xValue, numWritten;
+    int numWritten;
 
     if(numSamples > file->numValues) {
 	file->numValues = numSamples*3/2;
 	file->values = (short *)realloc(file->values, file->numValues*sizeof(short));
     }
-    for(xValue = 0; xValue < numSamples; xValue++) {
-	value = (int)(buffer[xValue]*32768.0 + 0.5);
-	if(value > SHRT_MAX) {
-	    file->values[xValue] = SHRT_MAX;
-	} else if (value < SHRT_MIN) {
-	    file->values[xValue] = SHRT_MIN;
-	} else {
-	    file->values[xValue] = value;
-	}
-    }
-    numWritten = sf_write_short(soundFile, file->values, numSamples);
+    numWritten = sf_write_short(soundFile, buffer, numSamples);
     if(numWritten != numSamples) {
 	fprintf(stderr, "Unable to write wave file.\n");
 	return 0;

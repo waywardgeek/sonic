@@ -38,7 +38,7 @@ static void runSonic(
     waveFile inFile = openInputWaveFile(inFileName, &sampleRate);
     waveFile outFile = openOutputWaveFile(outFileName, sampleRate);
     sonicStream stream = sonicCreateStream(speed, sampleRate);
-    float inBuffer[BUFFER_SIZE], outBuffer[BUFFER_SIZE];
+    short inBuffer[BUFFER_SIZE], outBuffer[BUFFER_SIZE];
     int numSamples;
 
     while(1) {
@@ -50,9 +50,9 @@ static void runSonic(
 	    closeWaveFile(outFile);
 	    return;
 	}
-        sonicWriteToStream(stream, inBuffer, numSamples);
+        sonicWriteShortToStream(stream, inBuffer, numSamples);
 	do {
-	    numSamples = sonicReadFromStream(stream, outBuffer, BUFFER_SIZE);
+	    numSamples = sonicReadShortFromStream(stream, outBuffer, BUFFER_SIZE);
 	    if(numSamples > 0) {
 		writeToWaveFile(outFile, outBuffer, numSamples);
 	    }
