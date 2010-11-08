@@ -87,3 +87,7 @@ int sonicReadFromStream(sonicStream stream, float *samples, int maxSamples);
 int sonicFlushStream(sonicStream stream);
 /* Return the number of samples in the output buffer */
 int sonicSamplesAvailable(sonicStream stream);
+/* Get the speed of the stream. */
+double sonicGetSpeed(sonicStream stream);
+/* Get the sample rate of the stream. */
+int sonicGetSampleRate(sonicStream stream);

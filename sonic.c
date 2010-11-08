@@ -36,6 +36,20 @@ struct sonicStreamStruct {
     int sampleRate;
 };
 
+/* Get the speed of the stream. */
+double sonicGetSpeed(
+    sonicStream stream)
+{
+    return stream->speed;
+}
+
+/* Get the sample rate of the stream. */
+int sonicGetSampleRate(
+    sonicStream stream)
+{
+    return stream->sampleRate;
+}
+
 /* Destroy the sonic stream. */
 void sonicDestroyStream(
     sonicStream stream)
