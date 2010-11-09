@@ -99,29 +99,34 @@ int readFromWaveFile(
     int maxSamples)
 {
     SNDFILE *soundFile = file->soundFile;
-    float value;
+    int value;
     short *values;
     int samplesRead;
     int numChannels = file->numChannels;
     int i, j;
 
-    if(maxSamples > file->numValues) {
-	file->numValues = maxSamples;
-	file->values = (short *)realloc(file->values, maxSamples*sizeof(short));
+    if(maxSamples*numChannels > file->numValues) {
+	file->numValues = maxSamples*numChannels;
+	file->values = (short *)realloc(file->values, file->numValues*sizeof(short));
     }
     values = file->values;
-    samplesRead = sf_read_short(soundFile, values, maxSamples);
+    samplesRead = sf_read_short(soundFile, values, maxSamples*numChannels);
     if(samplesRead <= 0) {
 	return 0;
     }
     samplesRead /= numChannels;
     if(numChannels > 1) {
 	for(i = 0; i < samplesRead; i++) {
-	    value = 0.0f;
+	    value = 0;
 	    for(j = 0; j < numChannels; j++) {
 		value += values[i*numChannels + j];
 	    }
-	    buffer[i] = (short)(value/(numChannels*32768.0f) + 0.5);
+	    if(value >= 0) {
+		buffer[i] = value/numChannels;
+	    } else {
+		/* On some OSes, dividing a negative number rounds the wrong way */
+		buffer[i] = -(-value/numChannels);
+	    }
 	}
     } else {
 	memcpy(buffer, values, samplesRead*sizeof(short));

@@ -23,16 +23,53 @@ Read wave files and speed them up or slow them down.
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include "sonic.h"
 #include "wave.h"
 
 #define BUFFER_SIZE 1024
+
+/* Scan through the input file to find it's maximum value. */
+static int findMaximumVolume(
+    waveFile inFile)
+{
+    short inBuffer[BUFFER_SIZE];
+    int samplesRead, i;
+    int maxValue = 0, value;
+
+    do {
+        samplesRead = readFromWaveFile(inFile, inBuffer, BUFFER_SIZE);
+	for(i = 0; i < samplesRead; i++) {
+	    value = inBuffer[i];
+	    if(value < 0) {
+		value = -value;
+	    }
+	    if(value > maxValue) {
+		maxValue = value;
+	    }
+	}
+    } while(samplesRead > 0);
+    return maxValue;
+}
+
+/* Scale the samples by the factor. */
+static void scaleSamples(
+    short *samples,
+    int numSamples,
+    double scale)
+{
+    while(numSamples--) {
+	*samples = (short)(*samples*scale + 0.5);
+	samples++;
+    }
+}
 
 /* Run sonic. */
 static void runSonic(
     waveFile inFile,
     waveFile outFile,
     double speed,
+    double scale,
     int sampleRate)
 {
     sonicStream stream = sonicCreateStream(speed, sampleRate);
@@ -44,6 +81,9 @@ static void runSonic(
 	if(samplesRead == 0) {
 	    sonicFlushStream(stream);
 	} else {
+	    if(scale != 1.0) {
+		scaleSamples(inBuffer, samplesRead, scale);
+	    }
 	    sonicWriteShortToStream(stream, inBuffer, samplesRead);
 	}
 	do {
@@ -59,7 +99,9 @@ static void runSonic(
 /* Print the usage. */
 static void usage(void)
 {
-    fprintf(stderr, "Usage: sonic speed infile outfile\n");
+    fprintf(stderr, "Usage: sonic [-s speed] [-v volume] infile outfile\n"
+        "    -s -- Set speed up factor.  1.0 means no change, 2.0 means 2X faster\n"
+	"    -v -- Scale volume as percentage of maximum allowed.  100 uses full range.\n");
     exit(1);
 }
 
@@ -69,15 +111,37 @@ int main(
 {
     waveFile inFile, outFile;
     char *inFileName, *outFileName;
-    double speed;
+    double speed = 1.0;
+    int setVolume = 0;
+    int maxVolume;
+    double volume = 1.0;
     int sampleRate;
+    double scale = 1.0;
+    int xArg = 1;
 
-    if(argc != 4) {
+    while(xArg < argc && *(argv[xArg]) == '-') {
+	if(!strcmp(argv[xArg], "-s")) {
+	    xArg++;
+	    if(xArg < argc) {
+	        speed = atof(argv[xArg]);
+                printf("Setting speed to %f\n", speed);
+	    }
+	} else if(!strcmp(argv[xArg], "-v")) {
+	    xArg++;
+	    if(xArg < argc) {
+		setVolume = 1;
+	        volume = atof(argv[xArg]);
+                printf("Setting volume to %0.2f%%\n", volume);
+		volume /= 100.0;
+	    }
+	}
+	xArg++;
+    }
+    if(argc -xArg != 2) {
 	usage();
     }
-    speed = atof(argv[1]);
-    inFileName = argv[2];
-    outFileName = argv[3];
+    inFileName = argv[xArg];
+    outFileName = argv[xArg + 1];
     inFile = openInputWaveFile(inFileName, &sampleRate);
     if(inFile == NULL) {
 	return 1;
@@ -87,7 +151,20 @@ int main(
 	closeWaveFile(inFile);
 	return 1;
     }
-    runSonic(inFile, outFile, speed, sampleRate);
+    if(setVolume) {
+	maxVolume = findMaximumVolume(inFile);
+	if(maxVolume != 0) {
+	    scale = volume*32768.0f/maxVolume;
+	}
+	printf("Scale = %0.2f\n", scale);
+	closeWaveFile(inFile);
+	inFile = openInputWaveFile(inFileName, &sampleRate);
+	if(inFile == NULL) {
+	    closeWaveFile(outFile);
+	    return 1;
+	}
+    }
+    runSonic(inFile, outFile, speed, scale, sampleRate);
     closeWaveFile(inFile);
     closeWaveFile(outFile);
     return 0;
