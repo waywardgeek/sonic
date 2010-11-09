@@ -87,9 +87,8 @@ int sonicReadFloatFromStream(sonicStream stream, float *samples, int maxSamples)
    be available, and zero is returned, which is not an error condition. */
 int sonicReadShortFromStream(sonicStream stream, short *samples, int maxSamples);
 /* Force the sonic stream to generate output using whatever data it currently
-   has.  Zeros will be appended to the input data if there is not enough data
-   in the stream's input buffer.  Use this, followed by a final read from the
-   stream before destroying the stream. */
+   has.  No extra delay will be added to the output, but flushing in the middle of
+   words could introduce distortion. */
 int sonicFlushStream(sonicStream stream);
 /* Return the number of samples in the output buffer */
 int sonicSamplesAvailable(sonicStream stream);

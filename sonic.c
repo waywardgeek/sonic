@@ -293,15 +293,14 @@ int sonicReadShortFromStream(
 }
 
 /* Force the sonic stream to generate output using whatever data it currently
-   has.  Zeros will be appended to the input data if there is not enough data
-   in the stream's input buffer.  Use this, followed by a final read from the
-   stream before destroying the stream. */
+   has.  No extra delay will be added to the output, but flushing in the middle of
+   words could introduce distortion. */
 int sonicFlushStream(
     sonicStream stream)
 {
     int maxRequired = stream->maxRequired;
     int numSamples = stream->numInputSamples;
-    int remainingSpace;
+    int remainingSpace, numOutputSamples, expectedSamples;
 
     if(numSamples == 0) {
 	return 1;
@@ -310,10 +309,22 @@ int sonicFlushStream(
 	return 0;
     }
     numSamples = stream->numInputSamples; /* Now numSamples < maxRequired */
+    if(numSamples == 0) {
+	return 1;
+    }
     remainingSpace = maxRequired - numSamples;
     memset(stream->inputBuffer + numSamples, 0, remainingSpace*sizeof(float));
     stream->numInputSamples = maxRequired;
-    return sonicWriteFloatToStream(stream, NULL, 0);
+    numOutputSamples = stream->numOutputSamples;
+    if(!sonicWriteFloatToStream(stream, NULL, 0)) {
+	return 0;
+    }
+    /* Throw away any extra samples we generated due to the silence we added */
+    expectedSamples = (int)(numSamples*stream->speed + 0.5);
+    if(stream->numOutputSamples > numOutputSamples + expectedSamples) {
+	stream->numOutputSamples = numOutputSamples + expectedSamples;
+    }
+    return 1;
 }
 
 /* Return the number of samples in the output buffer */
