@@ -30,34 +30,30 @@ Read wave files and speed them up or slow them down.
 
 /* Run sonic. */
 static void runSonic(
-    char *inFileName,
-    char *outFileName,
-    double speed)
+    waveFile inFile,
+    waveFile outFile,
+    double speed,
+    int sampleRate)
 {
-    int sampleRate;
-    waveFile inFile = openInputWaveFile(inFileName, &sampleRate);
-    waveFile outFile = openOutputWaveFile(outFileName, sampleRate);
     sonicStream stream = sonicCreateStream(speed, sampleRate);
     short inBuffer[BUFFER_SIZE], outBuffer[BUFFER_SIZE];
-    int numSamples;
+    int samplesRead, samplesWritten;
 
-    while(1) {
-        numSamples = readFromWaveFile(inFile, inBuffer, BUFFER_SIZE);
-	if(numSamples == 0) {
+    do {
+        samplesRead = readFromWaveFile(inFile, inBuffer, BUFFER_SIZE);
+	if(samplesRead == 0) {
 	    sonicFlushStream(stream);
-            sonicDestroyStream(stream);
-	    closeWaveFile(inFile);
-	    closeWaveFile(outFile);
-	    return;
+	} else {
+	    sonicWriteShortToStream(stream, inBuffer, samplesRead);
 	}
-        sonicWriteShortToStream(stream, inBuffer, numSamples);
 	do {
-	    numSamples = sonicReadShortFromStream(stream, outBuffer, BUFFER_SIZE);
-	    if(numSamples > 0) {
-		writeToWaveFile(outFile, outBuffer, numSamples);
+	    samplesWritten = sonicReadShortFromStream(stream, outBuffer, BUFFER_SIZE);
+	    if(samplesWritten > 0) {
+		writeToWaveFile(outFile, outBuffer, samplesWritten);
 	    }
-	} while(numSamples > 0);
-    }
+	} while(samplesWritten > 0);
+    } while(samplesRead > 0);
+    sonicDestroyStream(stream);
 }
 
 /* Print the usage. */
@@ -71,8 +67,10 @@ int main(
     int argc,
     char **argv)
 {
+    waveFile inFile, outFile;
     char *inFileName, *outFileName;
     double speed;
+    int sampleRate;
 
     if(argc != 4) {
 	usage();
@@ -80,6 +78,17 @@ int main(
     speed = atof(argv[1]);
     inFileName = argv[2];
     outFileName = argv[3];
-    runSonic(inFileName, outFileName, speed);
+    inFile = openInputWaveFile(inFileName, &sampleRate);
+    if(inFile == NULL) {
+	return 1;
+    }
+    outFile = openOutputWaveFile(outFileName, sampleRate);
+    if(outFile == NULL) {
+	closeWaveFile(inFile);
+	return 1;
+    }
+    runSonic(inFile, outFile, speed, sampleRate);
+    closeWaveFile(inFile);
+    closeWaveFile(outFile);
     return 0;
 }

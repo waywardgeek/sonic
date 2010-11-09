@@ -73,7 +73,7 @@ waveFile openOutputWaveFile(
     info.channels = 1;
     soundFile = sf_open(fileName, SFM_WRITE, &info);
     if(soundFile == NULL) {
-	fprintf(stderr, "Unable to open wave file %s: %s", fileName, sf_strerror(NULL));
+	fprintf(stderr, "Unable to open wave file %s: %s\n", fileName, sf_strerror(NULL));
 	return NULL;
     }
     file = (waveFile)calloc(1, sizeof(struct waveFileStruct));
