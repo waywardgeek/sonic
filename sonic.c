@@ -529,3 +529,37 @@ int sonicWriteShortToStream(
     return processStreamInput(stream);
 }
 
+/* This is a non-stream oriented interface to just change the speed of a sound sample */
+int sonicChangeFloatSpeed(
+    float *samples,
+    int numSamples,
+    double speed,
+    int sampleRate)
+{
+    sonicStream stream = sonicCreateStream(speed, sampleRate);
+
+    sonicWriteFloatToStream(stream, samples, numSamples);
+    sonicFlushStream(stream);
+    numSamples = sonicSamplesAvailable(stream);
+    sonicReadFloatFromStream(stream, samples, numSamples);
+    sonicDestroyStream(stream);
+    return numSamples;
+}
+
+/* This is a non-stream oriented interface to just change the speed of a sound sample */
+int sonicChangeShortSpeed(
+    short *samples,
+    int numSamples,
+    double speed,
+    int sampleRate)
+{
+    sonicStream stream = sonicCreateStream(speed, sampleRate);
+
+    sonicWriteShortToStream(stream, samples, numSamples);
+    sonicFlushStream(stream);
+    numSamples = sonicSamplesAvailable(stream);
+    sonicReadShortFromStream(stream, samples, numSamples);
+    sonicDestroyStream(stream);
+    return numSamples;
+}
+
