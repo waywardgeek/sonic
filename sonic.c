@@ -164,7 +164,7 @@ static int addShortSamplesToInputBuffer(
     }
     buffer = stream->inputBuffer + stream->numInputSamples;
     while(count--) {
-        *buffer++ = *samples++;
+        *buffer++ = (*samples++)/32767.0;
     }
     stream->numInputSamples += numSamples;
     return 1;
@@ -235,7 +235,7 @@ static int copyShortToOutput(
     }
     buffer = stream->outputBuffer + stream->numOutputSamples;
     while(count--) {
-        *buffer++ = *samples++;
+        *buffer++ = (*samples++)/32767;
     }
     stream->numOutputSamples += numSamples;
     return numSamples;
@@ -326,7 +326,7 @@ int sonicReadShortFromStream(
     }
     buffer = stream->outputBuffer;
     for(i = 0; i < numSamples; i++) {
-	*samples++ = *buffer++;
+	*samples++ = (*buffer++) * 32767;
     }
     if(remainingSamples > 0) {
 	memmove(stream->outputBuffer, stream->outputBuffer + numSamples,
