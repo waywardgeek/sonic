@@ -81,12 +81,18 @@ int sonicWriteFloatToStream(sonicStream stream, float *samples, int numSamples);
 /* Use this to write 16-bit data to be speed up or down into the stream.
    Return 0 if memory realloc failed, otherwise 1 */
 int sonicWriteShortToStream(sonicStream stream, short *samples, int numSamples);
+/* Use this to write 8-bit unsigned data to be speed up or down into the stream.
+   Return 0 if memory realloc failed, otherwise 1 */
+int sonicWriteUnsignedCharToStream(sonicStream stream, unsigned char *samples, int numSamples);
 /* Use this to read floating point data out of the stream.  Sometimes no data
    will be available, and zero is returned, which is not an error condition. */
 int sonicReadFloatFromStream(sonicStream stream, float *samples, int maxSamples);
 /* Use this to read 16-bit data out of the stream.  Sometimes no data will
    be available, and zero is returned, which is not an error condition. */
 int sonicReadShortFromStream(sonicStream stream, short *samples, int maxSamples);
+/* Use this to read 8-bit unsigned data out of the stream.  Sometimes no data will
+   be available, and zero is returned, which is not an error condition. */
+int sonicReadUnsignedCharFromStream(sonicStream stream, unsigned char *samples, int maxSamples);
 /* Force the sonic stream to generate output using whatever data it currently
    has.  No extra delay will be added to the output, but flushing in the middle of
    words could introduce distortion. */

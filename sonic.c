@@ -170,6 +170,29 @@ static int addShortSamplesToInputBuffer(
     return 1;
 }
 
+/* Add the input samples to the input buffer. */
+static int addUnsignedCharSamplesToInputBuffer(
+    sonicStream stream,
+    unsigned char *samples,
+    int numSamples)
+{
+    float *buffer;
+    int count = numSamples;
+
+    if(numSamples == 0) {
+	return 1;
+    }
+    if(!enlargeInputBufferIfNeeded(stream, numSamples)) {
+	return 0;
+    }
+    buffer = stream->inputBuffer + stream->numInputSamples;
+    while(count--) {
+        *buffer++ = (*samples++ - 128)/127.0;
+    }
+    stream->numInputSamples += numSamples;
+    return 1;
+}
+
 /* Remove input samples that we have already processed. */
 static void removeInputSamples(
     sonicStream stream,
@@ -213,6 +236,26 @@ static int copyShortToOutput(
     buffer = stream->outputBuffer + stream->numOutputSamples;
     while(count--) {
         *buffer++ = *samples++;
+    }
+    stream->numOutputSamples += numSamples;
+    return numSamples;
+}
+
+/* Just copy from the array to the output buffer */
+static int copyUnsignedCharToOutput(
+    sonicStream stream,
+    unsigned char *samples,
+    int numSamples)
+{
+    float *buffer;
+    int count = numSamples;
+
+    if(!enlargeOutputBufferIfNeeded(stream, numSamples)) {
+	return 0;
+    }
+    buffer = stream->outputBuffer + stream->numOutputSamples;
+    while(count--) {
+        *buffer++ = (*samples++ -128)/127.0;
     }
     stream->numOutputSamples += numSamples;
     return numSamples;
@@ -284,6 +327,37 @@ int sonicReadShortFromStream(
     buffer = stream->outputBuffer;
     for(i = 0; i < numSamples; i++) {
 	*samples++ = *buffer++;
+    }
+    if(remainingSamples > 0) {
+	memmove(stream->outputBuffer, stream->outputBuffer + numSamples,
+	    remainingSamples*sizeof(float));
+    }
+    stream->numOutputSamples = remainingSamples;
+    return numSamples;
+}
+
+/* Read unsigned char data out of the stream.  Sometimes no data will be available, and zero
+   is returned, which is not an error condition. */
+int sonicReadUnsignedCharFromStream(
+    sonicStream stream,
+    unsigned char *samples,
+    int maxSamples)
+{
+    int numSamples = stream->numOutputSamples;
+    int remainingSamples = 0;
+    float *buffer;
+    int i;
+
+    if(numSamples == 0) {
+	return 0;
+    }
+    if(numSamples > maxSamples) {
+	remainingSamples = numSamples - maxSamples;
+	numSamples = maxSamples;
+    }
+    buffer = stream->outputBuffer;
+    for(i = 0; i < numSamples; i++) {
+	*samples++ = (*buffer++) * 127 + 128;
     }
     if(remainingSamples > 0) {
 	memmove(stream->outputBuffer, stream->outputBuffer + numSamples,
@@ -525,6 +599,25 @@ int sonicWriteShortToStream(
 	return copyShortToOutput(stream, samples, numSamples);
     }
     if(!addShortSamplesToInputBuffer(stream, samples, numSamples)) {
+	return 0;
+    }
+    return processStreamInput(stream);
+}
+
+/* Simple wrapper around sonicWriteFloatToStream that does the unsigned char to float
+   conversion for you. */
+int sonicWriteUnsignedCharToStream(
+    sonicStream stream,
+    unsigned char *samples,
+    int numSamples)
+{
+    double speed = stream->speed;
+
+    if(speed > 0.999999 && speed < 1.000001) {
+	/* No speed change - just copy to the output */
+	return copyUnsignedCharToOutput(stream, samples, numSamples);
+    }
+    if(!addUnsignedCharSamplesToInputBuffer(stream, samples, numSamples)) {
 	return 0;
     }
     return processStreamInput(stream);
