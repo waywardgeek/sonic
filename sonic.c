@@ -20,6 +20,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdarg.h>
 #include "sonic.h"
 
 struct sonicStreamStruct {
@@ -36,6 +37,20 @@ struct sonicStreamStruct {
     int remainingInputToCopy;
     int sampleRate;
 };
+
+void sonicMSG(char *format, ...)
+{
+    char buffer[4096];
+    va_list ap;
+    FILE *file;
+
+    va_start(ap, format);
+    vsprintf((char *)buffer, (char *)format, ap);
+    va_end(ap);
+    file=fopen("/tmp/sonic.log", "a");
+    fprintf(file, "%s", buffer);
+    fclose(file);
+}
 
 /* Get the speed of the stream. */
 double sonicGetSpeed(
@@ -337,7 +352,6 @@ int sonicSamplesAvailable(
 
 /* Find the best frequency match in the range, and given a sample skip multiple. */
 static int findPitchPeriodInRange(
-    sonicStream stream,
     float *samples,
     int minPeriod,
     int maxPeriod,
@@ -385,7 +399,7 @@ static int findPitchPeriod(
     if(sampleRate > SONIC_AMDF_FREQ) {
 	skip = sampleRate/SONIC_AMDF_FREQ;
     }
-    period = findPitchPeriodInRange(stream, samples, minPeriod, maxPeriod, skip);
+    period = findPitchPeriodInRange(samples, minPeriod, maxPeriod, skip);
     minPeriod = period*(1.0 - SONIC_AMDF_RANGE);
     maxPeriod = period*(1.0 + SONIC_AMDF_RANGE);
     if(minPeriod < stream->minPeriod) {
@@ -545,21 +559,6 @@ int sonicChangeFloatSpeed(
     sonicReadFloatFromStream(stream, samples, numSamples);
     sonicDestroyStream(stream);
     return numSamples;
-}
-
-#include <stdarg.h>
-void MSG(char *format, ...)
-{
-    char buffer[4096];
-    va_list ap;
-    FILE *file;
-
-    va_start(ap, format);
-    vsprintf((char *)buffer, (char *)format, ap);
-    va_end(ap);
-    file=fopen("/tmp/sonic.log", "a");
-    fprintf(file, "%s", buffer);
-    fclose(file);
 }
 
 /* This is a non-stream oriented interface to just change the speed of a sound sample */
