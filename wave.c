@@ -29,15 +29,14 @@ This file supports read/write wave files.
 
 struct waveFileStruct {
     SNDFILE *soundFile;
-    short *values;
-    int numValues;
     int numChannels;
 };
 
 /* Open the file for reading.  Also determine it's sample rate. */
 waveFile openInputWaveFile(
     char *fileName,
-    int *sampleRate)
+    int *sampleRate,
+    int *numChannels)
 {
     SF_INFO info;
     SNDFILE *soundFile;
@@ -52,8 +51,6 @@ waveFile openInputWaveFile(
     file = (waveFile)calloc(1, sizeof(struct waveFileStruct));
     file->soundFile = soundFile;
     file->numChannels = info.channels;
-    file->numValues = 42;
-    file->values = (short *)calloc(file->numValues, sizeof(short));
     *sampleRate = info.samplerate;
     printf("Frames = %ld, sample rate = %d, channels = %d, format = %d\n",
         info.frames, info.samplerate, info.channels, info.format);
@@ -63,7 +60,8 @@ waveFile openInputWaveFile(
 /* Open the file for reading. */
 waveFile openOutputWaveFile(
     char *fileName,
-    int sampleRate)
+    int sampleRate,
+    int numChannels)
 {
     SF_INFO info;
     SNDFILE *soundFile;
@@ -71,7 +69,7 @@ waveFile openOutputWaveFile(
 
     info.format = SF_FORMAT_WAV | SF_FORMAT_PCM_16;
     info.samplerate = sampleRate;
-    info.channels = 1;
+    info.channels = numChannels;
     soundFile = sf_open(fileName, SFM_WRITE, &info);
     if(soundFile == NULL) {
 	fprintf(stderr, "Unable to open wave file %s: %s\n", fileName, sf_strerror(NULL));
@@ -79,8 +77,6 @@ waveFile openOutputWaveFile(
     }
     file = (waveFile)calloc(1, sizeof(struct waveFileStruct));
     file->soundFile = soundFile;
-    file->numValues = 42;
-    file->values = (short *)calloc(file->numValues, sizeof(short));
     return file;
 }
 
@@ -100,39 +96,14 @@ int readFromWaveFile(
     int maxSamples)
 {
     SNDFILE *soundFile = file->soundFile;
-    int value;
-    short *values;
     int samplesRead;
     int numChannels = file->numChannels;
-    int i, j;
 
-    if(maxSamples*numChannels > file->numValues) {
-	file->numValues = maxSamples*numChannels;
-	file->values = (short *)realloc(file->values, file->numValues*sizeof(short));
-    }
-    values = file->values;
-    samplesRead = sf_read_short(soundFile, values, maxSamples*numChannels);
+    samplesRead = sf_read_short(soundFile, buffer, maxSamples*numChannels);
     if(samplesRead <= 0) {
 	return 0;
     }
-    samplesRead /= numChannels;
-    if(numChannels > 1) {
-	for(i = 0; i < samplesRead; i++) {
-	    value = 0;
-	    for(j = 0; j < numChannels; j++) {
-		value += values[i*numChannels + j];
-	    }
-	    if(value >= 0) {
-		buffer[i] = value/numChannels;
-	    } else {
-		/* On some OSes, dividing a negative number rounds the wrong way */
-		buffer[i] = -(-value/numChannels);
-	    }
-	}
-    } else {
-	memcpy(buffer, values, samplesRead*sizeof(short));
-    }
-    return samplesRead;
+    return samplesRead/numChannels;
 }
 
 /* Write to the wave file. */
@@ -144,12 +115,8 @@ int writeToWaveFile(
     SNDFILE *soundFile = file->soundFile;
     int numWritten;
 
-    if(numSamples > file->numValues) {
-	file->numValues = numSamples*3/2;
-	file->values = (short *)realloc(file->values, file->numValues*sizeof(short));
-    }
-    numWritten = sf_write_short(soundFile, buffer, numSamples);
-    if(numWritten != numSamples) {
+    numWritten = sf_write_short(soundFile, buffer, numSamples*file->numChannels);
+    if(numWritten*file->numChannels != numSamples) {
 	fprintf(stderr, "Unable to write wave file.\n");
 	return 0;
     }

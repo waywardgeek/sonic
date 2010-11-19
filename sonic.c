@@ -24,9 +24,10 @@
 #include "sonic.h"
 
 struct sonicStreamStruct {
-    float speed;
     short *inputBuffer;
     short *outputBuffer;
+    float speed;
+    int numChannels;
     int inputBufferSize;
     int outputBufferSize;
     int numInputSamples;
@@ -38,6 +39,7 @@ struct sonicStreamStruct {
     int sampleRate;
 };
 
+/* Just used for debugging */
 void sonicMSG(char *format, ...)
 {
     char buffer[4096];
@@ -83,7 +85,8 @@ void sonicDestroyStream(
    allocate the stream. */
 sonicStream sonicCreateStream(
     float speed,
-    int sampleRate)
+    int sampleRate,
+    int numChannels)
 {
     sonicStream stream = (sonicStream)calloc(1, sizeof(struct sonicStreamStruct));
     int minPeriod = sampleRate/SONIC_MAX_PITCH;
@@ -93,18 +96,19 @@ sonicStream sonicCreateStream(
     if(stream == NULL) {
 	return NULL;
     }
-    stream->inputBuffer = (short *)calloc(maxRequired, sizeof(short));
+    stream->inputBuffer = (short *)calloc(maxRequired, sizeof(short)*numChannels);
     if(stream->inputBuffer == NULL) {
 	sonicDestroyStream(stream);
 	return NULL;
     }
-    stream->outputBuffer = (short *)calloc(maxRequired, sizeof(short));
+    stream->outputBuffer = (short *)calloc(maxRequired, sizeof(short)*numChannels);
     if(stream->outputBuffer == NULL) {
 	sonicDestroyStream(stream);
 	return NULL;
     }
     stream->speed = speed;
     stream->sampleRate = sampleRate;
+    stream->numChannels = numChannels;
     stream->minPeriod = minPeriod;
     stream->maxPeriod = maxPeriod;
     stream->maxRequired = maxRequired;
@@ -121,7 +125,7 @@ static int enlargeOutputBufferIfNeeded(
     if(stream->numOutputSamples + numSamples > stream->outputBufferSize) {
 	stream->outputBufferSize += (stream->outputBufferSize >> 1) + numSamples;
 	stream->outputBuffer = (short *)realloc(stream->outputBuffer,
-	    stream->outputBufferSize*sizeof(short));
+	    stream->outputBufferSize*sizeof(short)*stream->numChannels);
 	if(stream->outputBuffer == NULL) {
 	    return 0;
 	}
@@ -137,7 +141,7 @@ static int enlargeInputBufferIfNeeded(
     if(stream->numInputSamples + numSamples > stream->inputBufferSize) {
 	stream->inputBufferSize += (stream->inputBufferSize >> 1) + numSamples;
 	stream->inputBuffer = (short *)realloc(stream->inputBuffer,
-	    stream->inputBufferSize*sizeof(short));
+	    stream->inputBufferSize*sizeof(short)*stream->numChannels);
 	if(stream->inputBuffer == NULL) {
 	    return 0;
 	}
@@ -152,7 +156,7 @@ static int addFloatSamplesToInputBuffer(
     int numSamples)
 {
     short *buffer;
-    int count = numSamples;
+    int count = numSamples*stream->numChannels;
 
     if(numSamples == 0) {
 	return 1;
@@ -160,7 +164,7 @@ static int addFloatSamplesToInputBuffer(
     if(!enlargeInputBufferIfNeeded(stream, numSamples)) {
 	return 0;
     }
-    buffer = stream->inputBuffer + stream->numInputSamples;
+    buffer = stream->inputBuffer + stream->numInputSamples*stream->numChannels;
     while(count--) {
         *buffer++ = (*samples++)*32767.0f;
     }
@@ -180,7 +184,8 @@ static int addShortSamplesToInputBuffer(
     if(!enlargeInputBufferIfNeeded(stream, numSamples)) {
 	return 0;
     }
-    memcpy(stream->inputBuffer + stream->numInputSamples, samples, numSamples*sizeof(short));
+    memcpy(stream->inputBuffer + stream->numInputSamples*stream->numChannels, samples,
+        numSamples*sizeof(short)*stream->numChannels);
     stream->numInputSamples += numSamples;
     return 1;
 }
@@ -192,7 +197,7 @@ static int addUnsignedCharSamplesToInputBuffer(
     int numSamples)
 {
     short *buffer;
-    int count = numSamples;
+    int count = numSamples*stream->numChannels;
 
     if(numSamples == 0) {
 	return 1;
@@ -200,7 +205,7 @@ static int addUnsignedCharSamplesToInputBuffer(
     if(!enlargeInputBufferIfNeeded(stream, numSamples)) {
 	return 0;
     }
-    buffer = stream->inputBuffer + stream->numInputSamples;
+    buffer = stream->inputBuffer + stream->numInputSamples*stream->numChannels;
     while(count--) {
         *buffer++ = (*samples++ - 128) << 8;
     }
@@ -216,8 +221,8 @@ static void removeInputSamples(
     int remainingSamples = stream->numInputSamples - position;
 
     if(remainingSamples > 0) {
-	memmove(stream->inputBuffer, stream->inputBuffer + position,
-	    remainingSamples*sizeof(short));
+	memmove(stream->inputBuffer, stream->inputBuffer + position*stream->numChannels,
+	    remainingSamples*sizeof(short)*stream->numChannels);
     }
     stream->numInputSamples = remainingSamples;
 }
@@ -229,12 +234,12 @@ static int copyFloatToOutput(
     int numSamples)
 {
     short *buffer;
-    int count = numSamples;
+    int count = numSamples*stream->numChannels;
 
     if(!enlargeOutputBufferIfNeeded(stream, numSamples)) {
 	return 0;
     }
-    buffer = stream->outputBuffer + stream->numOutputSamples;
+    buffer = stream->outputBuffer + stream->numOutputSamples*stream->numChannels;
     while(count--) {
         *buffer++ = (*samples++)*32767.0f;
     }
@@ -251,7 +256,8 @@ static int copyShortToOutput(
     if(!enlargeOutputBufferIfNeeded(stream, numSamples)) {
 	return 0;
     }
-    memcpy(stream->outputBuffer + stream->numOutputSamples, samples, numSamples*sizeof(short));
+    memcpy(stream->outputBuffer + stream->numOutputSamples*stream->numChannels,
+	samples, numSamples*sizeof(short)*stream->numChannels);
     stream->numOutputSamples += numSamples;
     return numSamples;
 }
@@ -263,12 +269,12 @@ static int copyUnsignedCharToOutput(
     int numSamples)
 {
     short *buffer;
-    int count = numSamples;
+    int count = numSamples*stream->numChannels;
 
     if(!enlargeOutputBufferIfNeeded(stream, numSamples)) {
 	return 0;
     }
-    buffer = stream->outputBuffer + stream->numOutputSamples;
+    buffer = stream->outputBuffer + stream->numOutputSamples*stream->numChannels;
     while(count--) {
         *buffer++ = (*samples++ - 128) << 8;
     }
@@ -287,7 +293,8 @@ static int copyInputToOutput(
     if(numSamples > stream->maxRequired) {
 	numSamples = stream->maxRequired;
     }
-    if(!copyShortToOutput(stream, stream->inputBuffer + position, numSamples)) {
+    if(!copyShortToOutput(stream, stream->inputBuffer + position*stream->numChannels,
+	    numSamples)) {
 	return 0;
     }
     stream->remainingInputToCopy -= numSamples;
@@ -304,7 +311,7 @@ int sonicReadFloatFromStream(
     int numSamples = stream->numOutputSamples;
     int remainingSamples = 0;
     short *buffer;
-    int i;
+    int count;
 
     if(numSamples == 0) {
 	return 0;
@@ -314,12 +321,13 @@ int sonicReadFloatFromStream(
 	numSamples = maxSamples;
     }
     buffer = stream->outputBuffer;
-    for(i = 0; i < numSamples; i++) {
+    count = numSamples*stream->numChannels;
+    while(count--) {
 	*samples++ = (*buffer++)/32767.0f;
     }
     if(remainingSamples > 0) {
-	memmove(stream->outputBuffer, stream->outputBuffer + numSamples,
-	    remainingSamples*sizeof(short));
+	memmove(stream->outputBuffer, stream->outputBuffer + numSamples*stream->numChannels,
+	    remainingSamples*sizeof(short)*stream->numChannels);
     }
     stream->numOutputSamples = remainingSamples;
     return numSamples;
@@ -342,10 +350,10 @@ int sonicReadShortFromStream(
 	remainingSamples = numSamples - maxSamples;
 	numSamples = maxSamples;
     }
-    memcpy(samples, stream->outputBuffer, numSamples*sizeof(short));
+    memcpy(samples, stream->outputBuffer, numSamples*sizeof(short)*stream->numChannels);
     if(remainingSamples > 0) {
-	memmove(stream->outputBuffer, stream->outputBuffer + numSamples,
-	    remainingSamples*sizeof(short));
+	memmove(stream->outputBuffer, stream->outputBuffer + numSamples*stream->numChannels,
+	    remainingSamples*sizeof(short)*stream->numChannels);
     }
     stream->numOutputSamples = remainingSamples;
     return numSamples;
@@ -361,7 +369,7 @@ int sonicReadUnsignedCharFromStream(
     int numSamples = stream->numOutputSamples;
     int remainingSamples = 0;
     short *buffer;
-    int i;
+    int count;
 
     if(numSamples == 0) {
 	return 0;
@@ -371,12 +379,13 @@ int sonicReadUnsignedCharFromStream(
 	numSamples = maxSamples;
     }
     buffer = stream->outputBuffer;
-    for(i = 0; i < numSamples; i++) {
+    count = numSamples*stream->numChannels;
+    while(count--) {
 	*samples++ = (char)((*buffer++) >> 8) + 128;
     }
     if(remainingSamples > 0) {
-	memmove(stream->outputBuffer, stream->outputBuffer + numSamples,
-	    remainingSamples*sizeof(short));
+	memmove(stream->outputBuffer, stream->outputBuffer + numSamples*stream->numChannels,
+	    remainingSamples*sizeof(short)*stream->numChannels);
     }
     stream->numOutputSamples = remainingSamples;
     return numSamples;
@@ -403,7 +412,8 @@ int sonicFlushStream(
 	return 1;
     }
     remainingSpace = maxRequired - numSamples;
-    memset(stream->inputBuffer + numSamples, 0, remainingSpace*sizeof(short));
+    memset(stream->inputBuffer + numSamples*stream->numChannels, 0,
+        remainingSpace*sizeof(short)*stream->numChannels);
     stream->numInputSamples = maxRequired;
     numOutputSamples = stream->numOutputSamples;
     if(!sonicWriteShortToStream(stream, NULL, 0)) {
@@ -424,9 +434,11 @@ int sonicSamplesAvailable(
     return stream->numOutputSamples;
 }
 
-/* Find the best frequency match in the range, and given a sample skip multiple. */
+/* Find the best frequency match in the range, and given a sample skip multiple.
+   For now, just find the pitch of the first channel.  */
 static int findPitchPeriodInRange(
     short *samples,
+    int numChannels,
     int minPeriod,
     int maxPeriod,
     int skip)
@@ -436,17 +448,18 @@ static int findPitchPeriodInRange(
     unsigned long diff, minDiff = 0;
     unsigned int numSamples = (minPeriod + skip - 1)/skip;
     unsigned int bestNumSamples = 0;
+    int sampleSkip = skip*numChannels;
     int i;
 
     for(period = minPeriod; period <= maxPeriod; period += skip) {
 	diff = 0;
 	s = samples;
-	p = samples + period;
+	p = samples + period*numChannels;
 	for(i = 0; i < numSamples; i++) {
 	    sVal = *s;
 	    pVal = *p;
-	    s += skip;
-	    p += skip;
+	    s += sampleSkip;
+	    p += sampleSkip;
 	    diff += sVal >= pVal? (unsigned short)(sVal - pVal) :
 	        (unsigned short)(pVal - sVal);
 	}
@@ -480,7 +493,7 @@ static int findPitchPeriod(
     if(sampleRate > SONIC_AMDF_FREQ) {
 	skip = sampleRate/SONIC_AMDF_FREQ;
     }
-    period = findPitchPeriodInRange(samples, minPeriod, maxPeriod, skip);
+    period = findPitchPeriodInRange(samples, stream->numChannels, minPeriod, maxPeriod, skip);
     if(skip == 1) {
 	return period;
     }
@@ -492,7 +505,7 @@ static int findPitchPeriod(
     if(maxPeriod > stream->maxPeriod) {
 	maxPeriod = stream->maxPeriod;
     }
-    return findPitchPeriodInRange(samples, minPeriod, maxPeriod, 1);
+    return findPitchPeriodInRange(samples, stream->numChannels, minPeriod, maxPeriod, 1);
 }
 
 /* Skip over a pitch period, and copy period/speed samples to the output */
@@ -503,7 +516,9 @@ static int skipPitchPeriod(
     int period)
 {
     long t, newSamples;
-    short *out;
+    short *out, *prevPeriodSamples, *nextPeriodSamples;
+    int numChannels = stream->numChannels;
+    int i;
 
     if(speed >= 2.0f) {
 	newSamples = period/(speed - 1.0f);
@@ -514,9 +529,16 @@ static int skipPitchPeriod(
     if(!enlargeOutputBufferIfNeeded(stream, newSamples)) {
 	return 0;
     }
-    out = stream->outputBuffer + stream->numOutputSamples;
-    for(t = 0; t < newSamples; t++) {
-        out[t] = (samples[t]*(newSamples - t) + samples[t + period]*t)/newSamples;
+    for(i = 0; i < numChannels; i++) {
+	out = stream->outputBuffer + stream->numOutputSamples*numChannels + i;
+	prevPeriodSamples = samples + i;
+	nextPeriodSamples = samples + i + period*numChannels;
+	for(t = 0; t < newSamples; t++) {
+	    *out = (*prevPeriodSamples*(newSamples - t) + *nextPeriodSamples*t)/newSamples;
+	    out += numChannels;
+	    prevPeriodSamples += numChannels;
+	    nextPeriodSamples += numChannels;
+	}
     }
     stream->numOutputSamples += newSamples;
     return newSamples;
@@ -530,7 +552,9 @@ static int insertPitchPeriod(
     int period)
 {
     unsigned long t, newSamples;
-    short *out;
+    short *out, *prevPeriodSamples, *nextPeriodSamples;
+    int numChannels = stream->numChannels;
+    int i;
 
     if(speed < 0.5f) {
         newSamples = period*speed/(1.0f - speed);
@@ -541,11 +565,18 @@ static int insertPitchPeriod(
     if(!enlargeOutputBufferIfNeeded(stream, period + newSamples)) {
 	return 0;
     }
-    out = stream->outputBuffer + stream->numOutputSamples;
-    memcpy(out, samples, period*sizeof(short));
-    out += period;
-    for(t = 0; t < newSamples; t++) {
-        out[t] = (samples[t]*t + samples[t + period]*(newSamples - t))/newSamples;
+    out = stream->outputBuffer + stream->numOutputSamples*numChannels;
+    memcpy(out, samples, period*sizeof(short)*numChannels);
+    for(i = 0; i < numChannels; i++) {
+	out = stream->outputBuffer + (stream->numOutputSamples + period)*numChannels + i;
+	prevPeriodSamples = samples + i;
+	nextPeriodSamples = samples + i + period*numChannels;
+	for(t = 0; t < newSamples; t++) {
+	    *out = (*prevPeriodSamples*t + *nextPeriodSamples*(newSamples - t))/newSamples;
+	    out += numChannels;
+	    prevPeriodSamples += numChannels;
+	    nextPeriodSamples += numChannels;
+	}
     }
     stream->numOutputSamples += period + newSamples;
     return newSamples;
@@ -556,7 +587,7 @@ static int insertPitchPeriod(
 static int processStreamInput(
     sonicStream stream)
 {
-    short *samples = stream->inputBuffer;
+    short *samples;
     int numSamples = stream->numInputSamples;
     float speed = stream->speed;
     int position = 0, period, newSamples;
@@ -570,12 +601,13 @@ static int processStreamInput(
             newSamples = copyInputToOutput(stream, position);
 	    position += newSamples;
 	} else {
-	    period = findPitchPeriod(stream, samples + position);
+	    samples = stream->inputBuffer + position*stream->numChannels;
+	    period = findPitchPeriod(stream, samples);
 	    if(speed > 1.0) {
-		newSamples = skipPitchPeriod(stream, samples + position, speed, period);
+		newSamples = skipPitchPeriod(stream, samples, speed, period);
 		position += period + newSamples;
 	    } else {
-		newSamples = insertPitchPeriod(stream, samples + position, speed, period);
+		newSamples = insertPitchPeriod(stream, samples, speed, period);
 		position += newSamples;
 	    }
 	}
@@ -648,9 +680,10 @@ int sonicChangeFloatSpeed(
     float *samples,
     int numSamples,
     float speed,
-    int sampleRate)
+    int sampleRate,
+    int numChannels)
 {
-    sonicStream stream = sonicCreateStream(speed, sampleRate);
+    sonicStream stream = sonicCreateStream(speed, sampleRate, numChannels);
 
     sonicWriteFloatToStream(stream, samples, numSamples);
     sonicFlushStream(stream);
@@ -665,9 +698,10 @@ int sonicChangeShortSpeed(
     short *samples,
     int numSamples,
     float speed,
-    int sampleRate)
+    int sampleRate,
+    int numChannels)
 {
-    sonicStream stream = sonicCreateStream(speed, sampleRate);
+    sonicStream stream = sonicCreateStream(speed, sampleRate, numChannels);
 
     sonicWriteShortToStream(stream, samples, numSamples);
     sonicFlushStream(stream);
@@ -676,4 +710,3 @@ int sonicChangeShortSpeed(
     sonicDestroyStream(stream);
     return numSamples;
 }
-

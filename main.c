@@ -28,7 +28,7 @@ Read wave files and speed them up or slow them down.
 #include "sonic.h"
 #include "wave.h"
 
-#define BUFFER_SIZE 1024
+#define BUFFER_SIZE 2048
 
 /* Scan through the input file to find it's maximum value. */
 static int findMaximumVolume(
@@ -71,14 +71,15 @@ static void runSonic(
     waveFile outFile,
     double speed,
     double scale,
-    int sampleRate)
+    int sampleRate,
+    int numChannels)
 {
-    sonicStream stream = sonicCreateStream(speed, sampleRate);
+    sonicStream stream = sonicCreateStream(speed, sampleRate, numChannels);
     short inBuffer[BUFFER_SIZE], outBuffer[BUFFER_SIZE];
     int samplesRead, samplesWritten;
 
     do {
-        samplesRead = readFromWaveFile(inFile, inBuffer, BUFFER_SIZE);
+        samplesRead = readFromWaveFile(inFile, inBuffer, BUFFER_SIZE/numChannels);
 	if(samplesRead == 0) {
 	    sonicFlushStream(stream);
 	} else {
@@ -88,7 +89,8 @@ static void runSonic(
 	    sonicWriteShortToStream(stream, inBuffer, samplesRead);
 	}
 	do {
-	    samplesWritten = sonicReadShortFromStream(stream, outBuffer, BUFFER_SIZE);
+	    samplesWritten = sonicReadShortFromStream(stream, outBuffer,
+	        BUFFER_SIZE/numChannels);
 	    if(samplesWritten > 0) {
 		writeToWaveFile(outFile, outBuffer, samplesWritten);
 	    }
@@ -116,7 +118,7 @@ int main(
     int setVolume = 0;
     int maxVolume;
     double volume = 1.0;
-    int sampleRate;
+    int sampleRate, numChannels;
     double scale = 1.0;
     int xArg = 1;
 
@@ -143,11 +145,11 @@ int main(
     }
     inFileName = argv[xArg];
     outFileName = argv[xArg + 1];
-    inFile = openInputWaveFile(inFileName, &sampleRate);
+    inFile = openInputWaveFile(inFileName, &sampleRate, &numChannels);
     if(inFile == NULL) {
 	return 1;
     }
-    outFile = openOutputWaveFile(outFileName, sampleRate);
+    outFile = openOutputWaveFile(outFileName, sampleRate, numChannels);
     if(outFile == NULL) {
 	closeWaveFile(inFile);
 	return 1;
@@ -159,13 +161,13 @@ int main(
 	}
 	printf("Scale = %0.2f\n", scale);
 	closeWaveFile(inFile);
-	inFile = openInputWaveFile(inFileName, &sampleRate);
+	inFile = openInputWaveFile(inFileName, &sampleRate, &numChannels);
 	if(inFile == NULL) {
 	    closeWaveFile(outFile);
 	    return 1;
 	}
     }
-    runSonic(inFile, outFile, speed, scale, sampleRate);
+    runSonic(inFile, outFile, speed, scale, sampleRate, numChannels);
     closeWaveFile(inFile);
     closeWaveFile(outFile);
     return 0;

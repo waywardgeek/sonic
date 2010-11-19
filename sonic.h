@@ -70,13 +70,16 @@ similar to high speed factors is used.
 struct sonicStreamStruct;
 typedef struct sonicStreamStruct *sonicStream;
 
+/* For all of the following functions, numChannels is multiplied by numSamples
+   to determine the actual number of values read or returned. */
+
 /* Create a sonic stream.  Return NULL only if we are out of memory and cannot
-  allocate the stream. */
-sonicStream sonicCreateStream(float speed, int sampleRate);
+  allocate the stream. Set numChannels to 1 for mono, and 2 for stereo. */
+sonicStream sonicCreateStream(float speed, int sampleRate, int numChannels);
 /* Destroy the sonic stream. */
 void sonicDestroyStream(sonicStream stream);
 /* Use this to write floating point data to be speed up or down into the stream.
-   Return 0 if memory realloc failed, otherwise 1 */
+   Values must be between -1 and 1.  Return 0 if memory realloc failed, otherwise 1 */
 int sonicWriteFloatToStream(sonicStream stream, float *samples, int numSamples);
 /* Use this to write 16-bit data to be speed up or down into the stream.
    Return 0 if memory realloc failed, otherwise 1 */
@@ -106,8 +109,10 @@ int sonicGetSampleRate(sonicStream stream);
 /* This is a non-stream oriented interface to just change the speed of a sound
    sample.  It works in-place on the sample array, so there must be at least
    speed*numSamples available space in the array. Returns the new number of samples. */
-int sonicChangeFloatSpeed(float *samples, int numSamples, float speed, int sampleRate);
+int sonicChangeFloatSpeed(float *samples, int numSamples, float speed, int sampleRate,
+    int numChannels);
 /* This is a non-stream oriented interface to just change the speed of a sound
    sample.  It works in-place on the sample array, so there must be at least
    speed*numSamples available space in the array. Returns the new number of samples. */
-int sonicChangeShortSpeed(short *samples, int numSamples, float speed, int sampleRate);
+int sonicChangeShortSpeed(short *samples, int numSamples, float speed, int sampleRate,
+    int numChannels);
