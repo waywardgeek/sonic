@@ -52,6 +52,7 @@ waveFile openInputWaveFile(
     file->soundFile = soundFile;
     file->numChannels = info.channels;
     *sampleRate = info.samplerate;
+    *numChannels = info.channels;
     printf("Frames = %ld, sample rate = %d, channels = %d, format = %d\n",
         info.frames, info.samplerate, info.channels, info.format);
     return file;
@@ -77,6 +78,7 @@ waveFile openOutputWaveFile(
     }
     file = (waveFile)calloc(1, sizeof(struct waveFileStruct));
     file->soundFile = soundFile;
+    file->numChannels = numChannels;
     return file;
 }
 
@@ -116,7 +118,7 @@ int writeToWaveFile(
     int numWritten;
 
     numWritten = sf_write_short(soundFile, buffer, numSamples*file->numChannels);
-    if(numWritten*file->numChannels != numSamples) {
+    if(numWritten != numSamples*file->numChannels) {
 	fprintf(stderr, "Unable to write wave file.\n");
 	return 0;
     }
