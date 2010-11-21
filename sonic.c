@@ -551,7 +551,7 @@ static int insertPitchPeriod(
     float speed,
     int period)
 {
-    unsigned long t, newSamples;
+    long t, newSamples;
     short *out, *prevPeriodSamples, *nextPeriodSamples;
     int numChannels = stream->numChannels;
     int i;
