@@ -1,5 +1,5 @@
-#CFLAGS=-Wall -g -ansi -fPIC
-CFLAGS=-Wall -O2 -ansi -fPIC
+CFLAGS=-Wall -g -ansi -fPIC
+#CFLAGS=-Wall -O2 -ansi -fPIC
 
 all: sonic libsonic.so
 

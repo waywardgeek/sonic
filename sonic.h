@@ -64,6 +64,10 @@ similar to high speed factors is used.
 #define SONIC_MIN_PITCH 65
 #define SONIC_MAX_PITCH 400
 
+/* This defines the range of pitch shifting supported by sonic */
+#define SONIC_MIN_PITCH_FACTOR 0.75f
+#define SONIC_MAX_PITCH_FACTOR 1.33333f
+
 /* These are used to down-sample some inputs to improve speed */
 #define SONIC_AMDF_FREQ 8000
 
@@ -75,7 +79,7 @@ typedef struct sonicStreamStruct *sonicStream;
 
 /* Create a sonic stream.  Return NULL only if we are out of memory and cannot
   allocate the stream. Set numChannels to 1 for mono, and 2 for stereo. */
-sonicStream sonicCreateStream(float speed, int sampleRate, int numChannels);
+sonicStream sonicCreateStream(int sampleRate, int numChannels);
 /* Destroy the sonic stream. */
 void sonicDestroyStream(sonicStream stream);
 /* Use this to write floating point data to be speed up or down into the stream.
@@ -104,15 +108,25 @@ int sonicFlushStream(sonicStream stream);
 int sonicSamplesAvailable(sonicStream stream);
 /* Get the speed of the stream. */
 float sonicGetSpeed(sonicStream stream);
+/* Set the speed of the stream. */
+void sonicSetSpeed(sonicStream stream, float speed);
+/* Get the pitch of the stream. */
+float sonicGetPitch(sonicStream stream);
+/* Set the pitch of the stream. */
+void sonicSetPitch(sonicStream stream, float pitch);
+/* Get the scaling factor of the stream. */
+float sonicGetVolume(sonicStream stream);
+/* Set the scaling factor of the stream. */
+void sonicSetVolume(sonicStream stream, float volume);
 /* Get the sample rate of the stream. */
 int sonicGetSampleRate(sonicStream stream);
 /* This is a non-stream oriented interface to just change the speed of a sound
    sample.  It works in-place on the sample array, so there must be at least
    speed*numSamples available space in the array. Returns the new number of samples. */
-int sonicChangeFloatSpeed(float *samples, int numSamples, float speed, int sampleRate,
-    int numChannels);
+int sonicChangeFloatSpeed(float *samples, int numSamples, float speed, float pitch,
+    float volume, int sampleRate, int numChannels);
 /* This is a non-stream oriented interface to just change the speed of a sound
    sample.  It works in-place on the sample array, so there must be at least
    speed*numSamples available space in the array. Returns the new number of samples. */
-int sonicChangeShortSpeed(short *samples, int numSamples, float speed, int sampleRate,
-    int numChannels);
+int sonicChangeShortSpeed(short *samples, int numSamples, float speed, float pitch,
+    float volume, int sampleRate, int numChannels);
