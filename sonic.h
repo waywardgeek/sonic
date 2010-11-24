@@ -116,6 +116,8 @@ float sonicGetVolume(sonicStream stream);
 void sonicSetVolume(sonicStream stream, float volume);
 /* Get the sample rate of the stream. */
 int sonicGetSampleRate(sonicStream stream);
+/* Get the number of channels. */
+int sonicGetNumChannels(sonicStream stream);
 /* This is a non-stream oriented interface to just change the speed of a sound
    sample.  It works in-place on the sample array, so there must be at least
    speed*numSamples available space in the array. Returns the new number of samples. */

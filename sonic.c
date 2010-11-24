@@ -132,6 +132,13 @@ int sonicGetSampleRate(
     return stream->sampleRate;
 }
 
+/* Get the number of channels. */
+int sonicGetNumChannels(
+    sonicStream stream)
+{
+    return stream->numChannels;
+}
+
 /* Destroy the sonic stream. */
 void sonicDestroyStream(
     sonicStream stream)
