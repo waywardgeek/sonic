@@ -65,7 +65,7 @@ similar to high speed factors is used.
 #define SONIC_MAX_PITCH 400
 
 /* These are used to down-sample some inputs to improve speed */
-#define SONIC_AMDF_FREQ 8000
+#define SONIC_AMDF_FREQ 4000
 
 struct sonicStreamStruct;
 typedef struct sonicStreamStruct *sonicStream;

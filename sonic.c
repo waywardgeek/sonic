@@ -107,10 +107,6 @@ void sonicSetPitch(
     sonicStream stream,
     float pitch)
 {
-    if(pitch < 0.66666f) {
-	fprintf(stderr, "Pitch change below 2/3 is not supported: using 2/3.\n");
-	pitch = 0.66666f;
-    }
     stream->pitch = pitch;
 }
 
@@ -583,16 +579,52 @@ static void overlapAdd(
     short *rampDown,
     short *rampUp)
 {
-    short *o;
+    short *o, *u, *d;
     int i, t;
 
     for(i = 0; i < numChannels; i++) {
 	o = out + i;
+	u = rampUp + i;
+	d = rampDown + i;
 	for(t = 0; t < numSamples; t++) {
-	    *o = (*rampDown*(numSamples - t) + *rampUp*t)/numSamples;
+	    *o = (*d*(numSamples - t) + *u*t)/numSamples;
 	    o += numChannels;
-	    rampDown += numChannels;
-	    rampUp += numChannels;
+	    d += numChannels;
+	    u += numChannels;
+	}
+    }
+}
+
+/* Overlap two sound segments, ramp the volume of one down, while ramping the
+   other one from zero up, and add them, storing the result at the output. */
+static void overlapAddWithSeparation(
+    int numSamples,
+    int numChannels,
+    int separation,
+    short *out,
+    short *rampDown,
+    short *rampUp)
+{
+    short *o, *u, *d;
+    int i, t;
+
+    for(i = 0; i < numChannels; i++) {
+	o = out + i;
+	u = rampUp + i;
+	d = rampDown + i;
+	for(t = 0; t < numSamples + separation; t++) {
+	    if(t < separation) {
+		*o = *d*(numSamples - t)/numSamples;
+		d += numChannels;
+	    } else if(t < numSamples) {
+		*o = (*d*(numSamples - t) + *u*(t - separation))/numSamples;
+		d += numChannels;
+		u += numChannels;
+	    } else {
+		*o = *u*(t - separation)/numSamples;
+		u += numChannels;
+	    }
+	    o += numChannels;
 	}
     }
 }
@@ -647,7 +679,7 @@ static int adjustPitch(
 {
     float pitch = stream->pitch;
     int numChannels = stream->numChannels;
-    int period, newPeriod, overlappedSamples;
+    int period, newPeriod, separation;
     int position = 0;
     short *out, *rampDown, *rampUp;
 
@@ -660,32 +692,21 @@ static int adjustPitch(
     while(stream->numPitchSamples - position >= stream->maxRequired) {
 	period = findPitchPeriod(stream, stream->pitchBuffer + position*numChannels);
 	newPeriod = period/pitch;
-	if(pitch >= 1.0f) {
-	    overlappedSamples = newPeriod;
-	    rampDown = stream->pitchBuffer + position*numChannels;
-	    rampUp = stream->pitchBuffer + (position + period - newPeriod)*numChannels;
-	} else {
-	    overlappedSamples = (period << 1) - newPeriod;
-	    if(!copyToOutput(stream, stream->pitchBuffer + position*numChannels,
-		    period - overlappedSamples)) {
-		return 0;
-	    }
-	    rampDown = stream->pitchBuffer +
-	        (position + (period - overlappedSamples))*numChannels;
-	    rampUp = stream->pitchBuffer + position*numChannels;
-	}
-	out = stream->outputBuffer + stream->numOutputSamples*numChannels;
-	if(!enlargeOutputBufferIfNeeded(stream, overlappedSamples)) {
+	if(!enlargeOutputBufferIfNeeded(stream, newPeriod)) {
 	    return 0;
 	}
-	overlapAdd(overlappedSamples, numChannels, out, rampDown, rampUp);
-	stream->numOutputSamples += overlappedSamples;
-	if(pitch < 1.0f) {
-	    if(!copyToOutput(stream, stream->pitchBuffer +
-		    position + overlappedSamples*numChannels, period - overlappedSamples)) {
-		return 0;
-	    }
+	out = stream->outputBuffer + stream->numOutputSamples*numChannels;
+	if(pitch >= 1.0f) {
+	    rampDown = stream->pitchBuffer + position*numChannels;
+	    rampUp = stream->pitchBuffer + (position + period - newPeriod)*numChannels;
+	    overlapAdd(newPeriod, numChannels, out, rampDown, rampUp);
+	} else {
+	    rampDown = stream->pitchBuffer + position*numChannels;
+	    rampUp = stream->pitchBuffer + position*numChannels;
+	    separation = newPeriod - period;
+	    overlapAddWithSeparation(period, numChannels, separation, out, rampDown, rampUp);
 	}
+	stream->numOutputSamples += newPeriod;
 	position += period;
     }
     removePitchSamples(stream, position);

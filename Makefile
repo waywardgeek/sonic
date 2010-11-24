@@ -4,7 +4,7 @@ CFLAGS=-Wall -O2 -ansi -fPIC
 all: sonic libsonic.so
 
 sonic: wave.o main.o libsonic.so
-	gcc $(CFLAGS) -lsndfile -L. -lsonic -o sonic wave.o main.o
+	gcc $(CFLAGS) -lsndfile -lm -L. -lsonic -o sonic wave.o main.o
 
 sonic.o: sonic.c sonic.h
 	gcc $(CFLAGS) -c sonic.c

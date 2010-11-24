@@ -98,19 +98,19 @@ int main(
 	    xArg++;
 	    if(xArg < argc) {
 	        pitch = atof(argv[xArg]);
-                printf("Setting pitch to %0.2f%%\n", pitch);
+                printf("Setting pitch to %0.2f%%\n", pitch*100.0f);
 	    }
 	} else if(!strcmp(argv[xArg], "-s")) {
 	    xArg++;
 	    if(xArg < argc) {
 	        speed = atof(argv[xArg]);
-                printf("Setting speed to %0.2f\n", speed);
+                printf("Setting speed to %0.2f%%\n", speed*100.0f);
 	    }
 	} else if(!strcmp(argv[xArg], "-v")) {
 	    xArg++;
 	    if(xArg < argc) {
 	        volume = atof(argv[xArg]);
-                printf("Setting volume to %0.2f%%\n", volume);
+                printf("Setting volume to %0.2f%%\n", volume*100.0f);
 	    }
 	}
 	xArg++;
