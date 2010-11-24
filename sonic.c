@@ -306,7 +306,7 @@ static void removeInputSamples(
 }
 
 /* Just copy from the array to the output buffer */
-static int copyShortToOutput(
+static int copyToOutput(
     sonicStream stream,
     short *samples,
     int numSamples)
@@ -331,7 +331,7 @@ static int copyInputToOutput(
     if(numSamples > stream->maxRequired) {
 	numSamples = stream->maxRequired;
     }
-    if(!copyShortToOutput(stream, stream->inputBuffer + position*stream->numChannels,
+    if(!copyToOutput(stream, stream->inputBuffer + position*stream->numChannels,
 	    numSamples)) {
 	return 0;
     }
@@ -570,14 +570,122 @@ static int findPitchPeriod(
     return findPitchPeriodInRange(stream->downSampleBuffer, minPeriod, maxPeriod);
 }
 
-/* Change the pitch.  Increasing pitch just requires an overlap and add between
-   pitch periods to reduce their length.  Decreasing pitch is done by inserting
-   a sound segment made with overlap-add.  Return the new perid. */
-static void adjustPitch(
+/* Overlap two sound segments, ramp the volume of one down, while ramping the
+   other one from zero up, and add them, storing the result at the output. */
+static void overlapAdd(
+    int numSamples,
+    int numChannels,
+    short *out,
+    short *rampDown,
+    short *rampUp)
+{
+    short *o;
+    int i, t;
+
+    for(i = 0; i < numChannels; i++) {
+	o = out + i;
+	for(t = 0; t < numSamples; t++) {
+	    *o = (*rampDown*(numSamples - t) + *rampUp*t)/numSamples;
+	    o += numChannels;
+	    rampDown += numChannels;
+	    rampUp += numChannels;
+	}
+    }
+}
+
+/* Just move the new samples in the output buffer to the pitch bufer */
+static int moveNewSamplesToPitchBuffer(
     sonicStream stream,
     int originalNumOutputSamples)
 {
-    /* TODO: write this */
+    int numSamples = stream->numOutputSamples - originalNumOutputSamples;
+    int numChannels = stream->numChannels;
+
+    if(stream->numPitchSamples + numSamples > stream->pitchBufferSize) {
+	stream->pitchBufferSize += (stream->pitchBufferSize >> 1) + numSamples;
+	stream->pitchBuffer = (short *)realloc(stream->pitchBuffer,
+	    stream->pitchBufferSize*sizeof(short)*numChannels);
+	if(stream->pitchBuffer == NULL) {
+	    return 0;
+	}
+    }
+    memcpy(stream->pitchBuffer + stream->numPitchSamples*numChannels,
+        stream->outputBuffer + originalNumOutputSamples*numChannels,
+	numSamples*sizeof(short)*numChannels);
+    stream->numOutputSamples = originalNumOutputSamples;
+    stream->numPitchSamples += numSamples;
+    return 1;
+}
+
+/* Remove processed samples from the pitch buffer. */
+static void removePitchSamples(
+    sonicStream stream,
+    int numSamples)
+{
+    int numChannels = stream->numChannels;
+    short *source = stream->pitchBuffer + numSamples*numChannels;
+
+    if(numSamples == 0) {
+	return;
+    }
+    if(numSamples != stream->numPitchSamples) {
+	memmove(stream->pitchBuffer, source, (stream->numPitchSamples -
+	    numSamples)*sizeof(short)*numChannels);
+    }
+    stream->numPitchSamples -= numSamples;
+}
+
+/* Change the pitch.  The latency this introduces could be reduced by looking at
+   past samples to determine pitch, rather than future. */
+static int adjustPitch(
+    sonicStream stream,
+    int originalNumOutputSamples)
+{
+    float pitch = stream->pitch;
+    int numChannels = stream->numChannels;
+    int period, newPeriod, overlappedSamples;
+    int position = 0;
+    short *out, *rampDown, *rampUp;
+
+    if(stream->numOutputSamples == originalNumOutputSamples) {
+	return 1;
+    }
+    if(!moveNewSamplesToPitchBuffer(stream, originalNumOutputSamples)) {
+	return 0;
+    }
+    while(stream->numPitchSamples - position >= stream->maxRequired) {
+	period = findPitchPeriod(stream, stream->pitchBuffer + position*numChannels);
+	newPeriod = period/pitch;
+	if(pitch >= 1.0f) {
+	    overlappedSamples = newPeriod;
+	    rampDown = stream->pitchBuffer + position*numChannels;
+	    rampUp = stream->pitchBuffer + (position + period - newPeriod)*numChannels;
+	} else {
+	    overlappedSamples = (period << 1) - newPeriod;
+	    if(!copyToOutput(stream, stream->pitchBuffer + position*numChannels,
+		    period - overlappedSamples)) {
+		return 0;
+	    }
+	    rampDown = stream->pitchBuffer +
+	        (position + (period - overlappedSamples))*numChannels;
+	    rampUp = stream->pitchBuffer + position*numChannels;
+	}
+	out = stream->outputBuffer + stream->numOutputSamples*numChannels;
+	if(!enlargeOutputBufferIfNeeded(stream, overlappedSamples)) {
+	    return 0;
+	}
+	overlapAdd(overlappedSamples, numChannels, out, rampDown, rampUp);
+	stream->numOutputSamples += overlappedSamples;
+	if(pitch < 1.0f) {
+	    if(!copyToOutput(stream, stream->pitchBuffer +
+		    position + overlappedSamples*numChannels, period - overlappedSamples)) {
+		return 0;
+	    }
+	}
+	position += period;
+    }
+    removePitchSamples(stream, position);
+    return 1;
 }
 
 /* Skip over a pitch period, and copy period/speed samples to the output */
@@ -587,10 +695,8 @@ static int skipPitchPeriod(
     float speed,
     int period)
 {
-    long t, newSamples;
-    short *out, *prevPeriodSamples, *nextPeriodSamples;
+    long newSamples;
     int numChannels = stream->numChannels;
-    int i;
 
     if(speed >= 2.0f) {
 	newSamples = period/(speed - 1.0f);
@@ -601,17 +707,8 @@ static int skipPitchPeriod(
     if(!enlargeOutputBufferIfNeeded(stream, newSamples)) {
 	return 0;
     }
-    for(i = 0; i < numChannels; i++) {
-	out = stream->outputBuffer + stream->numOutputSamples*numChannels + i;
-	prevPeriodSamples = samples + i;
-	nextPeriodSamples = samples + i + period*numChannels;
-	for(t = 0; t < newSamples; t++) {
-	    *out = (*prevPeriodSamples*(newSamples - t) + *nextPeriodSamples*t)/newSamples;
-	    out += numChannels;
-	    prevPeriodSamples += numChannels;
-	    nextPeriodSamples += numChannels;
-	}
-    }
+    overlapAdd(newSamples, numChannels, stream->outputBuffer +
+        stream->numOutputSamples*numChannels, samples, samples + period*numChannels);
     stream->numOutputSamples += newSamples;
     return newSamples;
 }
@@ -623,10 +720,9 @@ static int insertPitchPeriod(
     float speed,
     int period)
 {
-    long t, newSamples;
-    short *out, *prevPeriodSamples, *nextPeriodSamples;
+    long newSamples;
+    short *out;
     int numChannels = stream->numChannels;
-    int i;
 
     if(speed < 0.5f) {
         newSamples = period*speed/(1.0f - speed);
@@ -639,17 +735,8 @@ static int insertPitchPeriod(
     }
     out = stream->outputBuffer + stream->numOutputSamples*numChannels;
     memcpy(out, samples, period*sizeof(short)*numChannels);
-    for(i = 0; i < numChannels; i++) {
-	out = stream->outputBuffer + (stream->numOutputSamples + period)*numChannels + i;
-	prevPeriodSamples = samples + i;
-	nextPeriodSamples = samples + i + period*numChannels;
-	for(t = 0; t < newSamples; t++) {
-	    *out = (*prevPeriodSamples*t + *nextPeriodSamples*(newSamples - t))/newSamples;
-	    out += numChannels;
-	    prevPeriodSamples += numChannels;
-	    nextPeriodSamples += numChannels;
-	}
-    }
+    out = stream->outputBuffer + (stream->numOutputSamples + period)*numChannels;
+    overlapAdd(newSamples, numChannels, out, samples + period*numChannels, samples);
     stream->numOutputSamples += period + newSamples;
     return newSamples;
 }
@@ -702,13 +789,15 @@ static int processStreamInput(
     if(speed > 1.00001 || speed < 0.99999) {
 	changeSpeed(stream, speed);
     } else {
-        if(!copyShortToOutput(stream, stream->inputBuffer, stream->numInputSamples)) {
+        if(!copyToOutput(stream, stream->inputBuffer, stream->numInputSamples)) {
 	    return 0;
 	}
 	stream->numInputSamples = 0;
     }
     if(stream->pitch != 1.0f) {
-	adjustPitch(stream, originalNumOutputSamples);
+	if(!adjustPitch(stream, originalNumOutputSamples)) {
+	    return 0;
+	}
     }
     if(stream->volume != 1.0f) {
 	/* Adjust output volume. */

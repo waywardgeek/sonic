@@ -64,10 +64,6 @@ similar to high speed factors is used.
 #define SONIC_MIN_PITCH 65
 #define SONIC_MAX_PITCH 400
 
-/* This defines the range of pitch shifting supported by sonic */
-#define SONIC_MIN_PITCH_FACTOR 0.75f
-#define SONIC_MAX_PITCH_FACTOR 1.33333f
-
 /* These are used to down-sample some inputs to improve speed */
 #define SONIC_AMDF_FREQ 8000
 
