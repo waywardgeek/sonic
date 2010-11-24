@@ -89,6 +89,7 @@ void closeWaveFile(
     SNDFILE *soundFile = file->soundFile;
 
     sf_close(soundFile);
+    free(file);
 }
 
 /* Read from the wave file. */

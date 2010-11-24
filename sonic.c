@@ -107,6 +107,10 @@ void sonicSetPitch(
     sonicStream stream,
     float pitch)
 {
+    if(pitch < 0.66666f) {
+	fprintf(stderr, "Pitch change below 2/3 is not supported: using 2/3.\n");
+	pitch = 0.66666f;
+    }
     stream->pitch = pitch;
 }
 
