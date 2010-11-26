@@ -43,6 +43,9 @@ struct sonicStreamStruct {
     int maxRequired;
     int remainingInputToCopy;
     int sampleRate;
+    int prevPeriod;
+    int prevMaxDiff;
+    int prevMinDiff;
 };
 
 /* Just used for debugging */
@@ -508,11 +511,13 @@ static void downSampleInput(
 static int findPitchPeriodInRange(
     short *samples,
     int minPeriod,
-    int maxPeriod)
+    int maxPeriod,
+    int *retMinDiff,
+    int *retMaxDiff)
 {
     int period, bestPeriod = 0;
     short *s, *p, sVal, pVal;
-    unsigned long diff, minDiff = 0;
+    unsigned long diff, minDiff = 1, maxDiff = 0;
     int i;
 
     for(period = minPeriod; period <= maxPeriod; period++) {
@@ -528,12 +533,32 @@ static int findPitchPeriodInRange(
 	/* Note that the highest number of samples we add into diff will be less
 	   than 256, since we skip samples.  Thus, diff is a 24 bit number, and
 	   we can safely multiply by numSamples without overflow */
-	if(bestPeriod == 0 || diff*bestPeriod < minDiff*period) {
+	if(diff*bestPeriod < minDiff*period) {
 	    minDiff = diff;
 	    bestPeriod = period;
 	}
+	if(diff*bestPeriod > maxDiff*period) {
+	    maxDiff = diff;
+	}
     }
+    *retMinDiff = minDiff;
+    *retMaxDiff = maxDiff;
     return bestPeriod;
+}
+
+/* At abrupt ends of voiced words, we can have pitch periods that are better
+   aproximated by the previous pitch period estimate.  Try to detect this case.  */
+static int prevPeriodBetter(
+    sonicStream stream,
+    int period,
+    int minDiff,
+    int maxDiff)
+{
+    if(maxDiff*3/2 < stream->prevMaxDiff && (maxDiff*3.0f)*stream->prevMinDiff < 
+	    (float)stream->prevMaxDiff*minDiff*2) {
+	return 1;
+    }
+    return 0;
 }
 
 /* Find the pitch period.  This is a critical step, and we may have to try
@@ -547,6 +572,7 @@ static int findPitchPeriod(
     int minPeriod = stream->minPeriod;
     int maxPeriod = stream->maxPeriod;
     int sampleRate = stream->sampleRate;
+    int minDiff, maxDiff, retPeriod;
     int skip = 1;
     int period;
 
@@ -554,27 +580,40 @@ static int findPitchPeriod(
 	skip = sampleRate/SONIC_AMDF_FREQ;
     }
     if(stream->numChannels == 1 && skip == 1) {
-	return findPitchPeriodInRange(samples, minPeriod, maxPeriod);
+	period = findPitchPeriodInRange(samples, minPeriod, maxPeriod, &minDiff, &maxDiff);
+    } else {
+	downSampleInput(stream, samples, skip);
+	period = findPitchPeriodInRange(stream->downSampleBuffer, minPeriod/skip,
+	    maxPeriod/skip, &minDiff, &maxDiff);
+	if(skip != 1) {
+	    period *= skip;
+	    minPeriod = period - (skip << 2);
+	    maxPeriod = period + (skip << 2);
+	    if(minPeriod < stream->minPeriod) {
+		minPeriod = stream->minPeriod;
+	    }
+	    if(maxPeriod > stream->maxPeriod) {
+		maxPeriod = stream->maxPeriod;
+	    }
+	    if(stream->numChannels == 1) {
+		period = findPitchPeriodInRange(samples, minPeriod, maxPeriod,
+		    &minDiff, &maxDiff);
+	    } else {
+		downSampleInput(stream, samples, 1);
+		period = findPitchPeriodInRange(stream->downSampleBuffer, minPeriod,
+		    maxPeriod, &minDiff, &maxDiff);
+	    }
+	}
     }
-    downSampleInput(stream, samples, skip);
-    period = findPitchPeriodInRange(stream->downSampleBuffer, minPeriod/skip, maxPeriod/skip);
-    if(skip == 1) {
-	return period;
+    if(prevPeriodBetter(stream, period, minDiff, maxDiff)) {
+        retPeriod = stream->prevPeriod;
+    } else {
+	retPeriod = period;
     }
-    period *= skip;
-    minPeriod = period - (skip << 2);
-    maxPeriod = period + (skip << 2);
-    if(minPeriod < stream->minPeriod) {
-	minPeriod = stream->minPeriod;
-    }
-    if(maxPeriod > stream->maxPeriod) {
-	maxPeriod = stream->maxPeriod;
-    }
-    if(stream->numChannels == 1) {
-	return findPitchPeriodInRange(samples, minPeriod, maxPeriod);
-    }
-    downSampleInput(stream, samples, 1);
-    return findPitchPeriodInRange(stream->downSampleBuffer, minPeriod, maxPeriod);
+    stream->prevMinDiff = minDiff;
+    stream->prevMaxDiff = maxDiff;
+    stream->prevPeriod = period;
+    return retPeriod;
 }
 
 /* Overlap two sound segments, ramp the volume of one down, while ramping the

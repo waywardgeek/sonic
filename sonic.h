@@ -59,6 +59,10 @@ For slow down factors between 0.5 and 0.5, no data is copied, and an algorithm
 similar to high speed factors is used.
 */
 
+#ifdef  __cplusplus
+extern "C" {
+#endif
+
 /* This specifies the range of voice pitches we try to match.
    Note that if we go lower than 65, we could overflow in findPitchInRange */
 #define SONIC_MIN_PITCH 65
@@ -128,3 +132,7 @@ int sonicChangeFloatSpeed(float *samples, int numSamples, float speed, float pit
    speed*numSamples available space in the array. Returns the new number of samples. */
 int sonicChangeShortSpeed(short *samples, int numSamples, float speed, float pitch,
     float volume, int sampleRate, int numChannels);
+
+#ifdef  __cplusplus
+}
+#endif
