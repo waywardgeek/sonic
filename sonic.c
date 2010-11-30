@@ -446,32 +446,29 @@ int sonicFlushStream(
     sonicStream stream)
 {
     int maxRequired = stream->maxRequired;
-    int numSamples = stream->numInputSamples;
-    int remainingSpace, numOutputSamples, expectedSamples;
+    int remainingSamples = stream->numInputSamples;
+    float speed = stream->speed/stream->pitch;
+    int expectedOutputSamples = stream->numOutputSamples +
+	(int)(remainingSamples/speed + stream->numPitchSamples/stream->pitch + 0.5f);
 
-    if(numSamples == 0) {
-	return 1;
+    /* Add enough silence to flush both input and pitch buffers. */
+    if(!enlargeInputBufferIfNeeded(stream, remainingSamples + 2*maxRequired)) {
+        return 0;
     }
-    if(numSamples >= maxRequired && !sonicWriteShortToStream(stream, NULL, 0)) {
-	return 0;
-    }
-    numSamples = stream->numInputSamples; /* Now numSamples < maxRequired */
-    if(numSamples == 0) {
-	return 1;
-    }
-    remainingSpace = maxRequired - numSamples;
-    memset(stream->inputBuffer + numSamples*stream->numChannels, 0,
-        remainingSpace*sizeof(short)*stream->numChannels);
-    stream->numInputSamples = maxRequired;
-    numOutputSamples = stream->numOutputSamples;
+    memset(stream->inputBuffer + remainingSamples*stream->numChannels, 0,
+	2*maxRequired*sizeof(short)*stream->numChannels);
+    stream->numInputSamples += 2*maxRequired;
     if(!sonicWriteShortToStream(stream, NULL, 0)) {
 	return 0;
     }
     /* Throw away any extra samples we generated due to the silence we added */
-    expectedSamples = (int)(numSamples*stream->speed + 0.5);
-    if(stream->numOutputSamples > numOutputSamples + expectedSamples) {
-	stream->numOutputSamples = numOutputSamples + expectedSamples;
+    if(stream->numOutputSamples > expectedOutputSamples) {
+	stream->numOutputSamples = expectedOutputSamples;
     }
+    /* Empty input and pitch buffers */
+    stream->numInputSamples = 0;
+    stream->remainingInputToCopy = 0;
+    stream->numPitchSamples = 0;
     return 1;
 }
 
@@ -515,7 +512,7 @@ static int findPitchPeriodInRange(
     int *retMinDiff,
     int *retMaxDiff)
 {
-    int period, bestPeriod = 0;
+    int period, bestPeriod = 0, worstPeriod = 255;
     short *s, *p, sVal, pVal;
     unsigned long diff, minDiff = 1, maxDiff = 0;
     int i;
@@ -537,12 +534,13 @@ static int findPitchPeriodInRange(
 	    minDiff = diff;
 	    bestPeriod = period;
 	}
-	if(diff*bestPeriod > maxDiff*period) {
+	if(diff*worstPeriod > maxDiff*period) {
 	    maxDiff = diff;
+	    worstPeriod = period;
 	}
     }
-    *retMinDiff = minDiff;
-    *retMaxDiff = maxDiff;
+    *retMinDiff = minDiff/bestPeriod;
+    *retMaxDiff = maxDiff/worstPeriod;
     return bestPeriod;
 }
 
@@ -552,13 +550,27 @@ static int prevPeriodBetter(
     sonicStream stream,
     int period,
     int minDiff,
-    int maxDiff)
+    int maxDiff,
+    int preferNewPeriod)
 {
-    if(maxDiff*3/2 < stream->prevMaxDiff && (maxDiff*3.0f)*stream->prevMinDiff < 
-	    (float)stream->prevMaxDiff*minDiff*2) {
-	return 1;
+    if(minDiff == 0) {
+	return 0;
     }
-    return 0;
+    if(preferNewPeriod) {
+	if(maxDiff > minDiff*3) {
+	    /* Got a reasonable match this period */
+	    return 0;
+	}
+	if(minDiff*2 <= stream->prevMinDiff*3) {
+	    /* Mismatch is not that much greater this period */
+	    return 0;
+	}
+    } else {
+	if(minDiff <= stream->prevMinDiff) {
+	    return 0;
+	}
+    }
+    return 1;
 }
 
 /* Find the pitch period.  This is a critical step, and we may have to try
@@ -567,7 +579,8 @@ static int prevPeriodBetter(
    do it again with a narrower frequency range without down sampling */
 static int findPitchPeriod(
     sonicStream stream,
-    short *samples)
+    short *samples,
+    int preferNewPeriod)
 {
     int minPeriod = stream->minPeriod;
     int maxPeriod = stream->maxPeriod;
@@ -605,7 +618,7 @@ static int findPitchPeriod(
 	    }
 	}
     }
-    if(prevPeriodBetter(stream, period, minDiff, maxDiff)) {
+    if(prevPeriodBetter(stream, period, minDiff, maxDiff, preferNewPeriod)) {
         retPeriod = stream->prevPeriod;
     } else {
 	retPeriod = period;
@@ -736,7 +749,7 @@ static int adjustPitch(
 	return 0;
     }
     while(stream->numPitchSamples - position >= stream->maxRequired) {
-	period = findPitchPeriod(stream, stream->pitchBuffer + position*numChannels);
+	period = findPitchPeriod(stream, stream->pitchBuffer + position*numChannels, 0);
 	newPeriod = period/pitch;
 	if(!enlargeOutputBufferIfNeeded(stream, newPeriod)) {
 	    return 0;
@@ -832,7 +845,7 @@ static int changeSpeed(
 	    position += newSamples;
 	} else {
 	    samples = stream->inputBuffer + position*stream->numChannels;
-	    period = findPitchPeriod(stream, samples);
+	    period = findPitchPeriod(stream, samples, 1);
 	    if(speed > 1.0) {
 		newSamples = skipPitchPeriod(stream, samples, speed, period);
 		position += period + newSamples;
