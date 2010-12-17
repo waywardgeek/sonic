@@ -21,6 +21,12 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>
+#ifdef SONIC_USE_SIN
+#include <math.h>
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
+#endif
 #include "sonic.h"
 
 struct sonicStreamStruct {
@@ -606,7 +612,7 @@ static int findPitchPeriod(
     int skip = 1;
     int period;
 
-    if(sampleRate > SONIC_AMDF_FREQ && stream->quality != 0) {
+    if(sampleRate > SONIC_AMDF_FREQ && stream->quality == 0) {
 	skip = sampleRate/SONIC_AMDF_FREQ;
     }
     if(stream->numChannels == 1 && skip == 1) {
@@ -663,7 +669,12 @@ static void overlapAdd(
 	u = rampUp + i;
 	d = rampDown + i;
 	for(t = 0; t < numSamples; t++) {
+#ifdef SONIC_USE_SIN
+	    float ratio = sin(t*M_PI/(2*numSamples));
+	    *o = *d*(1.0f - ratio) + *u*ratio;
+#else
 	    *o = (*d*(numSamples - t) + *u*t)/numSamples;
+#endif
 	    o += numChannels;
 	    d += numChannels;
 	    u += numChannels;

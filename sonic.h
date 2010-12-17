@@ -63,6 +63,10 @@ similar to high speed factors is used.
 extern "C" {
 #endif
 
+/* Uncomment this to use sin-wav based overlap add which in theory can improve
+   sound quality slightly, at the expense of lots of floating point math. */
+/* #define SONIC_USE_SIN */
+
 /* This specifies the range of voice pitches we try to match.
    Note that if we go lower than 65, we could overflow in findPitchInRange */
 #define SONIC_MIN_PITCH 65
