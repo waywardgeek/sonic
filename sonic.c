@@ -56,6 +56,7 @@ struct sonicStreamStruct {
 };
 
 /* Just used for debugging */
+/*
 void sonicMSG(char *format, ...)
 {
     char buffer[4096];
@@ -69,6 +70,7 @@ void sonicMSG(char *format, ...)
     fprintf(file, "%s", buffer);
     fclose(file);
 }
+*/
 
 /* Scale the samples by the factor. */
 static void scaleSamples(

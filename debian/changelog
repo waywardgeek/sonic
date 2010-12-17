@@ -1,5 +1,5 @@
-sonic (0.1.9) unstable; urgency=low
+sonic (0.1.10-1) unstable; urgency=low
 
-  * First version packaged for Debian rather than Vinux.
+  * Initial packaging. Closes: #nnn
 
- -- Bill Cox <waywardgeek@gmail.com>  Tue, 14 Dec 2010 16:10:37 -0500
+ -- Bill Cox <waywardgeek@gmail.com>  Fri, 17 Dec 2010 15:39:53 -0500
