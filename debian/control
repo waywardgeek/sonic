@@ -10,14 +10,14 @@ Vcs-Git: git://vinux-project.org/sonic
 
 Package: sonic
 Architecture: any
-Depends: libsonic (= ${binary:Version}), ${shlibs:Depends}, ${misc:Depends}
+Depends: libsonic0 (= ${binary:Version}), ${shlibs:Depends}, ${misc:Depends}
 Description: Simple utility to speed up or slow down speech
  Sonic is a very simple utility that reads and writes wav files,
  and speeds them up or slows them down, with low distortion.
  The key new feature in Sonic versus other libraries is very
  high quality at speed up factors well over 2X.
 
-Package: libsonic
+Package: libsonic0
 Architecture: any
 Section: libs
 Depends: ${shlibs:Depends}, ${misc:Depends}
@@ -25,10 +25,10 @@ Description: Simple library to speed up or slow down speech
  Sonic library used for speeding up or slowing down speech.
  This package contains just the actual library.
 
-Package: libsonic-dev
+Package: libsonic0-dev
 Architecture: any
 Section: libdevel
-Depends: libsonic (= ${binary:Version}), ${misc:Depends}
+Depends: libsonic0 (= ${binary:Version}), ${misc:Depends}
 Suggests: sonic
 Description: Header file for linking to libsonic
  Header file for linking to the libsonic library.
