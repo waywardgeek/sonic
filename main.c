@@ -105,7 +105,6 @@ int main(
                 printf("Setting pitch to %0.2f%%\n", pitch*100.0f);
 	    }
 	} else if(!strcmp(argv[xArg], "-q")) {
-	    xArg++;
 	    quality = 1;
 	    printf("Disabling speed-up heuristics\n");
 	} else if(!strcmp(argv[xArg], "-s")) {
