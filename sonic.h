@@ -118,6 +118,10 @@ void sonicSetPitch(sonicStream stream, float pitch);
 float sonicGetVolume(sonicStream stream);
 /* Set the scaling factor of the stream. */
 void sonicSetVolume(sonicStream stream, float volume);
+/* Get the quality setting. */
+int sonicGetQuality(sonicStream stream);
+/* Set the "quality".  Default 0 is virtually as good as 1, but very much faster. */
+void sonicSetQuality(sonicStream stream, int quality);
 /* Get the sample rate of the stream. */
 int sonicGetSampleRate(sonicStream stream);
 /* Get the number of channels. */

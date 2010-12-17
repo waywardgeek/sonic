@@ -31,6 +31,7 @@ struct sonicStreamStruct {
     float speed;
     float volume;
     float pitch;
+    int quality;
     int numChannels;
     int inputBufferSize;
     int pitchBufferSize;
@@ -111,6 +112,21 @@ void sonicSetPitch(
     float pitch)
 {
     stream->pitch = pitch;
+}
+
+/* Get the quality setting. */
+int sonicGetQuality(
+    sonicStream stream)
+{
+    return stream->quality;
+}
+
+/* Set the "quality".  Default 0 is virtually as good as 1, but very much faster. */
+void sonicSetQuality(
+    sonicStream stream,
+    int quality)
+{
+    stream->quality = quality;
 }
 
 /* Get the scaling factor of the stream. */
@@ -197,6 +213,7 @@ sonicStream sonicCreateStream(
     stream->speed = 1.0f;
     stream->pitch = 1.0f;
     stream->volume = 1.0f;
+    stream->quality = 0;
     stream->sampleRate = sampleRate;
     stream->numChannels = numChannels;
     stream->minPeriod = minPeriod;
@@ -589,7 +606,7 @@ static int findPitchPeriod(
     int skip = 1;
     int period;
 
-    if(sampleRate > SONIC_AMDF_FREQ) {
+    if(sampleRate > SONIC_AMDF_FREQ && stream->quality != 0) {
 	skip = sampleRate/SONIC_AMDF_FREQ;
     }
     if(stream->numChannels == 1 && skip == 1) {

@@ -37,6 +37,7 @@ static void runSonic(
     float speed,
     float pitch,
     float volume,
+    int quality,
     int sampleRate,
     int numChannels)
 {
@@ -47,6 +48,7 @@ static void runSonic(
     sonicSetSpeed(stream, speed);
     sonicSetPitch(stream, pitch);
     sonicSetVolume(stream, volume);
+    sonicSetQuality(stream, quality);
     do {
         samplesRead = readFromWaveFile(inFile, inBuffer, BUFFER_SIZE/numChannels);
 	if(samplesRead == 0) {
@@ -68,10 +70,11 @@ static void runSonic(
 /* Print the usage. */
 static void usage(void)
 {
-    fprintf(stderr, "Usage: sonic [-s speed] [-v volume] infile outfile\n"
-        "    -p -- Set pitch scaling factor.  1.3 means 30%% higher.\n"
-        "    -s -- Set speed up factor.  1.0 means no change, 2.0 means 2X faster.\n"
-	"    -v -- Scale volume as percentage of maximum allowed.  100 uses full range.\n");
+    fprintf(stderr, "Usage: sonic [OPTION]... infile outfile\n"
+        "    -p pitch   -- Set pitch scaling factor.  1.3 means 30%% higher.\n"
+        "    -q         -- Disable speed-up heuristics.  May increase quality.\n"
+        "    -s speed   -- Set speed up factor.  2.0 means 2X faster.\n"
+	"    -v volume  -- Scale volume by a constant factor.\n");
     exit(1);
 }
 
@@ -84,6 +87,7 @@ int main(
     float speed = 1.0;
     float pitch = 1.0;
     float volume = 1.0;
+    int quality = 0;
     int sampleRate, numChannels;
     int xArg = 1;
 
@@ -100,6 +104,10 @@ int main(
 	        pitch = atof(argv[xArg]);
                 printf("Setting pitch to %0.2f%%\n", pitch*100.0f);
 	    }
+	} else if(!strcmp(argv[xArg], "-q")) {
+	    xArg++;
+	    quality = 1;
+	    printf("Disabling speed-up heuristics\n");
 	} else if(!strcmp(argv[xArg], "-s")) {
 	    xArg++;
 	    if(xArg < argc) {
@@ -110,7 +118,7 @@ int main(
 	    xArg++;
 	    if(xArg < argc) {
 	        volume = atof(argv[xArg]);
-                printf("Setting volume to %0.2f%%\n", volume*100.0f);
+                printf("Setting volume to %0.2f\n", volume);
 	    }
 	}
 	xArg++;
@@ -129,7 +137,7 @@ int main(
 	closeWaveFile(inFile);
 	return 1;
     }
-    runSonic(inFile, outFile, speed, pitch, volume, sampleRate, numChannels);
+    runSonic(inFile, outFile, speed, pitch, volume, quality, sampleRate, numChannels);
     closeWaveFile(inFile);
     closeWaveFile(outFile);
     return 0;
