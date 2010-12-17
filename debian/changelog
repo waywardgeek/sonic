@@ -1,0 +1,5 @@
+sonic (0.1.9) unstable; urgency=low
+
+  * First version packaged for Debian rather than Vinux.
+
+ -- Bill Cox <waywardgeek@gmail.com>  Tue, 14 Dec 2010 16:10:37 -0500
