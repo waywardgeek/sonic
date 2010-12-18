@@ -1,5 +1,5 @@
 sonic (0.1.10-1) unstable; urgency=low
 
-  * Initial packaging. Closes: #nnn
+  * Initial packaging. Closes: #607477
 
  -- Bill Cox <waywardgeek@gmail.com>  Fri, 17 Dec 2010 15:39:53 -0500

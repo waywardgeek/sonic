@@ -17,7 +17,7 @@ Description: Simple utility to speed up or slow down speech
  The key new feature in Sonic versus other libraries is very
  high quality at speed up factors well over 2X.
 
-Package: libsonic
+Package: libsonic0
 Architecture: any
 Section: libs
 Depends: ${shlibs:Depends}, ${misc:Depends}

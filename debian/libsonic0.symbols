@@ -1,4 +1,4 @@
-libsonic.so.0 libsonic #MINVER#
+libsonic.so.0 libsonic0 #MINVER#
  sonicChangeFloatSpeed@Base 0.1.10
  sonicChangeShortSpeed@Base 0.1.10
  sonicCreateStream@Base 0.1.10
