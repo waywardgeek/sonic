@@ -11,6 +11,7 @@ if [ "`basename $PWD`" != "sonic-$version" ]; then
 fi
 make clean
 make -f debian/rules clean
+echo "sonic-${version} (git: `git log -1 --oneline | sed 's/ .*//'`)" > version
 cd ..
 if ! tar -cvzf sonic_$version.orig.tar.gz --exclude-vcs --exclude=debian sonic-$version; then 
     echo "Could not create sonic_$version.orig.tar.gz"
