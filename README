@@ -5,10 +5,6 @@ to easily be integrated into streaming voice applications, like TTS back ends.
 
 The primary motivation behind Sonic is to enable the blind and visually impaired
 to improve their productivity with open source speech engines, like espeak.
-Espeak currently suffers from poor performance when speeding up by a factor
-of 2.6X, and it does not currently have the ability to increase beyond this rate.
-With Sonic, espeak sounds more natural, and can be sped up much more.
-
 Sonic can also be used by the sighted.  For example, Sonic can improve the
 experience of listening to an audio book on an Android phone.
 
