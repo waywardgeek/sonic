@@ -1,5 +1,5 @@
 #CFLAGS=-Wall -g -ansi -fPIC
-CFLAGS=-Wall -O2 -ansi -fPIC
+CFLAGS=-Wall -O2 -ansi -fPIC -pthread
 LIB_TAG=0.1.10
 CC=gcc
 PREFIX=/usr/local
@@ -7,7 +7,7 @@ PREFIX=/usr/local
 all: sonic libsonic.so.$(LIB_TAG)
 
 sonic: wave.o main.o libsonic.so.$(LIB_TAG)
-	$(CC) $(CFLAGS) -lpthread -lsndfile libsonic.so.$(LIB_TAG) -o sonic wave.o main.o
+	$(CC) $(CFLAGS) -lsndfile libsonic.so.$(LIB_TAG) -o sonic wave.o main.o
 
 sonic.o: sonic.c sonic.h
 	$(CC) $(CFLAGS) -c sonic.c
