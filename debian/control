@@ -4,7 +4,7 @@ Priority: extra
 Maintainer: Bill Cox <waywardgeek@gmail.com>
 Build-Depends: libsndfile1-dev, debhelper (>= 7.0.50~)
 Standards-Version: 3.9.1
-Homepage: http://vinux-project.org
+Homepage: http://vinux-project.org/sonic
 Vcs-Browser: http://vinux-project.org/gitweb/?p=sonic.git;a=summary
 Vcs-Git: git://vinux-project.org/sonic
 

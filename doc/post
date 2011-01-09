@@ -5,7 +5,7 @@ if [ -f ../version ]; then
     sourceTarball=../../$version.orig.tar.gz
     if [ -f $sourceTarball ]; then
 	destTarball=$version.tar.gz
-	scp $tarball root@vinux-project.org:/var/www/vinux-project.org/sonic/download/$destTarball
+	scp $sourceTarball root@vinux-project.org:/var/www/vinux-project.org/sonic/download/$destTarball
     fi
 fi
 scp index.html root@vinux-project.org:/var/www/vinux-project.org/sonic
