@@ -2,9 +2,10 @@
 markdown_py index.md > index.html
 if [ -f ../version ]; then
     version=`awk '{print $1}' ../version`
-    tarball=../../$version.orig.tar.gz
-    if [ -f $tarball ]; then
-	scp $tarball root@vinux-project.org:/var/www/vinux-project.org/sonic/download
+    sourceTarball=../../$version.orig.tar.gz
+    if [ -f $sourceTarball ]; then
+	destTarball=$version.tar.gz
+	scp $tarball root@vinux-project.org:/var/www/vinux-project.org/sonic/download/$destTarball
     fi
 fi
 scp index.html root@vinux-project.org:/var/www/vinux-project.org/sonic
