@@ -21,7 +21,7 @@ open source under the Lesser Gnu Public License version 2.1.  Feel free to conta
 me at <waywardgeek@gmail.com>.  One user was concerned about patents.  I believe
 the sonic algorithms do not violate any patents, as most of it is very old,
 based on [PICOLA](http://keizai.yokkaichi-u.ac.jp/~ikeda/research/picola.html),
-and the new parts, for greater than 2X speed up, is clearly a capability most
+and the new part, for greater than 2X speed up, is clearly a capability most
 developers ignore, and would not bother to patent.  I will not file any patents
 on sonic algorithms, leaving the algorithms free for you to use.
 
@@ -45,7 +45,7 @@ that there is room in the samples array for the speed-changed samples.  In
 general, if you are speeding up, rather than slowing down, it will be safe to
 have no extra padding.
 
-The other way to use libsonic is in stream mode.  This is more complex, but it
+The other way to use libsonic is in stream mode.  This is more complex, but
 allows sonic to be inserted into a sound stream with fairly low latency.  The
 current maximum latency in sonic is 31 milliseconds, which is enough to process
 two pitch periods of voice as low as 65 Hz.  In general, the latency is equal to
@@ -100,4 +100,4 @@ Then, read those samples as above.  That's about all there is to using libsonic.
 There are some more functions as a convenience for the user, like
 sonicGetSpeed.  Other sound data formats are supported: signed char and float.
 If float, the sound data should be between -1.0 and 1.0.  Internally, all sound
-data is converted to short for processing.
+data is converted to 16-bit integers for processing.
