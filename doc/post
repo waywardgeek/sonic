@@ -1,3 +1,11 @@
 #!/bin/bash
 markdown_py index.md > index.html
+if [ -f ../version ]; then
+    version=`awk '{print $1}' ../version`
+    tarball=../../sonic_$version.orig.tar.gz
+    if [ -f $tarball ]; then
+	scp $tarball root@vinux-project.org:/var/www/vinux-project.org/sonic
+	sed -i "s/sonic_.*\.orig.tar.gz/sonic_$version.orig.tar.gz/" index.md
+    fi
+fi
 scp index.html root@vinux-project.org:/var/www/vinux-project.org/sonic
