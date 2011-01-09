@@ -1,3 +1,9 @@
+sonic (0.1.12-1) unstable; urgency=low
+
+  * Added web page, compile with -pthread.
+
+ -- Bill Cox <waywardgeek@gmail.com>  Sun, 09 Jan 2011 11:45:54 -0500
+
 sonic (0.1.11-1) unstable; urgency=low
 
   * Removing .git and debian directory from orig.tar.gz file
