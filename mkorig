@@ -4,7 +4,7 @@
 # .git.
 
 version=`head -1 debian/changelog | sed 's/.*(//
-     s/-[0-9]*).*//'`
+     s/-.*//'`
 if [ "`basename $PWD`" != "sonic-$version" ]; then
     echo "Directory name should be sonic-$version"
     exit 1
