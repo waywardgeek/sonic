@@ -11,9 +11,9 @@ it's optimized for speed ups of over 2X, unlike previous algorithms for changing
 speech rate.  The sonic library is a very simple ANSI C library that is designed
 to easily be integrated into streaming voice applications, like TTS back ends.
 
-The primary motivation behind Sonic is to enable the blind and visually impaired
+The primary motivation behind sonic is to enable the blind and visually impaired
 to improve their productivity with open source speech engines, like espeak.
-Sonic can also be used by the sighted.  For example, Sonic can improve the
+Sonic can also be used by the sighted.  For example, sonic can improve the
 experience of listening to an audio book on an Android phone.
 
 Sonic is Copyright 2010, 2011, Bill Cox, all rights reserved.  It is released as
@@ -25,11 +25,34 @@ and the new part, for greater than 2X speed up, is clearly a capability most
 developers ignore, and would not bother to patent.  I will not file any patents
 on sonic algorithms, leaving the algorithms free for you to use.
 
-# Using libsonic in your program
+## Comparison to Other Solutions
 
-The file main.c is the source code for the sonic command-line application.  It
-is meant to be useful as example code.  Feel free to copy directly from it into
-your application, as main.c is in the public domain.
+Sonic is not like SoundTouch.  SoundTouch uses WSOLA, an algorithm optimized for
+changing the tempo of music.  No open source WSOLA based program performs well
+for speech (contrary to the inventor's estimate of WSOLA).  Listen to
+[this soundstretch sample](soundstretch.wav), which uses SoundTouch, and compare
+it to [this sonic sample](sonic.wav).  Both are sped up by 2X.  With a bit of
+hacking, WSOLA can be made to sound better than this soundstretch sample, but it
+will never sound good, even at 2X.
+
+However, there are decent open-source algorithms for speech.  They are all in
+the TD-PSOLA family.  For speech rates below 2X, sonic uses PICOLA, which I find
+to be the best algorithm available.  A slightly buggy implementation of PICOLA is
+availale in the spandsp library.  I find the one in RockBox quite good, though
+it's limited to 2X speed up.  So far as I know, only sonic is optimized for speed
+factors needed by the blind, up to 8X.
+
+## Using libsonic in your program
+
+Sonic is still a new library, and has not yet been incorporated into Debian or
+other major distros.  For now, I recommend that users simply add sonic.c and
+sonic.h to their applications.
+
+The file [main.c](main.c) is the source code for the sonic command-line application.  It
+is meant to be useful as example code.  Feel free to copy directly from main.c
+into your application, as main.c is in the public domain.  Dependencies listed
+in debian/control like libsndfile are there to compile the sonic command-line
+application.  Libsonic has no external dependencies.
 
 There are basically two ways to use sonic: batch or stream mode.  The simplest
 is batch mode where you pass an entire sound sample to sonic.  All you do is
