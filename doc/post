@@ -16,3 +16,4 @@ if [ -f ../version ]; then
 fi
 flac -d sonic.flac soundstretch.flac
 scp $files root@vinux-project.org:/var/www/vinux-project.org/sonic
+rm *.wav index.html
