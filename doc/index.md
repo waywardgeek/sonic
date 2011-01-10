@@ -22,8 +22,7 @@ me at <waywardgeek@gmail.com>.  One user was concerned about patents.  I believe
 the sonic algorithms do not violate any patents, as most of it is very old,
 based on [PICOLA](http://keizai.yokkaichi-u.ac.jp/~ikeda/research/picola.html),
 and the new part, for greater than 2X speed up, is clearly a capability most
-developers ignore, and would not bother to patent.  I will not file any patents
-on sonic algorithms, leaving the algorithms free for you to use.
+developers ignore, and would not bother to patent.
 
 ## Comparison to Other Solutions
 
@@ -35,12 +34,19 @@ it to [this sonic sample](sonic.wav).  Both are sped up by 2X.  With a bit of
 hacking, WSOLA can be made to sound better than this soundstretch sample, but it
 will never sound good, even at 2X.
 
-However, there are decent open-source algorithms for speech.  They are all in
-the TD-PSOLA family.  For speech rates below 2X, sonic uses PICOLA, which I find
-to be the best algorithm available.  A slightly buggy implementation of PICOLA is
-availale in the spandsp library.  I find the one in RockBox quite good, though
-it's limited to 2X speed up.  So far as I know, only sonic is optimized for speed
-factors needed by the blind, up to 8X.
+However, there are decent open-source algorithms for speeding up speech.  They
+are all in the TD-PSOLA family.  For speech rates below 2X, sonic uses PICOLA,
+which I find to be the best algorithm available.  A slightly buggy
+implementation of PICOLA is available in the spandsp library.  I find the one in
+RockBox quite good, though it's limited to 2X speed up.  So far as I know, only
+sonic is optimized for speed factors needed by the blind, up to 8X.
+
+Sonic does all of it's CPU intensive work with integer math, and works well on
+ARM CPUs without FPUs.  It supports multiple channels (stereo), and is also able
+to change the pitch of a voice.  It works well in streaming audio applications,
+and can deal with sound streams in 16-bit signed integer, 32-bit floating point,
+or 8-bit unsigned formats.  The source code is in plain ANSI C.  In short, it's
+production ready.  This sets it apart from most alternatives.
 
 ## Using libsonic in your program
 
