@@ -30,9 +30,9 @@ Sonic is not like SoundTouch.  SoundTouch uses WSOLA, an algorithm optimized for
 changing the tempo of music.  No open source WSOLA based program performs well
 for speech (contrary to the inventor's estimate of WSOLA).  Listen to
 [this soundstretch sample](soundstretch.wav), which uses SoundTouch, and compare
-it to [this sonic sample](sonic.wav).  Both are sped up by 2X.  With a bit of
-hacking, WSOLA can be made to sound better than this soundstretch sample, but it
-will never sound good, even at 2X.
+it to [this sonic sample](sonic.wav).  Both are sped up by 2X.  WSOLA
+introduces unaccepable levels of distortion, making speech impossible to
+understand at high speed (over 2.5X) by blind speed listeners.
 
 However, there are decent open-source algorithms for speeding up speech.  They
 are all in the TD-PSOLA family.  For speech rates below 2X, sonic uses PICOLA,
