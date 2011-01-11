@@ -1,3 +1,9 @@
+sonic (0.1.13-1) unstable; urgency=low
+
+  * Added rate control, and a new pitch control mode.
+
+ -- Bill Cox <waywardgeek@gmail.com>  Tue, 11 Jan 2011 07:44:38 -0500
+
 sonic (0.1.12-1) unstable; urgency=low
 
   * Added web page, compile with -pthread.
