@@ -20,7 +20,9 @@ static void runSonic(
     waveFile outFile,
     float speed,
     float pitch,
+    float rate,
     float volume,
+    int emulateChordPitch,
     int quality,
     int sampleRate,
     int numChannels)
@@ -31,7 +33,9 @@ static void runSonic(
 
     sonicSetSpeed(stream, speed);
     sonicSetPitch(stream, pitch);
+    sonicSetRate(stream, rate);
     sonicSetVolume(stream, volume);
+    sonicSetChordPitch(stream, emulateChordPitch);
     sonicSetQuality(stream, quality);
     do {
         samplesRead = readFromWaveFile(inFile, inBuffer, BUFFER_SIZE/numChannels);
@@ -55,8 +59,11 @@ static void runSonic(
 static void usage(void)
 {
     fprintf(stderr, "Usage: sonic [OPTION]... infile outfile\n"
+        "    -c         -- Modify pitch by emulating vocal chords vibrating\n"
+	"                  faster or slower.\n"
         "    -p pitch   -- Set pitch scaling factor.  1.3 means 30%% higher.\n"
         "    -q         -- Disable speed-up heuristics.  May increase quality.\n"
+        "    -r rate    -- Set playback rate.  2.0 means 2X faster, and 2X pitch.\n"
         "    -s speed   -- Set speed up factor.  2.0 means 2X faster.\n"
 	"    -v volume  -- Scale volume by a constant factor.\n");
     exit(1);
@@ -68,9 +75,11 @@ int main(
 {
     waveFile inFile, outFile;
     char *inFileName, *outFileName;
-    float speed = 1.0;
-    float pitch = 1.0;
-    float volume = 1.0;
+    float speed = 1.0f;
+    float pitch = 1.0f;
+    float rate = 1.0f;
+    float volume = 1.0f;
+    int emulateChordPitch = 0;
     int quality = 0;
     int sampleRate, numChannels;
     int xArg = 1;
@@ -82,20 +91,29 @@ int main(
 	return 1;
     }
     while(xArg < argc && *(argv[xArg]) == '-') {
-	if(!strcmp(argv[xArg], "-p")) {
+	if(!strcmp(argv[xArg], "-c")) {
+	    emulateChordPitch = 1;
+	    printf("Scaling pitch linearly.\n");
+	} else if(!strcmp(argv[xArg], "-p")) {
 	    xArg++;
 	    if(xArg < argc) {
 	        pitch = atof(argv[xArg]);
-                printf("Setting pitch to %0.2f%%\n", pitch*100.0f);
+                printf("Setting pitch to %0.2fX\n", pitch);
 	    }
 	} else if(!strcmp(argv[xArg], "-q")) {
 	    quality = 1;
 	    printf("Disabling speed-up heuristics\n");
+	} else if(!strcmp(argv[xArg], "-r")) {
+	    xArg++;
+	    if(xArg < argc) {
+	        rate = atof(argv[xArg]);
+                printf("Setting rate to %0.2fX\n", rate);
+	    }
 	} else if(!strcmp(argv[xArg], "-s")) {
 	    xArg++;
 	    if(xArg < argc) {
 	        speed = atof(argv[xArg]);
-                printf("Setting speed to %0.2f%%\n", speed*100.0f);
+                printf("Setting speed to %0.2fX\n", speed);
 	    }
 	} else if(!strcmp(argv[xArg], "-v")) {
 	    xArg++;
@@ -120,7 +138,8 @@ int main(
 	closeWaveFile(inFile);
 	return 1;
     }
-    runSonic(inFile, outFile, speed, pitch, volume, quality, sampleRate, numChannels);
+    runSonic(inFile, outFile, speed, pitch, rate, volume, emulateChordPitch, quality,
+        sampleRate, numChannels);
     closeWaveFile(inFile);
     closeWaveFile(outFile);
     return 0;

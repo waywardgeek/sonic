@@ -19,12 +19,12 @@
    02111-1307 USA.  */
 
 /*
-The Sonic Library implements Pitch Based Resampling, which is a new algorithm
-invented by Bill Cox for the specific purpose of speeding up speech by high
-factors at high quality.  It generates smooth speech at speed up factors as high
-as 6X, possibly more.  It is also capable of slowing down speech, and generates
-high quality results regardless of the speed up or slow down factor.  For
-speeding up speech by 2X or more, the following equation is used:
+The Sonic Library implements a new algorithm invented by Bill Cox for the
+specific purpose of speeding up speech by high factors at high quality.  It
+generates smooth speech at speed up factors as high as 6X, possibly more.  It is
+also capable of slowing down speech, and generates high quality results
+regardless of the speed up or slow down factor.  For speeding up speech by 2X or
+more, the following equation is used:
 
     newSamples = period/(speed - 1.0)
     scale = 1.0/newSamples;
@@ -118,10 +118,19 @@ void sonicSetSpeed(sonicStream stream, float speed);
 float sonicGetPitch(sonicStream stream);
 /* Set the pitch of the stream. */
 void sonicSetPitch(sonicStream stream, float pitch);
+/* Get the rate of the stream. */
+float sonicGetRate(sonicStream stream);
+/* Set the rate of the stream. */
+void sonicSetRate(sonicStream stream, float rate);
 /* Get the scaling factor of the stream. */
 float sonicGetVolume(sonicStream stream);
 /* Set the scaling factor of the stream. */
 void sonicSetVolume(sonicStream stream, float volume);
+/* Get the chord pitch setting. */
+int sonicGetChordPitch(sonicStream stream);
+/* Set chord pitch mode on or off.  Default is off.  See the documentation
+   page for a description of this feature. */
+void sonicSetChordPitch(sonicStream stream, int useChordPitch);
 /* Get the quality setting. */
 int sonicGetQuality(sonicStream stream);
 /* Set the "quality".  Default 0 is virtually as good as 1, but very much faster. */

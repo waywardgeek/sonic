@@ -1,5 +1,5 @@
-#CFLAGS=-Wall -g -ansi -fPIC
-CFLAGS=-Wall -O2 -ansi -fPIC -pthread
+CFLAGS=-Wall -g -ansi -fPIC
+#CFLAGS=-Wall -O2 -ansi -fPIC -pthread
 LIB_TAG=0.1.10
 CC=gcc
 PREFIX=/usr/local

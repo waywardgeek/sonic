@@ -30,7 +30,7 @@ Sonic is not like SoundTouch.  SoundTouch uses WSOLA, an algorithm optimized for
 changing the tempo of music.  No WSOLA based program performs well for speech
 (contrary to the inventor's estimate of WSOLA).  Listen to [this soundstretch
 sample](soundstretch.wav), which uses SoundTouch, and compare it to [this sonic
-sample](sonic.wav).  Both are sped up by 2X.  WSOLA introduces unaccepable
+sample](sonic.wav).  Both are sped up by 2X.  WSOLA introduces unacceptable
 levels of distortion, making speech impossible to understand at high speed (over
 2.5X) by blind speed listeners.
 
@@ -91,19 +91,34 @@ When you're done with a sonic stream, you can free it's memory with:
 
     sonicDestroyStream(stream);
 
-By default, a sonic stream sets the speed, pitch, and volume to 1.0, which means
+By default, a sonic stream sets the speed, pitch, rate, and volume to 1.0, which means
 no change at all to the sound stream.  Sonic detects this case, and simply
 copies the input to the output to reduce CPU load.  To change the speed, pitch,
-or volume, set the parameters using:
+rate, or volume, set the parameters using:
 
     sonicSetSpeed(stream, speed);
     sonicSetPitch(stream, pitch);
+    sonicSetRate(stream, rate);
     sonicSetVolume(stream, volume);
 
-These three parameters are floating point numbers.  A speed of 2.0 means to
+These four parameters are floating point numbers.  A speed of 2.0 means to
 double speed of speech.  A pitch of 0.95 means to lower the pitch by about 5%,
 and a volume of 1.4 means to multiply the sound samples by 1.4, clipping if we
-exceed the maximum range of a 16-bit integer.
+exceed the maximum range of a 16-bit integer.  Speech rate scales how fast
+speech is played.  A 2.0 value will make you sound like a chipmunk talking very
+fast.  A 0.7 value will make you sound like a giant talking slowly.
+
+By default, pitch is modified by changing the rate, and then using speed
+modification to bring the speed back to normal.  This allows for a wide range of
+pitch changes, but changing the pitch makes the speaker sound larger or smaller,
+too.  If you want to make the person sound like the same person, but talking at
+a higher or lower pitch, then enable the vocal chord emulation mode for pitch
+scaling, using:
+
+    sonicSetChordPitch(stream, 1);
+
+However, only small changes to pitch should be used in this mode, as it
+introduces significant distortion otherwise.
 
 After setting the sound parameters, you write to the stream like this:
 
