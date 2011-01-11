@@ -143,12 +143,12 @@ int sonicGetNumChannels(sonicStream stream);
    sample.  It works in-place on the sample array, so there must be at least
    speed*numSamples available space in the array. Returns the new number of samples. */
 int sonicChangeFloatSpeed(float *samples, int numSamples, float speed, float pitch,
-    float volume, int sampleRate, int numChannels);
+    float rate, float volume, int useChordPitch, int sampleRate, int numChannels);
 /* This is a non-stream oriented interface to just change the speed of a sound
    sample.  It works in-place on the sample array, so there must be at least
    speed*numSamples available space in the array. Returns the new number of samples. */
 int sonicChangeShortSpeed(short *samples, int numSamples, float speed, float pitch,
-    float volume, int sampleRate, int numChannels);
+    float rate, float volume, int useChordPitch, int sampleRate, int numChannels);
 
 #ifdef  __cplusplus
 }

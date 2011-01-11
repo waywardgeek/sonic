@@ -21,3 +21,8 @@ libsonic.so.0 libsonic0 #MINVER#
  sonicWriteFloatToStream@Base 0.1.10
  sonicWriteShortToStream@Base 0.1.10
  sonicWriteUnsignedCharToStream@Base 0.1.10
+ sonicGetRate@Base 0.1.13
+ sonicSetRate@Base 0.1.13
+ sonicGetChordPitch@Base 0.1.13
+ sonicSetChordPitch@Base 0.1.13
+

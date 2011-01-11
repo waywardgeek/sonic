@@ -64,7 +64,8 @@ There are basically two ways to use sonic: batch or stream mode.  The simplest
 is batch mode where you pass an entire sound sample to sonic.  All you do is
 call one function, like this:
 
-    sonicChangeShortSpeed(samples, numSamples, speed, pitch, volume, sampleRate, numChannels);
+    sonicChangeShortSpeed(samples, numSamples, speed, pitch, rate, volume,
+	useChordPitch, sampleRate, numChannels);
 
 This will change the speed and pitch of the sound samples pointed to by samples,
 which should be 16-bit signed integers.  Stereo mode is supported, as
@@ -72,7 +73,11 @@ is any arbitrary number of channels.  Samples for each channel should be
 adjacent in the input array.  Because the samples are modified in-place, be sure
 that there is room in the samples array for the speed-changed samples.  In
 general, if you are speeding up, rather than slowing down, it will be safe to
-have no extra padding.
+have no extra padding.  If your sound samples are mono, and you don't want to
+scale volume or playback rate, and if you want normal pitch scaling, then call
+it like this:
+
+    sonicChangeShortSpeed(samples, numSamples, speed, pitch, 1.0f, 1.0f, 0, sampleRate, 1);
 
 The other way to use libsonic is in stream mode.  This is more complex, but
 allows sonic to be inserted into a sound stream with fairly low latency.  The

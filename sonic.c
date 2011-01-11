@@ -1095,7 +1095,9 @@ int sonicChangeFloatSpeed(
     int numSamples,
     float speed,
     float pitch,
+    float rate,
     float volume,
+    int useChordPitch,
     int sampleRate,
     int numChannels)
 {
@@ -1103,7 +1105,9 @@ int sonicChangeFloatSpeed(
 
     sonicSetSpeed(stream, speed);
     sonicSetPitch(stream, pitch);
+    sonicSetRate(stream, rate);
     sonicSetVolume(stream, volume);
+    sonicSetChordPitch(stream, useChordPitch);
     sonicWriteFloatToStream(stream, samples, numSamples);
     sonicFlushStream(stream);
     numSamples = sonicSamplesAvailable(stream);
@@ -1118,7 +1122,9 @@ int sonicChangeShortSpeed(
     int numSamples,
     float speed,
     float pitch,
+    float rate,
     float volume,
+    int useChordPitch,
     int sampleRate,
     int numChannels)
 {
@@ -1126,7 +1132,9 @@ int sonicChangeShortSpeed(
 
     sonicSetSpeed(stream, speed);
     sonicSetPitch(stream, pitch);
+    sonicSetRate(stream, rate);
     sonicSetVolume(stream, volume);
+    sonicSetChordPitch(stream, useChordPitch);
     sonicWriteShortToStream(stream, samples, numSamples);
     sonicFlushStream(stream);
     numSamples = sonicSamplesAvailable(stream);
