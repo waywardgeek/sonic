@@ -51,8 +51,9 @@ production ready.  This sets it apart from most alternatives.
 ## Using libsonic in your program
 
 Sonic is still a new library, and has not yet been incorporated into Debian or
-other major distros.  For now, I recommend that users simply add sonic.c and
-sonic.h to their applications.
+other major distros.  For now, feel free to simply add sonic.c and
+sonic.h to your application, but consider switching to -lsonic once the library
+is available on your distro.
 
 The file [main.c](main.c) is the source code for the sonic command-line application.  It
 is meant to be useful as example code.  Feel free to copy directly from main.c
@@ -64,8 +65,7 @@ There are basically two ways to use sonic: batch or stream mode.  The simplest
 is batch mode where you pass an entire sound sample to sonic.  All you do is
 call one function, like this:
 
-    sonicChangeShortSpeed(samples, numSamples, speed, pitch, rate, volume,
-	useChordPitch, sampleRate, numChannels);
+    sonicChangeShortSpeed(samples, numSamples, speed, pitch, rate, volume, useChordPitch, sampleRate, numChannels);
 
 This will change the speed and pitch of the sound samples pointed to by samples,
 which should be 16-bit signed integers.  Stereo mode is supported, as
