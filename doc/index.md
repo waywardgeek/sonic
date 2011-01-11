@@ -132,7 +132,7 @@ You read the sped up speech samples from sonic like this:
 	 * the sound device. */
     }
 
-You may change the speed, pitch, and volume parameters at any time, without
+You may change the speed, pitch, rate, and volume parameters at any time, without
 having to flush or create a new sonic stream.
 
 When your sound stream ends, there may be several milliseconds of sound data in
