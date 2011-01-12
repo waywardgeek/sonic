@@ -4,7 +4,7 @@
 
 The source code repository can be cloned using git:
 
-    $ git clone git://vinux-project.org/sonic
+    $ git clone git://github.com/waywardgeek/sonic.git
 
 Sonic is a simple algorithm for speeding up or slowing down speech.  However,
 it's optimized for speed ups of over 2X, unlike previous algorithms for changing
