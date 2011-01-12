@@ -5,6 +5,7 @@
 
 version=`head -1 debian/changelog | sed 's/.*(//
      s/-.*//'`
+sed -i "s/LIB_TAG=.*/LIB_TAG=$version/" Makefile
 if [ "`basename $PWD`" != "sonic-$version" ]; then
     echo "Directory name should be sonic-$version"
     exit 1
