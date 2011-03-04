@@ -4,7 +4,7 @@ LIB_TAG=0.1.13
 CC=gcc
 PREFIX=/usr/local
 
-all: sonic libsonic.so.$(LIB_TAG)
+all: sonic libsonic.so.$(LIB_TAG) libsonic-$(LIB_TAG).a
 
 sonic: wave.o main.o libsonic.so.$(LIB_TAG)
 	$(CC) $(CFLAGS) -lsndfile libsonic.so.$(LIB_TAG) -o sonic wave.o main.o
@@ -22,6 +22,8 @@ libsonic.so.$(LIB_TAG): sonic.o
 	$(CC) $(CFLAGS) -shared -Wl,-soname,libsonic.so.0 sonic.o -o libsonic.so.$(LIB_TAG)
 	ln -sf libsonic.so.$(LIB_TAG) libsonic.so
 	ln -sf libsonic.so.$(LIB_TAG) libsonic.so.0
+
+libsonic-$(LIB_TAG).a: sonic.o
 
 install: sonic libsonic.so.$(LIB_TAG) sonic.h
 	install -d $(DESTDIR)$(PREFIX)/bin $(DESTDIR)$(PREFIX)/include $(DESTDIR)$(PREFIX)/lib

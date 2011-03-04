@@ -192,22 +192,8 @@ void sonicSetVolume(
     stream->volume = volume;
 }
 
-/* Get the sample rate of the stream. */
-int sonicGetSampleRate(
-    sonicStream stream)
-{
-    return stream->sampleRate;
-}
-
-/* Get the number of channels. */
-int sonicGetNumChannels(
-    sonicStream stream)
-{
-    return stream->numChannels;
-}
-
-/* Destroy the sonic stream. */
-void sonicDestroyStream(
+/* Free stream buffers. */
+static void freeStreamBuffers(
     sonicStream stream)
 {
     if(stream->inputBuffer != NULL) {
@@ -222,7 +208,57 @@ void sonicDestroyStream(
     if(stream->downSampleBuffer != NULL) {
 	free(stream->downSampleBuffer);
     }
+}
+
+/* Destroy the sonic stream. */
+void sonicDestroyStream(
+    sonicStream stream)
+{
+    freeStreamBuffers(stream);
     free(stream);
+}
+
+/* Allocate stream buffers. */
+static int allocateStreamBuffers(
+    sonicStream stream,
+    int sampleRate,
+    int numChannels)
+{
+    int minPeriod = sampleRate/SONIC_MAX_PITCH;
+    int maxPeriod = sampleRate/SONIC_MIN_PITCH;
+    int maxRequired = 2*maxPeriod; 
+
+    stream->inputBufferSize = maxRequired;
+    stream->inputBuffer = (short *)calloc(maxRequired, sizeof(short)*numChannels);
+    if(stream->inputBuffer == NULL) {
+	sonicDestroyStream(stream);
+	return 0;
+    }
+    stream->outputBufferSize = maxRequired;
+    stream->outputBuffer = (short *)calloc(maxRequired, sizeof(short)*numChannels);
+    if(stream->outputBuffer == NULL) {
+	sonicDestroyStream(stream);
+	return 0;
+    }
+    stream->pitchBufferSize = maxRequired;
+    stream->pitchBuffer = (short *)calloc(maxRequired, sizeof(short)*numChannels);
+    if(stream->pitchBuffer == NULL) {
+	sonicDestroyStream(stream);
+	return 0;
+    }
+    stream->downSampleBuffer = (short *)calloc(maxRequired, sizeof(short));
+    if(stream->downSampleBuffer == NULL) {
+	sonicDestroyStream(stream);
+	return 0;
+    }
+    stream->sampleRate = sampleRate;
+    stream->numChannels = numChannels;
+    stream->oldRatePosition = 0;
+    stream->newRatePosition = 0;
+    stream->minPeriod = minPeriod;
+    stream->maxPeriod = maxPeriod;
+    stream->maxRequired = maxRequired;
+    return 1;
 }
 
 /* Create a sonic stream.  Return NULL only if we are out of memory and cannot
@@ -232,32 +268,13 @@ sonicStream sonicCreateStream(
     int numChannels)
 {
     sonicStream stream = (sonicStream)calloc(1, sizeof(struct sonicStreamStruct));
-    int minPeriod = sampleRate/SONIC_MAX_PITCH;
-    int maxPeriod = sampleRate/SONIC_MIN_PITCH;
-    int maxRequired = 2*maxPeriod; 
 
     if(stream == NULL) {
 	return NULL;
     }
-    stream->inputBufferSize = maxRequired;
-    stream->inputBuffer = (short *)calloc(maxRequired, sizeof(short)*numChannels);
-    if(stream->inputBuffer == NULL) {
-	sonicDestroyStream(stream);
-	return NULL;
+    if(!allocateStreamBuffers(stream, sampleRate, numChannels)) {
+        return NULL;
     }
-    stream->outputBufferSize = maxRequired;
-    stream->outputBuffer = (short *)calloc(maxRequired, sizeof(short)*numChannels);
-    if(stream->outputBuffer == NULL) {
-	sonicDestroyStream(stream);
-	return NULL;
-    }
-    stream->pitchBufferSize = maxRequired;
-    stream->pitchBuffer = (short *)calloc(maxRequired, sizeof(short)*numChannels);
-    if(stream->pitchBuffer == NULL) {
-	sonicDestroyStream(stream);
-	return NULL;
-    }
-    stream->downSampleBuffer = (short *)calloc(maxRequired, sizeof(short));
     stream->speed = 1.0f;
     stream->pitch = 1.0f;
     stream->volume = 1.0f;
@@ -266,12 +283,41 @@ sonicStream sonicCreateStream(
     stream->newRatePosition = 0;
     stream->useChordPitch = 0;
     stream->quality = 0;
-    stream->sampleRate = sampleRate;
-    stream->numChannels = numChannels;
-    stream->minPeriod = minPeriod;
-    stream->maxPeriod = maxPeriod;
-    stream->maxRequired = maxRequired;
     return stream;
+}
+
+/* Get the sample rate of the stream. */
+int sonicGetSampleRate(
+    sonicStream stream)
+{
+    return stream->sampleRate;
+}
+
+/* Set the sample rate of the stream.  This will cause samples buffered in the stream to
+   be lost. */
+void sonicSetSampleRate(
+    sonicStream stream,
+    int sampleRate)
+{
+    freeStreamBuffers(stream);
+    allocateStreamBuffers(stream, sampleRate, stream->numChannels);
+}
+
+/* Get the number of channels. */
+int sonicGetNumChannels(
+    sonicStream stream)
+{
+    return stream->numChannels;
+}
+
+/* Set the num channels of the stream.  This will cause samples buffered in the stream to
+   be lost. */
+void sonicSetNumChannels(
+    sonicStream stream,
+    int numChannels)
+{
+    freeStreamBuffers(stream);
+    allocateStreamBuffers(stream, stream->sampleRate, numChannels);
 }
 
 /* Enlarge the output buffer if needed. */
