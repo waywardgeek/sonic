@@ -258,6 +258,7 @@ static int allocateStreamBuffers(
     stream->minPeriod = minPeriod;
     stream->maxPeriod = maxPeriod;
     stream->maxRequired = maxRequired;
+    stream->prevPeriod = 0;
     return 1;
 }
 
@@ -669,7 +670,7 @@ static int prevPeriodBetter(
     int maxDiff,
     int preferNewPeriod)
 {
-    if(minDiff == 0) {
+    if(minDiff == 0 || stream->prevPeriod == 0) {
 	return 0;
     }
     if(preferNewPeriod) {
