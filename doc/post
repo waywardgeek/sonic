@@ -3,7 +3,8 @@
 files="index.html
 sonic.wav
 ../main.c
-soundstretch.wav"
+soundstretch.wav
+Sonic-NDK.apk"
 
 markdown_py index.md > index.html
 if [ -f ../version ]; then
@@ -11,9 +12,9 @@ if [ -f ../version ]; then
     sourceTarball=../../$version.orig.tar.gz
     if [ -f $sourceTarball ]; then
 	destTarball=$version.tar.gz
-	scp $sourceTarball root@vinux-project.org:/var/www/vinux-project.org/sonic/download/$destTarball
+	scp $sourceTarball root@dev.vinux-project.org:/var/www/dev.vinux-project.org/sonic/download/$destTarball
     fi
 fi
 flac -d sonic.flac soundstretch.flac
-scp $files root@vinux-project.org:/var/www/vinux-project.org/sonic
+scp $files root@dev.vinux-project.org:/var/www/dev.vinux-project.org/sonic
 rm *.wav index.html

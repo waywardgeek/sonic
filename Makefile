@@ -2,7 +2,7 @@
 CFLAGS=-Wall -O2 -ansi -fPIC -pthread
 LIB_TAG=0.1.13
 CC=gcc
-PREFIX=/usr/local
+PREFIX=/usr
 
 all: sonic libsonic.so.$(LIB_TAG) libsonic-$(LIB_TAG).a
 

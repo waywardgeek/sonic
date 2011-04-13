@@ -6,6 +6,15 @@ The source code repository can be cloned using git:
 
     $ git clone git://github.com/waywardgeek/sonic.git
 
+The source code for the Android version, sonic-ndk, can be cloned with:
+
+    $ git clone git://github.com/waywardgeek/sonic-ndk.git
+
+There is a simple test app for android that demos capabilities.  You can
+[install the Android application from here](Sonic-NDK.apk)
+
+## Overview
+
 Sonic is a simple algorithm for speeding up or slowing down speech.  However,
 it's optimized for speed ups of over 2X, unlike previous algorithms for changing
 speech rate.  The sonic library is a very simple ANSI C library that is designed
