@@ -1,9 +1,9 @@
 #!/bin/bash
 
 files="index.html
-sonic.wav
 ../main.c
-soundstretch.wav
+../samples/sonic.wav
+../samples/soundstretch.wav
 Sonic-NDK.apk"
 
 markdown_py index.md > index.html

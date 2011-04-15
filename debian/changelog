@@ -1,3 +1,15 @@
+sonic (0.1.15-1) unstable; urgency=low
+
+  * Updates to improve Debian packaging.
+
+ -- Bill Cox <waywardgeek@gmail.com>  Fri, 15 Apr 2011 12:32:30 -0400
+
+sonic (0.1.14-1) unstable; urgency=low
+
+  * Changed default install to /usr, rather than /usr/local
+
+ -- Bill Cox <waywardgeek@gmail.com>  Thu, 14 Apr 2011 14:37:47 -0400
+
 sonic (0.1.13-1) unstable; urgency=low
 
   * Added rate control, and a new pitch control mode.

@@ -1,4 +1,14 @@
-These wav files show how Sonic performs at increasing speech rates.
+These wav files show how Sonic performs at increasing speech rates.  All sound
+sampels are in the public domain.
+
+sonic.flac
+This is a sonic 2X sped-up version of a public domain librivox.org recording, from
+the audiobook "Princess of Mars".
+
+soundtouch.flac
+This is the same recording as sonic.flac, but sped up using soundtouch, which
+uses WSOLA rather than the sonic algorithm.  Even at 2X speed up, you should be
+able to hear the characteristic WSOLA distortion relative to the sonic version.
 
 talking.wav
 This is my father talking, using a decent microphone and 44KHz sample rate.
@@ -18,22 +28,7 @@ sonic 2.6 out.wav espeak_sonic.wav'.  Sonic sped it up 2.6X, which is about the
 same speed as espeak at -s450.  I personally feel that the sonic sped up sample
 sounds better than espeak at -s450.
 
-voxin_s110.wav
-This was generated with 'say -s110 -f test1.txt -w voxin_s110.wav'.  It's about
-3.1X faster than voxin's default rate.
-
-voxin_sonic_3.1x.wav
-This was generated with 'say -f test1.txt -w out.wav; sonic 3.1 out.wav
-voxin_sonic_3.1x.wav'.  It sounds almost identical to voxin_s110.wav, as far as I can
-tell, though one blind listener says he prefers the sound of voxin when sped up
-using sonic.
-
-voxin_s130.wav
-This was generated with 'say -s130 -f test1.txt -w voxin_s130.wav'.  It's about
-4.4X faster than voxin's default rate.
-
-voxin_sonic_4.4x.wav
-This was generated with 'say -f test1.txt -w out.wav; sonic 4.4 out.wav
-voxin_sonic_4.4x.wav'.  It sounds almost identical to voxin_s110.wav, as far as I can
-tell, though one blind listener says he prefers the sound of voxin when sped up
-using sonic.
+twosineperiods.wav
+This is just two sine periods, which is too short to hear.  However, it's
+useful for making sure the flush function works correctly.  A 2-X speedup should
+result in one sine period with no distortion.

@@ -25,4 +25,3 @@ libsonic.so.0 libsonic0 #MINVER#
  sonicSetRate@Base 0.1.13
  sonicGetChordPitch@Base 0.1.13
  sonicSetChordPitch@Base 0.1.13
-
