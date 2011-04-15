@@ -1,3 +1,2 @@
-Mon Dec 20 - Bill Cox
-    * Added initial ChangeLog to track development without having to insert the
-    * entire git log
+This file is now only here as a place-holder for autotools.  Log history is
+maintained in git.
