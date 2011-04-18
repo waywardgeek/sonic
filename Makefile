@@ -45,4 +45,4 @@ uninstall:
 	rm -f $(DESTDIR)$(PREFIX)/lib/libsonic.so.0
 
 clean:
-	rm -f *.o sonic libsonic.so* version
+	rm -f *.o sonic libsonic.so* version ChangeLog
