@@ -1,12 +1,7 @@
-sonic (0.1.16-1ubuntu1) maverick; urgency=low
-
-  * Added git log in ChangeLog.
-
- -- Bill Cox <waywardgeek@gmail.com>  Mon, 18 Apr 2011 10:54:13 -0400
-
 sonic (0.1.16-1) unstable; urgency=low
 
   * Added a bit more explanation about copyrights of various files.
+  * Dump git log to ChangeLog
 
  -- Bill Cox <waywardgeek@gmail.com>  Sat, 16 Apr 2011 16:49:33 -0400
 
