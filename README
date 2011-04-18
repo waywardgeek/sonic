@@ -9,7 +9,9 @@ Sonic can also be used by the sighted.  For example, Sonic can improve the
 experience of listening to an audio book on an Android phone.
 
 Sonic is Copyright 2010, Bill Cox, all rights reserved.  It is released as open
-source under the Lesser Gnu Public License version 2.1.
+source under the Lesser Gnu Public License version 2.1.  All files except main.c
+and all the sound samples are LGPL.  main.c and the sound samples in the samples
+directory are in the public domain.
 
 Author: Bill Cox
 email: waywardgeek@gmail.com

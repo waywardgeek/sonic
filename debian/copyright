@@ -31,6 +31,10 @@ Copyright:
    Boston, MA 02110-1335
    USA
 
+   There are some files in this distribution which are in the public domain.
+   They are main.c, and all sound samples in the samples directory.  All other
+   files are LGPL 2.1.
+
 The Debian packaging is:
 
     Copyright (C) 2010 Bill Cox <waywardgeek@gmail.com>

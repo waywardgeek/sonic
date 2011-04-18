@@ -4,7 +4,7 @@
 
 #CFLAGS=-Wall -g -ansi -fPIC -pthread
 CFLAGS=-Wall -O2 -ansi -fPIC -pthread
-LIB_TAG=0.1.15
+LIB_TAG=0.1.16
 CC=gcc
 PREFIX=/usr
 
