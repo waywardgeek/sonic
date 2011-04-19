@@ -3,8 +3,7 @@
 files="index.html
 ../main.c
 ../samples/sonic.wav
-../samples/soundstretch.wav
-Sonic-NDK.apk"
+../samples/soundstretch.wav"
 
 markdown_py index.md > index.html
 if [ -f ../version ]; then

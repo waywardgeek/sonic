@@ -1,3 +1,10 @@
+sonic (0.1.17-1) unstable; urgency=low
+
+  * Removed Sonic-NDK, which is a binary compiled for Android from the source
+    tar-ball.
+
+ -- Bill Cox <waywardgeek@gmail.com>  Tue, 19 Apr 2011 07:46:51 -0400
+
 sonic (0.1.16-1) unstable; urgency=low
 
   * Added a bit more explanation about copyrights of various files.
