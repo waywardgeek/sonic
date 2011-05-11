@@ -19,6 +19,13 @@ Sonic is a simple algorithm for speeding up or slowing down speech.  However,
 it's optimized for speed ups of over 2X, unlike previous algorithms for changing
 speech rate.  The sonic library is a very simple ANSI C library that is designed
 to easily be integrated into streaming voice applications, like TTS back ends.
+While a very new project, it is already integrated into:
+
+- espeak
+- Debian Sid as package libsonic
+- Android Astro Player Nova
+- Android Osplayer
+- Multiple closed source TTS engines
 
 The primary motivation behind sonic is to enable the blind and visually impaired
 to improve their productivity with open source speech engines, like espeak.
@@ -35,20 +42,22 @@ developers ignore, and would not bother to patent.
 
 ## Comparison to Other Solutions
 
-Sonic is not like SoundTouch.  SoundTouch uses WSOLA, an algorithm optimized for
-changing the tempo of music.  No WSOLA based program performs well for speech
-(contrary to the inventor's estimate of WSOLA).  Listen to [this soundstretch
-sample](soundstretch.wav), which uses SoundTouch, and compare it to [this sonic
-sample](sonic.wav).  Both are sped up by 2X.  WSOLA introduces unacceptable
-levels of distortion, making speech impossible to understand at high speed (over
-2.5X) by blind speed listeners.
+In short, Sonic is better for speech, while WSOLA is better for music.
+
+A popular alternative is SoundTouch.  SoundTouch uses WSOLA, an algorithm
+optimized for changing the tempo of music.  No WSOLA based program performs well
+for speech (contrary to the inventor's estimate of WSOLA).  Listen to [this
+soundstretch sample](soundstretch.wav), which uses SoundTouch, and compare
+it to [this sonic sample](sonic.wav).  Both are sped up by 2X.  WSOLA
+introduces unacceptable levels of distortion, making speech impossible to
+understand at high speed (over 2.5X) by blind speed listeners.
 
 However, there are decent open-source algorithms for speeding up speech.  They
 are all in the TD-PSOLA family.  For speech rates below 2X, sonic uses PICOLA,
 which I find to be the best algorithm available.  A slightly buggy
 implementation of PICOLA is available in the spandsp library.  I find the one in
 RockBox quite good, though it's limited to 2X speed up.  So far as I know, only
-sonic is optimized for speed factors needed by the blind, up to 8X.
+sonic is optimized for speed factors needed by the blind, up to 6X.
 
 Sonic does all of it's CPU intensive work with integer math, and works well on
 ARM CPUs without FPUs.  It supports multiple channels (stereo), and is also able
@@ -59,10 +68,10 @@ production ready.  This sets it apart from most alternatives.
 
 ## Using libsonic in your program
 
-Sonic is still a new library, and has not yet been incorporated into Debian or
-other major distros.  For now, feel free to simply add sonic.c and
-sonic.h to your application, but consider switching to -lsonic once the library
-is available on your distro.
+Sonic is still a new library, but is in Debian Sid.  It will take a while
+for it to filter out into all the other distros.  For now, feel free to simply
+add sonic.c and sonic.h to your application, but consider switching to -lsonic
+once the library is available on your distro.
 
 The file [main.c](main.c) is the source code for the sonic command-line application.  It
 is meant to be useful as example code.  Feel free to copy directly from main.c
