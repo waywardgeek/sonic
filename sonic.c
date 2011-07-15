@@ -16,7 +16,7 @@
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, write to the Free
    Software Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA
-   02111-1307 USA.  */
+   02111-1307 USA. */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -621,7 +621,7 @@ static void downSampleInput(
 }
 
 /* Find the best frequency match in the range, and given a sample skip multiple.
-   For now, just find the pitch of the first channel.  */
+   For now, just find the pitch of the first channel. */
 static int findPitchPeriodInRange(
     short *samples,
     int minPeriod,
@@ -662,7 +662,7 @@ static int findPitchPeriodInRange(
 }
 
 /* At abrupt ends of voiced words, we can have pitch periods that are better
-   aproximated by the previous pitch period estimate.  Try to detect this case.  */
+   approximated by the previous pitch period estimate.  Try to detect this case. */
 static int prevPeriodBetter(
     sonicStream stream,
     int period,
