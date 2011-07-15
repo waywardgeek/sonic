@@ -41,8 +41,6 @@ struct sonicStreamStruct {
     float rate;
     int oldRatePosition;
     int newRatePosition;
-    int oldSampleRate;
-    int newSampleRate;
     int useChordPitch;
     int quality;
     int numChannels;
@@ -58,7 +56,6 @@ struct sonicStreamStruct {
     int remainingInputToCopy;
     int sampleRate;
     int prevPeriod;
-    int prevMaxDiff;
     int prevMinDiff;
 };
 
@@ -596,7 +593,7 @@ int sonicSamplesAvailable(
     return stream->numOutputSamples;
 }
 
-/* If skip is greater than one, average skip samples togther and write them to
+/* If skip is greater than one, average skip samples together and write them to
    the down-sample buffer.  If numChannels is greater than one, mix the channels
    together as we down sample. */
 static void downSampleInput(
@@ -741,7 +738,6 @@ static int findPitchPeriod(
 	retPeriod = period;
     }
     stream->prevMinDiff = minDiff;
-    stream->prevMaxDiff = maxDiff;
     stream->prevPeriod = period;
     return retPeriod;
 }
@@ -810,7 +806,7 @@ static void overlapAddWithSeparation(
     }
 }
 
-/* Just move the new samples in the output buffer to the pitch bufer */
+/* Just move the new samples in the output buffer to the pitch buffer */
 static int moveNewSamplesToPitchBuffer(
     sonicStream stream,
     int originalNumOutputSamples)
@@ -980,7 +976,7 @@ static int skipPitchPeriod(
 
     if(speed >= 2.0f) {
 	newSamples = period/(speed - 1.0f);
-    } else if(speed > 1.0f) {
+    } else {
 	newSamples = period;
 	stream->remainingInputToCopy = period*(2.0f - speed)/(speed - 1.0f);
     }
