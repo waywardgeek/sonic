@@ -443,7 +443,7 @@ static int copyToOutput(
     memcpy(stream->outputBuffer + stream->numOutputSamples*stream->numChannels,
 	samples, numSamples*sizeof(short)*stream->numChannels);
     stream->numOutputSamples += numSamples;
-    return numSamples;
+    return 1;
 }
 
 /* Just copy from the input buffer to the output buffer.  Return 0 if we fail to
