@@ -13,6 +13,9 @@ The source code for the Android version, sonic-ndk, can be cloned with:
 There is a simple test app for android that demos capabilities.  You can
 [install the Android application from here](Sonic-NDK.apk)
 
+There is a new native Java port, which is very fast!  Checkout Sonic.java and
+Main.java in the latest tar-ball, or get the code from git.
+
 ## Overview
 
 Sonic is a simple algorithm for speeding up or slowing down speech.  However,

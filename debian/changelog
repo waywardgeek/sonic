@@ -1,3 +1,9 @@
+sonic (0.1.18-1) unstable; urgency=low
+
+  * Added native Java port.
+
+ -- Bill Cox <waywardgeek@gmail.com>  Sat, 16 Jul 2011 12:12:32 -0400
+
 sonic (0.1.17-1) unstable; urgency=low
 
   * Removed Sonic-NDK, which is a binary compiled for Android from the source
