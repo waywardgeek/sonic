@@ -12,8 +12,24 @@ A native Java port of Sonic is in Sonic.java.
 
 Sonic is Copyright 2010, 2011, Bill Cox, all rights reserved.  It is released as
 open source under the Lesser Gnu Public License version 2.1.  All files except
-main.c and all the sound samples are LGPL.  main.c and the sound samples in the
-samples directory are in the public domain.
+main.c, Main.java and all the sound samples are LGPL.  main.c and the sound
+samples in the samples directory are in the public domain.
+
+Performance test:
+
+I sped up a 751958176 byte wav file with sonic (a 9 hour, 28 minute mono audio
+file encoded at 16-bit 11.KHz), but with the output writing disabled.  The
+reported time, running Ubuntu 11.04 on my HP Pavilion dm4 laptop was:
+
+real    0m50.839s
+user    0m47.370s
+sys     0m0.620s
+
+The Java version is not much slower.  It reported:
+
+real    0m52.043s
+user    0m51.190s
+sys     0m0.310s
 
 Author: Bill Cox
 email: waywardgeek@gmail.com

@@ -313,6 +313,23 @@ public class Sonic {
         numInputSamples += numSamples;
     }
 
+    // Add the input samples to the input buffer.  They must be 16-bit little-endian encoded in a byte array.
+    private void addBytesToInputBuffer(
+        byte inBuffer[],
+        int numBytes)
+    {
+    	int numSamples = numBytes/(2*numChannels);
+        short sample;
+
+        enlargeInputBufferIfNeeded(numSamples);
+        int xBuffer = numInputSamples*numChannels;
+        for(int xByte = 0; xByte + 1 < numBytes; xByte += 2) {
+        	sample = (short)((inBuffer[xByte] & 0xff) | (inBuffer[xByte + 1] << 8));
+            inputBuffer[xBuffer++] = sample;
+        }
+        numInputSamples += numSamples;
+    }
+
     // Remove input samples that we have already processed.
     private void removeInputSamples(
         int position)
@@ -416,6 +433,33 @@ public class Sonic {
         move(outputBuffer, 0, outputBuffer, numSamples, remainingSamples);
         numOutputSamples = remainingSamples;
         return numSamples;
+    }
+
+    // Read unsigned byte data out of the stream.  Sometimes no data will be available, and zero
+    // is returned, which is not an error condition.
+    public int readBytesFromStream(
+        byte outBuffer[],
+        int maxBytes)
+    {
+    	int maxSamples = maxBytes/(2*numChannels);
+        int numSamples = numOutputSamples;
+        int remainingSamples = 0;
+
+        if(numSamples == 0 || maxSamples == 0) {
+            return 0;
+        }
+        if(numSamples > maxSamples) {
+            remainingSamples = numSamples - maxSamples;
+            numSamples = maxSamples;
+        }
+        for(int xSample = 0; xSample < numSamples*numChannels; xSample++) {
+        	short sample = outputBuffer[xSample];
+        	outBuffer[xSample << 1] = (byte)(sample & 0xff);
+        	outBuffer[(xSample << 1) + 1] = (byte)(sample >> 8);
+        }
+        move(outputBuffer, 0, outputBuffer, numSamples, remainingSamples);
+        numOutputSamples = remainingSamples;
+        return 2*numSamples*numChannels;
     }
 
     // Force the sonic stream to generate output using whatever data it currently
@@ -853,7 +897,7 @@ public class Sonic {
             r *= pitch;
         }
         if(s > 1.00001 || s < 0.99999) {
-            changeSpeed(speed);
+            changeSpeed(s);
         } else {
             copyToOutput(inputBuffer, 0, numInputSamples);
             numInputSamples = 0;
@@ -862,8 +906,8 @@ public class Sonic {
             if(pitch != 1.0f) {
                 adjustPitch(originalNumOutputSamples);
             }
-        } else if(rate != 1.0f) {
-            adjustRate(rate, originalNumOutputSamples);
+        } else if(r != 1.0f) {
+            adjustRate(r, originalNumOutputSamples);
         }
         if(volume != 1.0f) {
             // Adjust output volume.
@@ -897,6 +941,15 @@ public class Sonic {
         int numSamples)
     {
         addUnsignedByteSamplesToInputBuffer(samples, numSamples);
+        processStreamInput();
+    }
+
+    // Simple wrapper around sonicWriteBytesToStream that does the byte to 16-bit LE conversion.
+    public void writeBytesToStream(
+        byte inBuffer[],
+        int numBytes)
+    {
+        addBytesToInputBuffer(inBuffer, numBytes);
         processStreamInput();
     }
 
