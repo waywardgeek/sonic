@@ -16,7 +16,13 @@
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, write to the Free
    Software Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA
-   02111-1307 USA. */
+   02111-1307 USA.
+    
+   As a special exception, you may add the source code for this file, sonic.c,
+   to your project, rather than linking against a libsonic or adding Sonic.jar,
+   but any changes to these two files must be published according to the LGPL
+   terms.
+*/
 
 #include <stdio.h>
 #include <stdlib.h>
