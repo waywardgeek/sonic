@@ -18,11 +18,11 @@ Main.java in the latest tar-ball, or get the code from git.
 
 ## Overview
 
-Sonic is a simple algorithm for speeding up or slowing down speech.  However,
-it's optimized for speed ups of over 2X, unlike previous algorithms for changing
-speech rate.  The sonic library is a very simple ANSI C library that is designed
-to easily be integrated into streaming voice applications, like TTS back ends.
-While a very new project, it is already integrated into:
+Sonic is free software for speeding up or slowing down speech.  While similar to
+other algorithms that came before, Sonic is optimized for speed ups of over 2X.
+There is a simple sonic library in ANSI C, and one in pure Java.  Both are
+designed to easily be integrated into streaming voice applications, like TTS
+back ends.  While a very new project, it is already integrated into:
 
 - espeak
 - Debian Sid as package libsonic
@@ -31,17 +31,18 @@ While a very new project, it is already integrated into:
 - Multiple closed source TTS engines
 
 The primary motivation behind sonic is to enable the blind and visually impaired
-to improve their productivity with open source speech engines, like espeak.
+to improve their productivity with free software speech engines, like espeak.
 Sonic can also be used by the sighted.  For example, sonic can improve the
 experience of listening to an audio book on an Android phone.
 
 Sonic is Copyright 2010, 2011, Bill Cox, all rights reserved.  It is released as
-open source under the Lesser Gnu Public License version 2.1.  Feel free to contact
-me at <waywardgeek@gmail.com>.  One user was concerned about patents.  I believe
-the sonic algorithms do not violate any patents, as most of it is very old,
-based on [PICOLA](http://keizai.yokkaichi-u.ac.jp/~ikeda/research/picola.html),
-and the new part, for greater than 2X speed up, is clearly a capability most
-developers ignore, and would not bother to patent.
+free software under the Lesser Gnu Public License version 2.1 (LGPL).  Feel free
+to contact me at <waywardgeek@gmail.com>.  One user was concerned about patents.
+I believe the sonic algorithms do not violate any patents, as most of it is very
+old, based on
+[PICOLA](http://keizai.yokkaichi-u.ac.jp/~ikeda/research/picola.html), and the
+new part, for greater than 2X speed up, is clearly a capability most developers
+ignore, and would not bother to patent.
 
 ## Comparison to Other Solutions
 
@@ -55,7 +56,7 @@ it to [this sonic sample](sonic.wav).  Both are sped up by 2X.  WSOLA
 introduces unacceptable levels of distortion, making speech impossible to
 understand at high speed (over 2.5X) by blind speed listeners.
 
-However, there are decent open-source algorithms for speeding up speech.  They
+However, there are decent free software algorithms for speeding up speech.  They
 are all in the TD-PSOLA family.  For speech rates below 2X, sonic uses PICOLA,
 which I find to be the best algorithm available.  A slightly buggy
 implementation of PICOLA is available in the spandsp library.  I find the one in
@@ -67,14 +68,14 @@ ARM CPUs without FPUs.  It supports multiple channels (stereo), and is also able
 to change the pitch of a voice.  It works well in streaming audio applications,
 and can deal with sound streams in 16-bit signed integer, 32-bit floating point,
 or 8-bit unsigned formats.  The source code is in plain ANSI C.  In short, it's
-production ready.  This sets it apart from most alternatives.
+production ready.
 
 ## Using libsonic in your program
 
 Sonic is still a new library, but is in Debian Sid.  It will take a while
 for it to filter out into all the other distros.  For now, feel free to simply
-add sonic.c and sonic.h to your application, but consider switching to -lsonic
-once the library is available on your distro.
+add sonic.c and sonic.h to your application (or Sonic.java), but consider
+switching to -lsonic once the library is available on your distro.
 
 The file [main.c](main.c) is the source code for the sonic command-line application.  It
 is meant to be useful as example code.  Feel free to copy directly from main.c
