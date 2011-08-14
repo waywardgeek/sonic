@@ -39,7 +39,7 @@ generated with:
 
 where t = 0 to newSamples - 1.
 
-For speed factors < 2X, an algorithm similar to PICOLA is used.  The above
+For speed factors < 2X, the PICOLA algorithm is used.  The above
 algorithm is first used to double the speed of one pitch period.  Then, enough
 input is directly copied from the input to the output to achieve the desired
 speed up facter, where 1.0 < speed < 2.0.  The amount of data copied is derived:
@@ -55,7 +55,7 @@ until the output desired speed is reached.  The length of data copied is:
 
     length = period*(speed - 0.5)/(1 - speed)
 
-For slow down factors between 0.5 and 0.5, no data is copied, and an algorithm
+For slow down factors below 0.5, no data is copied, and an algorithm
 similar to high speed factors is used.
 */
 
