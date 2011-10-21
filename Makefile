@@ -8,7 +8,7 @@ LIB_TAG=0.1.18
 CC=gcc
 PREFIX=/usr
 
-all: sonic libsonic.so.$(LIB_TAG) libsonic-$(LIB_TAG).a
+all: sonic libsonic.so.$(LIB_TAG) libsonic.a
 
 sonic: wave.o main.o libsonic.so.$(LIB_TAG)
 	$(CC) $(CFLAGS) libsonic.so.$(LIB_TAG) -o sonic wave.o main.o
@@ -27,13 +27,15 @@ libsonic.so.$(LIB_TAG): sonic.o
 	ln -sf libsonic.so.$(LIB_TAG) libsonic.so
 	ln -sf libsonic.so.$(LIB_TAG) libsonic.so.0
 
-libsonic-$(LIB_TAG).a: sonic.o
+libsonic.a: sonic.o
+	$(AR) cqs libsonic.a sonic.o
 
 install: sonic libsonic.so.$(LIB_TAG) sonic.h
 	install -d $(DESTDIR)$(PREFIX)/bin $(DESTDIR)$(PREFIX)/include $(DESTDIR)$(PREFIX)/lib
 	install sonic $(DESTDIR)$(PREFIX)/bin
 	install sonic.h $(DESTDIR)$(PREFIX)/include
 	install libsonic.so.$(LIB_TAG) $(DESTDIR)$(PREFIX)/lib
+	install libsonic.a $(DESTDIR)$(LIBDIR)
 	ln -sf libsonic.so.$(LIB_TAG) $(DESTDIR)$(PREFIX)/lib/libsonic.so
 	ln -sf libsonic.so.$(LIB_TAG) $(DESTDIR)$(PREFIX)/lib/libsonic.so.0
 
@@ -43,6 +45,7 @@ uninstall:
 	rm -f $(DESTDIR)$(PREFIX)/lib/libsonic.so.$(LIB_TAG)
 	rm -f $(DESTDIR)$(PREFIX)/lib/libsonic.so
 	rm -f $(DESTDIR)$(PREFIX)/lib/libsonic.so.0
+	rm -f $(DESTDIR)$(LIBDIR)/libsonic.a
 
 clean:
-	rm -f *.o sonic libsonic.so*
+	rm -f *.o sonic libsonic.so* libsonic.a
