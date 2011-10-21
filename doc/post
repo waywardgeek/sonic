@@ -14,6 +14,5 @@ if [ -f ../version ]; then
 	scp $sourceTarball root@dev.vinux-project.org:/var/www/dev.vinux-project.org/sonic/download/$destTarball
     fi
 fi
-flac -d ../samples/sonic.flac ../samples/soundstretch.flac
 scp $files root@dev.vinux-project.org:/var/www/dev.vinux-project.org/sonic
 rm ../samples/*.wav index.html
