@@ -2,8 +2,8 @@
 # safe.  We call malloc, and older Linux versions only linked in the thread-safe
 # malloc if -pthread is specified.
 
-#CFLAGS=-Wall -g -ansi -fPIC -pthread
-CFLAGS=-Wall -O2 -ansi -fPIC -pthread
+CFLAGS=-Wall -g -ansi -fPIC -pthread
+#CFLAGS=-Wall -O2 -ansi -fPIC -pthread
 LIB_TAG=0.1.18
 CC=gcc
 PREFIX=/usr
@@ -11,7 +11,7 @@ PREFIX=/usr
 all: sonic libsonic.so.$(LIB_TAG) libsonic-$(LIB_TAG).a
 
 sonic: wave.o main.o libsonic.so.$(LIB_TAG)
-	$(CC) $(CFLAGS) -lsndfile libsonic.so.$(LIB_TAG) -o sonic wave.o main.o
+	$(CC) $(CFLAGS) libsonic.so.$(LIB_TAG) -o sonic wave.o main.o
 
 sonic.o: sonic.c sonic.h
 	$(CC) $(CFLAGS) -c sonic.c

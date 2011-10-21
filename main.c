@@ -84,12 +84,6 @@ int main(
     int sampleRate, numChannels;
     int xArg = 1;
 
-    if(argc < 2 || *(argv[xArg]) != '-') {
-	fprintf(stderr, "You must provide at least one option to change speed,"
-	    "pitch, or volume.\n");
-	usage();
-	return 1;
-    }
     while(xArg < argc && *(argv[xArg]) == '-') {
 	if(!strcmp(argv[xArg], "-c")) {
 	    emulateChordPitch = 1;
