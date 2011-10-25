@@ -2,7 +2,7 @@ Source: sonic
 Section: sound
 Priority: extra
 Maintainer: Bill Cox <waywardgeek@gmail.com>
-Build-Depends: libsndfile1-dev, debhelper (>= 7.0.50~)
+Build-Depends: debhelper (>= 7.0.50~)
 Standards-Version: 3.9.1
 Homepage: http://vinux-project.org/sonic
 Vcs-Browser: http://vinux-project.org/gitweb/?p=sonic.git;a=summary
