@@ -7,11 +7,12 @@ CFLAGS=-Wall -g -ansi -fPIC -pthread
 LIB_TAG=0.1.18
 CC=gcc
 PREFIX=/usr
+LIBDIR=$(PREFIX)/lib
 
 all: sonic libsonic.so.$(LIB_TAG) libsonic.a
 
 sonic: wave.o main.o libsonic.so.$(LIB_TAG)
-	$(CC) $(CFLAGS) libsonic.so.$(LIB_TAG) -o sonic wave.o main.o
+	$(CC) $(CFLAGS) -o sonic wave.o main.o libsonic.so.$(LIB_TAG)
 
 sonic.o: sonic.c sonic.h
 	$(CC) $(CFLAGS) -c sonic.c
