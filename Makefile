@@ -2,6 +2,11 @@
 # safe.  We call malloc, and older Linux versions only linked in the thread-safe
 # malloc if -pthread is specified.
 
+SONAME=soname
+UNAME := $(shell uname)
+ifeq ($(UNAME), Darwin)
+  SONAME=install_name
+endif
 CFLAGS=-Wall -g -ansi -fPIC -pthread
 #CFLAGS=-Wall -O2 -ansi -fPIC -pthread
 LIB_TAG=0.1.18
@@ -24,7 +29,7 @@ main.o: main.c sonic.h wave.h
 	$(CC) $(CFLAGS) -c main.c
 
 libsonic.so.$(LIB_TAG): sonic.o
-	$(CC) $(CFLAGS) -shared -Wl,-soname,libsonic.so.0 sonic.o -o libsonic.so.$(LIB_TAG)
+	$(CC) $(CFLAGS) -shared -Wl,-$(SONAME),libsonic.so.0 sonic.o -o libsonic.so.$(LIB_TAG)
 	ln -sf libsonic.so.$(LIB_TAG) libsonic.so
 	ln -sf libsonic.so.$(LIB_TAG) libsonic.so.0
 

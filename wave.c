@@ -208,8 +208,8 @@ static int readHeader(
     data = readInt(file); /* 04 - how big is the rest of this file? */
     expectString(file, "WAVE"); /* 08 - WAVE */
     expectString(file, "fmt "); /* 12 - fmt */
-    data = readInt(file); /* 16 - size of this chunk */
-    if(data != 16) {
+    int chunkSize = readInt(file); /* 16 or 18 - size of this chunk */
+    if(chunkSize != 16 && chunkSize != 18) {
         fprintf(stderr, "Only basic wave files are supported\n");
         return 0;
     }
@@ -226,6 +226,9 @@ static int readHeader(
     if(data != 16) {
         fprintf(stderr, "Only 16 bit PCM wave files are supported\n");
         return 0;
+    }
+    if (chunkSize == 18) { /* ffmpeg writes 18, and so has 2 extra bytes here */
+        data = readShort(file);
     }
     expectString(file, "data"); /* 36 - data */
     readInt(file); /* 40 - how big is this data chunk */
