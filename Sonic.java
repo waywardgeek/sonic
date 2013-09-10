@@ -65,10 +65,11 @@ public class Sonic {
     	short[] oldArray,
     	int newLength)
     {
+    	newLength *= numChannels;
         short[]	newArray = new short[newLength];
         int length = oldArray.length <= newLength? oldArray.length : newLength;
         
-        length *= numChannels;
+        
         for(int x = 0; x < length; x++) {
             newArray[x] = oldArray[x];
         }
