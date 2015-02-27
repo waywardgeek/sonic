@@ -1,3 +1,6 @@
+# This file was written by Bill Cox in 2010, and is licensed under the Apache
+# 2.0 license.
+#
 # Note that -pthread is only included so that older Linux builds will be thread
 # safe.  We call malloc, and older Linux versions only linked in the thread-safe
 # malloc if -pthread is specified.
@@ -7,9 +10,9 @@ UNAME := $(shell uname)
 ifeq ($(UNAME), Darwin)
   SONAME=install_name
 endif
-CFLAGS=-Wall -g -ansi -fPIC -pthread
-#CFLAGS=-Wall -O2 -ansi -fPIC -pthread
-LIB_TAG=0.1.18
+#CFLAGS=-Wall -g -ansi -fPIC -pthread
+CFLAGS=-Wall -O3 -ansi -fPIC -pthread
+LIB_TAG=0.2.0
 CC=gcc
 PREFIX=/usr
 LIBDIR=$(PREFIX)/lib

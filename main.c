@@ -1,6 +1,5 @@
-/* This file, main.c, was written by Bill Cox in 2010, and placed into the public domain.
-   Feel free to copy and paste code from this file into your application.  Note,
-   however, that the other source files, sonic.c and sonic.h, are LGPL.
+/* This file was written by Bill Cox in 2010, and is licensed under the Apache
+   2.0 license.
 
    This file is meant as a simple example for how to use libsonic.  It is also a
    useful utility on it's own, which can speed up or slow down wav files, change

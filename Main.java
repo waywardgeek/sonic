@@ -1,4 +1,6 @@
-/* This file was written by me, Bill Cox in 2011, and placed into the public domain. */
+/* This file was written by Bill Cox in 2011, and is licensed under the Apache
+   2.0 license. */
+
 package sonic;
 
 import java.io.File;

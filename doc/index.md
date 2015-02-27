@@ -35,14 +35,13 @@ to improve their productivity with free software speech engines, like espeak.
 Sonic can also be used by the sighted.  For example, sonic can improve the
 experience of listening to an audio book on an Android phone.
 
-Sonic is Copyright 2010, 2011, Bill Cox, all rights reserved.  It is released as
-free software under the Lesser Gnu Public License version 2.1 (LGPL).  Feel free
-to contact me at <waywardgeek@gmail.com>.  One user was concerned about patents.
-I believe the sonic algorithms do not violate any patents, as most of it is very
-old, based on
-[PICOLA](http://keizai.yokkaichi-u.ac.jp/~ikeda/research/picola.html), and the
-new part, for greater than 2X speed up, is clearly a capability most developers
-ignore, and would not bother to patent.
+Sonic is Copyright 2010, 2011, Bill Cox, all rights reserved.  It is released
+as under the Apache 2.0 license.  Feel free to contact me at
+<waywardgeek@gmail.com>.  One user was concerned about patents.  I believe the
+sonic algorithms do not violate any patents, as most of it is very old, based
+on [PICOLA](http://keizai.yokkaichi-u.ac.jp/~ikeda/research/picola.html), and
+the new part, for greater than 2X speed up, is clearly a capability most
+developers ignore, and would not bother to patent.
 
 ## Comparison to Other Solutions
 

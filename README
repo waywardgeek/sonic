@@ -13,13 +13,8 @@ how to use Sonic.java.  To play with it, you'll need a "talking.wav" file in the
 current directory, and you'll want to change the speed, pitch or other
 parameters manually in Main.java, in the main method.
 
-Sonic is Copyright 2010, 2011, Bill Cox, all rights reserved.  It is released as
-open source under the Lesser Gnu Public License version 2.1.  All files except
-main.c, Main.java and all the sound samples are LGPL.  main.c Main.java and the
-sound samples in the samples directory are in the public domain.  As a special
-exception, you may add the source code for sonic.c or Sonic.java to your
-project, rather than linking against a libsonic or adding Sonic.jar, but any
-changes to these two files must be published according to the LGPL terms.
+Sonic is Copyright 2010, 2011, Bill Cox, all rights reserved.  It is released
+under the Apache 2.0 license, to promote usage as widely as possible.
 
 Performance test:
 
