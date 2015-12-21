@@ -166,7 +166,8 @@ static void expectString(
 /* Write the header of the wave file. */
 static void writeHeader(
     waveFile file,
-    int sampleRate)
+    int sampleRate,
+    short numChannels)
 {
     /* write the wav file per the wav file format */
     writeString(file, "RIFF"); /* 00 - RIFF */
@@ -177,7 +178,7 @@ static void writeHeader(
     writeString(file, "fmt "); /* 12 - fmt */
     writeInt(file, 16); /* 16 - size of this chunk */
     writeShort(file, 1); /* 20 - what is the audio format? 1 for PCM = Pulse Code Modulation */
-    writeShort(file, 1); /* 22 - mono or stereo? 1 or 2?  (or 5 or ???) */
+    writeShort(file, numChannels); /* 22 - mono or stereo? 1 or 2?  (or 5 or ???) */
     writeInt(file, sampleRate); /* 24 - samples per second (numbers per second) */
     writeInt(file, sampleRate * 2); /* 28 - bytes per second */
     writeShort(file, 2); /* 32 - # of bytes in one sample, for all channels */
@@ -278,7 +279,7 @@ waveFile openOutputWaveFile(
     file->soundFile = soundFile;
     file->sampleRate = sampleRate;
     file->numChannels = numChannels;
-    writeHeader(file, sampleRate);
+    writeHeader(file, sampleRate, numChannels);
     if(file->failed) {
         closeFile(file);
         return NULL;
