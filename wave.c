@@ -167,7 +167,7 @@ static void expectString(
 static void writeHeader(
     waveFile file,
     int sampleRate,
-    short numChannels)
+    int numChannels)
 {
     /* write the wav file per the wav file format */
     writeString(file, "RIFF"); /* 00 - RIFF */
