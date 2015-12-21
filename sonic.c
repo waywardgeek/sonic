@@ -74,7 +74,7 @@ static void scaleSamples(
     int value;
 
     while(numSamples--) {
-	value = (*samples*fixedPointVolume) >> 12;
+        value = (*samples*fixedPointVolume) >> 12;
 	if(value > 32767) {
 	    value = 32767;
 	} else if(value < -32767) {
