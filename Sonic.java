@@ -10,10 +10,10 @@ package sonic;
 
 public class Sonic {
 
-	private static final int SONIC_MIN_PITCH = 65;
-	private static final int SONIC_MAX_PITCH = 400;
-	/* This is used to down-sample some inputs to improve speed */
-	private static final int SONIC_AMDF_FREQ = 4000;
+        private static final int SONIC_MIN_PITCH = 65;
+        private static final int SONIC_MAX_PITCH = 400;
+        /* This is used to down-sample some inputs to improve speed */
+        private static final int SONIC_AMDF_FREQ = 4000;
 
     private short inputBuffer[];
     private short outputBuffer[];
@@ -46,11 +46,11 @@ public class Sonic {
 
     // Resize the array.
     private short[] resize(
-    	short[] oldArray,
-    	int newLength)
+            short[] oldArray,
+            int newLength)
     {
-    	newLength *= numChannels;
-        short[]	newArray = new short[newLength];
+            newLength *= numChannels;
+        short[]        newArray = new short[newLength];
         int length = oldArray.length <= newLength? oldArray.length : newLength;
 
         System.arraycopy(oldArray, 0, newArray, 0, length);
@@ -59,11 +59,11 @@ public class Sonic {
 
     // Move samples from one array to another.  May move samples down within an array, but not up.
     private void move(
-    	short dest[],
-    	int destPos,
-    	short source[],
-    	int sourcePos,
-    	int numSamples)
+            short dest[],
+            int destPos,
+            short source[],
+            int sourcePos,
+            int numSamples)
     {
         System.arraycopy(source, sourcePos*numChannels, dest, destPos*numChannels, numSamples*numChannels);
     }
@@ -293,7 +293,7 @@ public class Sonic {
         enlargeInputBufferIfNeeded(numSamples);
         int xBuffer = numInputSamples*numChannels;
         for(int xSample = 0; xSample < numSamples*numChannels; xSample++) {
-        	sample = (short)((samples[xSample] & 0xff) - 128); // Convert from unsigned to signed
+                sample = (short)((samples[xSample] & 0xff) - 128); // Convert from unsigned to signed
             inputBuffer[xBuffer++] = (short) (sample << 8);
         }
         numInputSamples += numSamples;
@@ -304,13 +304,13 @@ public class Sonic {
         byte inBuffer[],
         int numBytes)
     {
-    	int numSamples = numBytes/(2*numChannels);
+            int numSamples = numBytes/(2*numChannels);
         short sample;
 
         enlargeInputBufferIfNeeded(numSamples);
         int xBuffer = numInputSamples*numChannels;
         for(int xByte = 0; xByte + 1 < numBytes; xByte += 2) {
-        	sample = (short)((inBuffer[xByte] & 0xff) | (inBuffer[xByte + 1] << 8));
+                sample = (short)((inBuffer[xByte] & 0xff) | (inBuffer[xByte + 1] << 8));
             inputBuffer[xBuffer++] = sample;
         }
         numInputSamples += numSamples;
@@ -414,7 +414,7 @@ public class Sonic {
             numSamples = maxSamples;
         }
         for(int xSample = 0; xSample < numSamples*numChannels; xSample++) {
-        	samples[xSample] = (byte)((outputBuffer[xSample] >> 8) + 128);
+                samples[xSample] = (byte)((outputBuffer[xSample] >> 8) + 128);
         }
         move(outputBuffer, 0, outputBuffer, numSamples, remainingSamples);
         numOutputSamples = remainingSamples;
@@ -427,7 +427,7 @@ public class Sonic {
         byte outBuffer[],
         int maxBytes)
     {
-    	int maxSamples = maxBytes/(2*numChannels);
+            int maxSamples = maxBytes/(2*numChannels);
         int numSamples = numOutputSamples;
         int remainingSamples = 0;
 
@@ -439,9 +439,9 @@ public class Sonic {
             numSamples = maxSamples;
         }
         for(int xSample = 0; xSample < numSamples*numChannels; xSample++) {
-        	short sample = outputBuffer[xSample];
-        	outBuffer[xSample << 1] = (byte)(sample & 0xff);
-        	outBuffer[(xSample << 1) + 1] = (byte)(sample >> 8);
+                short sample = outputBuffer[xSample];
+                outBuffer[xSample << 1] = (byte)(sample & 0xff);
+                outBuffer[(xSample << 1) + 1] = (byte)(sample >> 8);
         }
         move(outputBuffer, 0, outputBuffer, numSamples, remainingSamples);
         numOutputSamples = remainingSamples;
@@ -721,11 +721,11 @@ public class Sonic {
             enlargeOutputBufferIfNeeded(newPeriod);
             if(pitch >= 1.0f) {
                 overlapAdd(newPeriod, numChannels, outputBuffer, numOutputSamples, pitchBuffer,
-                	position, pitchBuffer, position + period - newPeriod);
+                        position, pitchBuffer, position + period - newPeriod);
             } else {
                 separation = newPeriod - period;
                 overlapAddWithSeparation(period, numChannels, separation, outputBuffer, numOutputSamples,
-                	pitchBuffer, position, pitchBuffer, position);
+                        pitchBuffer, position, pitchBuffer, position);
             }
             numOutputSamples += newPeriod;
             position += period;
@@ -775,7 +775,7 @@ public class Sonic {
                 enlargeOutputBufferIfNeeded(1);
                 for(int i = 0; i < numChannels; i++) {
                     outputBuffer[numOutputSamples*numChannels + i] = interpolate(pitchBuffer, position + i,
-                    	oldSampleRate, newSampleRate);
+                            oldSampleRate, newSampleRate);
                 }
                 newRatePosition++;
                 numOutputSamples++;
@@ -811,7 +811,7 @@ public class Sonic {
         }
         enlargeOutputBufferIfNeeded(newSamples);
         overlapAdd(newSamples, numChannels, outputBuffer, numOutputSamples, samples, position,
-        	samples, position + period);
+                samples, position + period);
         numOutputSamples += newSamples;
         return newSamples;
     }
@@ -834,7 +834,7 @@ public class Sonic {
         enlargeOutputBufferIfNeeded(period + newSamples);
         move(outputBuffer, numOutputSamples, samples, position, period);
         overlapAdd(newSamples, numChannels, outputBuffer, numOutputSamples + period, samples,
-        	position + period, samples, position);
+                position + period, samples, position);
         numOutputSamples += period + newSamples;
         return newSamples;
     }

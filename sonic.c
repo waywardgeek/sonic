@@ -75,12 +75,12 @@ static void scaleSamples(
 
     while(numSamples--) {
         value = (*samples*fixedPointVolume) >> 12;
-	if(value > 32767) {
-	    value = 32767;
-	} else if(value < -32767) {
-	    value = -32767;
-	}
-	*samples++ = value;
+        if(value > 32767) {
+            value = 32767;
+        } else if(value < -32767) {
+            value = -32767;
+        }
+        *samples++ = value;
     }
 }
 
@@ -182,16 +182,16 @@ static void freeStreamBuffers(
     sonicStream stream)
 {
     if(stream->inputBuffer != NULL) {
-	free(stream->inputBuffer);
+        free(stream->inputBuffer);
     }
     if(stream->outputBuffer != NULL) {
-	free(stream->outputBuffer);
+        free(stream->outputBuffer);
     }
     if(stream->pitchBuffer != NULL) {
-	free(stream->pitchBuffer);
+        free(stream->pitchBuffer);
     }
     if(stream->downSampleBuffer != NULL) {
-	free(stream->downSampleBuffer);
+        free(stream->downSampleBuffer);
     }
 }
 
@@ -216,25 +216,25 @@ static int allocateStreamBuffers(
     stream->inputBufferSize = maxRequired;
     stream->inputBuffer = (short *)calloc(maxRequired, sizeof(short)*numChannels);
     if(stream->inputBuffer == NULL) {
-	sonicDestroyStream(stream);
-	return 0;
+        sonicDestroyStream(stream);
+        return 0;
     }
     stream->outputBufferSize = maxRequired;
     stream->outputBuffer = (short *)calloc(maxRequired, sizeof(short)*numChannels);
     if(stream->outputBuffer == NULL) {
-	sonicDestroyStream(stream);
-	return 0;
+        sonicDestroyStream(stream);
+        return 0;
     }
     stream->pitchBufferSize = maxRequired;
     stream->pitchBuffer = (short *)calloc(maxRequired, sizeof(short)*numChannels);
     if(stream->pitchBuffer == NULL) {
-	sonicDestroyStream(stream);
-	return 0;
+        sonicDestroyStream(stream);
+        return 0;
     }
     stream->downSampleBuffer = (short *)calloc(maxRequired, sizeof(short));
     if(stream->downSampleBuffer == NULL) {
-	sonicDestroyStream(stream);
-	return 0;
+        sonicDestroyStream(stream);
+        return 0;
     }
     stream->sampleRate = sampleRate;
     stream->numChannels = numChannels;
@@ -256,7 +256,7 @@ sonicStream sonicCreateStream(
     sonicStream stream = (sonicStream)calloc(1, sizeof(struct sonicStreamStruct));
 
     if(stream == NULL) {
-	return NULL;
+        return NULL;
     }
     if(!allocateStreamBuffers(stream, sampleRate, numChannels)) {
         return NULL;
@@ -312,12 +312,12 @@ static int enlargeOutputBufferIfNeeded(
     int numSamples)
 {
     if(stream->numOutputSamples + numSamples > stream->outputBufferSize) {
-	stream->outputBufferSize += (stream->outputBufferSize >> 1) + numSamples;
-	stream->outputBuffer = (short *)realloc(stream->outputBuffer,
-	    stream->outputBufferSize*sizeof(short)*stream->numChannels);
-	if(stream->outputBuffer == NULL) {
-	    return 0;
-	}
+        stream->outputBufferSize += (stream->outputBufferSize >> 1) + numSamples;
+        stream->outputBuffer = (short *)realloc(stream->outputBuffer,
+            stream->outputBufferSize*sizeof(short)*stream->numChannels);
+        if(stream->outputBuffer == NULL) {
+            return 0;
+        }
     }
     return 1;
 }
@@ -328,12 +328,12 @@ static int enlargeInputBufferIfNeeded(
     int numSamples)
 {
     if(stream->numInputSamples + numSamples > stream->inputBufferSize) {
-	stream->inputBufferSize += (stream->inputBufferSize >> 1) + numSamples;
-	stream->inputBuffer = (short *)realloc(stream->inputBuffer,
-	    stream->inputBufferSize*sizeof(short)*stream->numChannels);
-	if(stream->inputBuffer == NULL) {
-	    return 0;
-	}
+        stream->inputBufferSize += (stream->inputBufferSize >> 1) + numSamples;
+        stream->inputBuffer = (short *)realloc(stream->inputBuffer,
+            stream->inputBufferSize*sizeof(short)*stream->numChannels);
+        if(stream->inputBuffer == NULL) {
+            return 0;
+        }
     }
     return 1;
 }
@@ -348,10 +348,10 @@ static int addFloatSamplesToInputBuffer(
     int count = numSamples*stream->numChannels;
 
     if(numSamples == 0) {
-	return 1;
+        return 1;
     }
     if(!enlargeInputBufferIfNeeded(stream, numSamples)) {
-	return 0;
+        return 0;
     }
     buffer = stream->inputBuffer + stream->numInputSamples*stream->numChannels;
     while(count--) {
@@ -368,10 +368,10 @@ static int addShortSamplesToInputBuffer(
     int numSamples)
 {
     if(numSamples == 0) {
-	return 1;
+        return 1;
     }
     if(!enlargeInputBufferIfNeeded(stream, numSamples)) {
-	return 0;
+        return 0;
     }
     memcpy(stream->inputBuffer + stream->numInputSamples*stream->numChannels, samples,
         numSamples*sizeof(short)*stream->numChannels);
@@ -389,10 +389,10 @@ static int addUnsignedCharSamplesToInputBuffer(
     int count = numSamples*stream->numChannels;
 
     if(numSamples == 0) {
-	return 1;
+        return 1;
     }
     if(!enlargeInputBufferIfNeeded(stream, numSamples)) {
-	return 0;
+        return 0;
     }
     buffer = stream->inputBuffer + stream->numInputSamples*stream->numChannels;
     while(count--) {
@@ -410,8 +410,8 @@ static void removeInputSamples(
     int remainingSamples = stream->numInputSamples - position;
 
     if(remainingSamples > 0) {
-	memmove(stream->inputBuffer, stream->inputBuffer + position*stream->numChannels,
-	    remainingSamples*sizeof(short)*stream->numChannels);
+        memmove(stream->inputBuffer, stream->inputBuffer + position*stream->numChannels,
+            remainingSamples*sizeof(short)*stream->numChannels);
     }
     stream->numInputSamples = remainingSamples;
 }
@@ -423,10 +423,10 @@ static int copyToOutput(
     int numSamples)
 {
     if(!enlargeOutputBufferIfNeeded(stream, numSamples)) {
-	return 0;
+        return 0;
     }
     memcpy(stream->outputBuffer + stream->numOutputSamples*stream->numChannels,
-	samples, numSamples*sizeof(short)*stream->numChannels);
+        samples, numSamples*sizeof(short)*stream->numChannels);
     stream->numOutputSamples += numSamples;
     return 1;
 }
@@ -440,11 +440,11 @@ static int copyInputToOutput(
     int numSamples = stream->remainingInputToCopy;
 
     if(numSamples > stream->maxRequired) {
-	numSamples = stream->maxRequired;
+        numSamples = stream->maxRequired;
     }
     if(!copyToOutput(stream, stream->inputBuffer + position*stream->numChannels,
-	    numSamples)) {
-	return 0;
+            numSamples)) {
+        return 0;
     }
     stream->remainingInputToCopy -= numSamples;
     return numSamples;
@@ -463,20 +463,20 @@ int sonicReadFloatFromStream(
     int count;
 
     if(numSamples == 0) {
-	return 0;
+        return 0;
     }
     if(numSamples > maxSamples) {
-	remainingSamples = numSamples - maxSamples;
-	numSamples = maxSamples;
+        remainingSamples = numSamples - maxSamples;
+        numSamples = maxSamples;
     }
     buffer = stream->outputBuffer;
     count = numSamples*stream->numChannels;
     while(count--) {
-	*samples++ = (*buffer++)/32767.0f;
+        *samples++ = (*buffer++)/32767.0f;
     }
     if(remainingSamples > 0) {
-	memmove(stream->outputBuffer, stream->outputBuffer + numSamples*stream->numChannels,
-	    remainingSamples*sizeof(short)*stream->numChannels);
+        memmove(stream->outputBuffer, stream->outputBuffer + numSamples*stream->numChannels,
+            remainingSamples*sizeof(short)*stream->numChannels);
     }
     stream->numOutputSamples = remainingSamples;
     return numSamples;
@@ -493,16 +493,16 @@ int sonicReadShortFromStream(
     int remainingSamples = 0;
 
     if(numSamples == 0) {
-	return 0;
+        return 0;
     }
     if(numSamples > maxSamples) {
-	remainingSamples = numSamples - maxSamples;
-	numSamples = maxSamples;
+        remainingSamples = numSamples - maxSamples;
+        numSamples = maxSamples;
     }
     memcpy(samples, stream->outputBuffer, numSamples*sizeof(short)*stream->numChannels);
     if(remainingSamples > 0) {
-	memmove(stream->outputBuffer, stream->outputBuffer + numSamples*stream->numChannels,
-	    remainingSamples*sizeof(short)*stream->numChannels);
+        memmove(stream->outputBuffer, stream->outputBuffer + numSamples*stream->numChannels,
+            remainingSamples*sizeof(short)*stream->numChannels);
     }
     stream->numOutputSamples = remainingSamples;
     return numSamples;
@@ -521,20 +521,20 @@ int sonicReadUnsignedCharFromStream(
     int count;
 
     if(numSamples == 0) {
-	return 0;
+        return 0;
     }
     if(numSamples > maxSamples) {
-	remainingSamples = numSamples - maxSamples;
-	numSamples = maxSamples;
+        remainingSamples = numSamples - maxSamples;
+        numSamples = maxSamples;
     }
     buffer = stream->outputBuffer;
     count = numSamples*stream->numChannels;
     while(count--) {
-	*samples++ = (char)((*buffer++) >> 8) + 128;
+        *samples++ = (char)((*buffer++) >> 8) + 128;
     }
     if(remainingSamples > 0) {
-	memmove(stream->outputBuffer, stream->outputBuffer + numSamples*stream->numChannels,
-	    remainingSamples*sizeof(short)*stream->numChannels);
+        memmove(stream->outputBuffer, stream->outputBuffer + numSamples*stream->numChannels,
+            remainingSamples*sizeof(short)*stream->numChannels);
     }
     stream->numOutputSamples = remainingSamples;
     return numSamples;
@@ -551,21 +551,21 @@ int sonicFlushStream(
     float speed = stream->speed/stream->pitch;
     float rate = stream->rate*stream->pitch;
     int expectedOutputSamples = stream->numOutputSamples +
-	(int)((remainingSamples/speed + stream->numPitchSamples)/rate + 0.5f);
+        (int)((remainingSamples/speed + stream->numPitchSamples)/rate + 0.5f);
 
     /* Add enough silence to flush both input and pitch buffers. */
     if(!enlargeInputBufferIfNeeded(stream, remainingSamples + 2*maxRequired)) {
         return 0;
     }
     memset(stream->inputBuffer + remainingSamples*stream->numChannels, 0,
-	2*maxRequired*sizeof(short)*stream->numChannels);
+        2*maxRequired*sizeof(short)*stream->numChannels);
     stream->numInputSamples += 2*maxRequired;
     if(!sonicWriteShortToStream(stream, NULL, 0)) {
-	return 0;
+        return 0;
     }
     /* Throw away any extra samples we generated due to the silence we added */
     if(stream->numOutputSamples > expectedOutputSamples) {
-	stream->numOutputSamples = expectedOutputSamples;
+        stream->numOutputSamples = expectedOutputSamples;
     }
     /* Empty input and pitch buffers */
     stream->numInputSamples = 0;
@@ -596,11 +596,11 @@ static void downSampleInput(
     short *downSamples = stream->downSampleBuffer;
 
     for(i = 0; i < numSamples; i++) {
-	value = 0;
+        value = 0;
         for(j = 0; j < samplesPerValue; j++) {
-	    value += *samples++;
-	}
-	value /= samplesPerValue;
+            value += *samples++;
+        }
+        value /= samplesPerValue;
         *downSamples++ = value;
     }
 }
@@ -620,26 +620,26 @@ static int findPitchPeriodInRange(
     int i;
 
     for(period = minPeriod; period <= maxPeriod; period++) {
-	diff = 0;
-	s = samples;
-	p = samples + period;
-	for(i = 0; i < period; i++) {
-	    sVal = *s++;
-	    pVal = *p++;
-	    diff += sVal >= pVal? (unsigned short)(sVal - pVal) :
-	        (unsigned short)(pVal - sVal);
-	}
-	/* Note that the highest number of samples we add into diff will be less
-	   than 256, since we skip samples.  Thus, diff is a 24 bit number, and
-	   we can safely multiply by numSamples without overflow */
-	if(diff*bestPeriod < minDiff*period) {
-	    minDiff = diff;
-	    bestPeriod = period;
-	}
-	if(diff*worstPeriod > maxDiff*period) {
-	    maxDiff = diff;
-	    worstPeriod = period;
-	}
+        diff = 0;
+        s = samples;
+        p = samples + period;
+        for(i = 0; i < period; i++) {
+            sVal = *s++;
+            pVal = *p++;
+            diff += sVal >= pVal? (unsigned short)(sVal - pVal) :
+                (unsigned short)(pVal - sVal);
+        }
+        /* Note that the highest number of samples we add into diff will be less
+           than 256, since we skip samples.  Thus, diff is a 24 bit number, and
+           we can safely multiply by numSamples without overflow */
+        if(diff*bestPeriod < minDiff*period) {
+            minDiff = diff;
+            bestPeriod = period;
+        }
+        if(diff*worstPeriod > maxDiff*period) {
+            maxDiff = diff;
+            worstPeriod = period;
+        }
     }
     *retMinDiff = minDiff/bestPeriod;
     *retMaxDiff = maxDiff/worstPeriod;
@@ -656,21 +656,21 @@ static int prevPeriodBetter(
     int preferNewPeriod)
 {
     if(minDiff == 0 || stream->prevPeriod == 0) {
-	return 0;
+        return 0;
     }
     if(preferNewPeriod) {
-	if(maxDiff > minDiff*3) {
-	    /* Got a reasonable match this period */
-	    return 0;
-	}
-	if(minDiff*2 <= stream->prevMinDiff*3) {
-	    /* Mismatch is not that much greater this period */
-	    return 0;
-	}
+        if(maxDiff > minDiff*3) {
+            /* Got a reasonable match this period */
+            return 0;
+        }
+        if(minDiff*2 <= stream->prevMinDiff*3) {
+            /* Mismatch is not that much greater this period */
+            return 0;
+        }
     } else {
-	if(minDiff <= stream->prevMinDiff) {
-	    return 0;
-	}
+        if(minDiff <= stream->prevMinDiff) {
+            return 0;
+        }
     }
     return 1;
 }
@@ -692,38 +692,38 @@ static int findPitchPeriod(
     int period;
 
     if(sampleRate > SONIC_AMDF_FREQ && stream->quality == 0) {
-	skip = sampleRate/SONIC_AMDF_FREQ;
+        skip = sampleRate/SONIC_AMDF_FREQ;
     }
     if(stream->numChannels == 1 && skip == 1) {
-	period = findPitchPeriodInRange(samples, minPeriod, maxPeriod, &minDiff, &maxDiff);
+        period = findPitchPeriodInRange(samples, minPeriod, maxPeriod, &minDiff, &maxDiff);
     } else {
-	downSampleInput(stream, samples, skip);
-	period = findPitchPeriodInRange(stream->downSampleBuffer, minPeriod/skip,
-	    maxPeriod/skip, &minDiff, &maxDiff);
-	if(skip != 1) {
-	    period *= skip;
-	    minPeriod = period - (skip << 2);
-	    maxPeriod = period + (skip << 2);
-	    if(minPeriod < stream->minPeriod) {
-		minPeriod = stream->minPeriod;
-	    }
-	    if(maxPeriod > stream->maxPeriod) {
-		maxPeriod = stream->maxPeriod;
-	    }
-	    if(stream->numChannels == 1) {
-		period = findPitchPeriodInRange(samples, minPeriod, maxPeriod,
-		    &minDiff, &maxDiff);
-	    } else {
-		downSampleInput(stream, samples, 1);
-		period = findPitchPeriodInRange(stream->downSampleBuffer, minPeriod,
-		    maxPeriod, &minDiff, &maxDiff);
-	    }
-	}
+        downSampleInput(stream, samples, skip);
+        period = findPitchPeriodInRange(stream->downSampleBuffer, minPeriod/skip,
+            maxPeriod/skip, &minDiff, &maxDiff);
+        if(skip != 1) {
+            period *= skip;
+            minPeriod = period - (skip << 2);
+            maxPeriod = period + (skip << 2);
+            if(minPeriod < stream->minPeriod) {
+                minPeriod = stream->minPeriod;
+            }
+            if(maxPeriod > stream->maxPeriod) {
+                maxPeriod = stream->maxPeriod;
+            }
+            if(stream->numChannels == 1) {
+                period = findPitchPeriodInRange(samples, minPeriod, maxPeriod,
+                    &minDiff, &maxDiff);
+            } else {
+                downSampleInput(stream, samples, 1);
+                period = findPitchPeriodInRange(stream->downSampleBuffer, minPeriod,
+                    maxPeriod, &minDiff, &maxDiff);
+            }
+        }
     }
     if(prevPeriodBetter(stream, period, minDiff, maxDiff, preferNewPeriod)) {
         retPeriod = stream->prevPeriod;
     } else {
-	retPeriod = period;
+        retPeriod = period;
     }
     stream->prevMinDiff = minDiff;
     stream->prevPeriod = period;
@@ -743,20 +743,20 @@ static void overlapAdd(
     int i, t;
 
     for(i = 0; i < numChannels; i++) {
-	o = out + i;
-	u = rampUp + i;
-	d = rampDown + i;
-	for(t = 0; t < numSamples; t++) {
+        o = out + i;
+        u = rampUp + i;
+        d = rampDown + i;
+        for(t = 0; t < numSamples; t++) {
 #ifdef SONIC_USE_SIN
-	    float ratio = sin(t*M_PI/(2*numSamples));
-	    *o = *d*(1.0f - ratio) + *u*ratio;
+            float ratio = sin(t*M_PI/(2*numSamples));
+            *o = *d*(1.0f - ratio) + *u*ratio;
 #else
-	    *o = (*d*(numSamples - t) + *u*t)/numSamples;
+            *o = (*d*(numSamples - t) + *u*t)/numSamples;
 #endif
-	    o += numChannels;
-	    d += numChannels;
-	    u += numChannels;
-	}
+            o += numChannels;
+            d += numChannels;
+            u += numChannels;
+        }
     }
 }
 
@@ -774,23 +774,23 @@ static void overlapAddWithSeparation(
     int i, t;
 
     for(i = 0; i < numChannels; i++) {
-	o = out + i;
-	u = rampUp + i;
-	d = rampDown + i;
-	for(t = 0; t < numSamples + separation; t++) {
-	    if(t < separation) {
-		*o = *d*(numSamples - t)/numSamples;
-		d += numChannels;
-	    } else if(t < numSamples) {
-		*o = (*d*(numSamples - t) + *u*(t - separation))/numSamples;
-		d += numChannels;
-		u += numChannels;
-	    } else {
-		*o = *u*(t - separation)/numSamples;
-		u += numChannels;
-	    }
-	    o += numChannels;
-	}
+        o = out + i;
+        u = rampUp + i;
+        d = rampDown + i;
+        for(t = 0; t < numSamples + separation; t++) {
+            if(t < separation) {
+                *o = *d*(numSamples - t)/numSamples;
+                d += numChannels;
+            } else if(t < numSamples) {
+                *o = (*d*(numSamples - t) + *u*(t - separation))/numSamples;
+                d += numChannels;
+                u += numChannels;
+            } else {
+                *o = *u*(t - separation)/numSamples;
+                u += numChannels;
+            }
+            o += numChannels;
+        }
     }
 }
 
@@ -803,16 +803,16 @@ static int moveNewSamplesToPitchBuffer(
     int numChannels = stream->numChannels;
 
     if(stream->numPitchSamples + numSamples > stream->pitchBufferSize) {
-	stream->pitchBufferSize += (stream->pitchBufferSize >> 1) + numSamples;
-	stream->pitchBuffer = (short *)realloc(stream->pitchBuffer,
-	    stream->pitchBufferSize*sizeof(short)*numChannels);
-	if(stream->pitchBuffer == NULL) {
-	    return 0;
-	}
+        stream->pitchBufferSize += (stream->pitchBufferSize >> 1) + numSamples;
+        stream->pitchBuffer = (short *)realloc(stream->pitchBuffer,
+            stream->pitchBufferSize*sizeof(short)*numChannels);
+        if(stream->pitchBuffer == NULL) {
+            return 0;
+        }
     }
     memcpy(stream->pitchBuffer + stream->numPitchSamples*numChannels,
         stream->outputBuffer + originalNumOutputSamples*numChannels,
-	numSamples*sizeof(short)*numChannels);
+        numSamples*sizeof(short)*numChannels);
     stream->numOutputSamples = originalNumOutputSamples;
     stream->numPitchSamples += numSamples;
     return 1;
@@ -827,11 +827,11 @@ static void removePitchSamples(
     short *source = stream->pitchBuffer + numSamples*numChannels;
 
     if(numSamples == 0) {
-	return;
+        return;
     }
     if(numSamples != stream->numPitchSamples) {
-	memmove(stream->pitchBuffer, source, (stream->numPitchSamples -
-	    numSamples)*sizeof(short)*numChannels);
+        memmove(stream->pitchBuffer, source, (stream->numPitchSamples -
+            numSamples)*sizeof(short)*numChannels);
     }
     stream->numPitchSamples -= numSamples;
 }
@@ -849,30 +849,30 @@ static int adjustPitch(
     short *out, *rampDown, *rampUp;
 
     if(stream->numOutputSamples == originalNumOutputSamples) {
-	return 1;
+        return 1;
     }
     if(!moveNewSamplesToPitchBuffer(stream, originalNumOutputSamples)) {
-	return 0;
+        return 0;
     }
     while(stream->numPitchSamples - position >= stream->maxRequired) {
-	period = findPitchPeriod(stream, stream->pitchBuffer + position*numChannels, 0);
-	newPeriod = period/pitch;
-	if(!enlargeOutputBufferIfNeeded(stream, newPeriod)) {
-	    return 0;
-	}
-	out = stream->outputBuffer + stream->numOutputSamples*numChannels;
-	if(pitch >= 1.0f) {
-	    rampDown = stream->pitchBuffer + position*numChannels;
-	    rampUp = stream->pitchBuffer + (position + period - newPeriod)*numChannels;
-	    overlapAdd(newPeriod, numChannels, out, rampDown, rampUp);
-	} else {
-	    rampDown = stream->pitchBuffer + position*numChannels;
-	    rampUp = stream->pitchBuffer + position*numChannels;
-	    separation = newPeriod - period;
-	    overlapAddWithSeparation(period, numChannels, separation, out, rampDown, rampUp);
-	}
-	stream->numOutputSamples += newPeriod;
-	position += period;
+        period = findPitchPeriod(stream, stream->pitchBuffer + position*numChannels, 0);
+        newPeriod = period/pitch;
+        if(!enlargeOutputBufferIfNeeded(stream, newPeriod)) {
+            return 0;
+        }
+        out = stream->outputBuffer + stream->numOutputSamples*numChannels;
+        if(pitch >= 1.0f) {
+            rampDown = stream->pitchBuffer + position*numChannels;
+            rampUp = stream->pitchBuffer + (position + period - newPeriod)*numChannels;
+            overlapAdd(newPeriod, numChannels, out, rampDown, rampUp);
+        } else {
+            rampDown = stream->pitchBuffer + position*numChannels;
+            rampUp = stream->pitchBuffer + position*numChannels;
+            separation = newPeriod - period;
+            overlapAddWithSeparation(period, numChannels, separation, out, rampDown, rampUp);
+        }
+        stream->numOutputSamples += newPeriod;
+        position += period;
     }
     removePitchSamples(stream, position);
     return 1;
@@ -911,41 +911,41 @@ static int adjustRate(
 
     /* Set these values to help with the integer math */
     while(newSampleRate > (1 << 14) || oldSampleRate > (1 << 14)) {
-	newSampleRate >>= 1;
-	oldSampleRate >>= 1;
+        newSampleRate >>= 1;
+        oldSampleRate >>= 1;
     }
     if(stream->numOutputSamples == originalNumOutputSamples) {
-	return 1;
+        return 1;
     }
     if(!moveNewSamplesToPitchBuffer(stream, originalNumOutputSamples)) {
-	return 0;
+        return 0;
     }
     /* Leave at least one pitch sample in the buffer */
     for(position = 0; position < stream->numPitchSamples - 1; position++) {
-	while((stream->oldRatePosition + 1)*newSampleRate >
-	        stream->newRatePosition*oldSampleRate) {
-	    if(!enlargeOutputBufferIfNeeded(stream, 1)) {
-		return 0;
-	    }
-	    out = stream->outputBuffer + stream->numOutputSamples*numChannels;
-	    in = stream->pitchBuffer + position;
-	    for(i = 0; i < numChannels; i++) {
-		*out++ = interpolate(stream, in, oldSampleRate, newSampleRate);
-		in++;
-	    }
-	    stream->newRatePosition++;
-	    stream->numOutputSamples++;
-	}
-	stream->oldRatePosition++;
-	if(stream->oldRatePosition == oldSampleRate) {
-	    stream->oldRatePosition = 0;
-	    if(stream->newRatePosition != newSampleRate) {
-		fprintf(stderr,
-		    "Assertion failed: stream->newRatePosition != newSampleRate\n");
-		exit(1);
-	    }
-	    stream->newRatePosition = 0;
-	}
+        while((stream->oldRatePosition + 1)*newSampleRate >
+                stream->newRatePosition*oldSampleRate) {
+            if(!enlargeOutputBufferIfNeeded(stream, 1)) {
+                return 0;
+            }
+            out = stream->outputBuffer + stream->numOutputSamples*numChannels;
+            in = stream->pitchBuffer + position;
+            for(i = 0; i < numChannels; i++) {
+                *out++ = interpolate(stream, in, oldSampleRate, newSampleRate);
+                in++;
+            }
+            stream->newRatePosition++;
+            stream->numOutputSamples++;
+        }
+        stream->oldRatePosition++;
+        if(stream->oldRatePosition == oldSampleRate) {
+            stream->oldRatePosition = 0;
+            if(stream->newRatePosition != newSampleRate) {
+                fprintf(stderr,
+                    "Assertion failed: stream->newRatePosition != newSampleRate\n");
+                exit(1);
+            }
+            stream->newRatePosition = 0;
+        }
     }
     removePitchSamples(stream, position);
     return 1;
@@ -963,13 +963,13 @@ static int skipPitchPeriod(
     int numChannels = stream->numChannels;
 
     if(speed >= 2.0f) {
-	newSamples = period/(speed - 1.0f);
+        newSamples = period/(speed - 1.0f);
     } else {
-	newSamples = period;
-	stream->remainingInputToCopy = period*(2.0f - speed)/(speed - 1.0f);
+        newSamples = period;
+        stream->remainingInputToCopy = period*(2.0f - speed)/(speed - 1.0f);
     }
     if(!enlargeOutputBufferIfNeeded(stream, newSamples)) {
-	return 0;
+        return 0;
     }
     overlapAdd(newSamples, numChannels, stream->outputBuffer +
         stream->numOutputSamples*numChannels, samples, samples + period*numChannels);
@@ -992,10 +992,10 @@ static int insertPitchPeriod(
         newSamples = period*speed/(1.0f - speed);
     } else {
         newSamples = period;
-	stream->remainingInputToCopy = period*(2.0f*speed - 1.0f)/(1.0f - speed);
+        stream->remainingInputToCopy = period*(2.0f*speed - 1.0f)/(1.0f - speed);
     }
     if(!enlargeOutputBufferIfNeeded(stream, period + newSamples)) {
-	return 0;
+        return 0;
     }
     out = stream->outputBuffer + stream->numOutputSamples*numChannels;
     memcpy(out, samples, period*sizeof(short)*numChannels);
@@ -1017,26 +1017,26 @@ static int changeSpeed(
     int maxRequired = stream->maxRequired;
 
     if(stream->numInputSamples < maxRequired) {
-	return 1;
+        return 1;
     }
     do {
-	if(stream->remainingInputToCopy > 0) {
+        if(stream->remainingInputToCopy > 0) {
             newSamples = copyInputToOutput(stream, position);
-	    position += newSamples;
-	} else {
-	    samples = stream->inputBuffer + position*stream->numChannels;
-	    period = findPitchPeriod(stream, samples, 1);
-	    if(speed > 1.0) {
-		newSamples = skipPitchPeriod(stream, samples, speed, period);
-		position += period + newSamples;
-	    } else {
-		newSamples = insertPitchPeriod(stream, samples, speed, period);
-		position += newSamples;
-	    }
-	}
-	if(newSamples == 0) {
-	    return 0; /* Failed to resize output buffer */
-	}
+            position += newSamples;
+        } else {
+            samples = stream->inputBuffer + position*stream->numChannels;
+            period = findPitchPeriod(stream, samples, 1);
+            if(speed > 1.0) {
+                newSamples = skipPitchPeriod(stream, samples, speed, period);
+                position += period + newSamples;
+            } else {
+                newSamples = insertPitchPeriod(stream, samples, speed, period);
+                position += newSamples;
+            }
+        }
+        if(newSamples == 0) {
+            return 0; /* Failed to resize output buffer */
+        }
     } while(position + maxRequired <= numSamples);
     removeInputSamples(stream, position);
     return 1;
@@ -1052,32 +1052,32 @@ static int processStreamInput(
     float rate = stream->rate;
 
     if(!stream->useChordPitch) {
-	rate *= stream->pitch;
+        rate *= stream->pitch;
     }
     if(speed > 1.00001 || speed < 0.99999) {
-	changeSpeed(stream, speed);
+        changeSpeed(stream, speed);
     } else {
         if(!copyToOutput(stream, stream->inputBuffer, stream->numInputSamples)) {
-	    return 0;
-	}
-	stream->numInputSamples = 0;
+            return 0;
+        }
+        stream->numInputSamples = 0;
     }
     if(stream->useChordPitch) {
-	if(stream->pitch != 1.0f) {
-	    if(!adjustPitch(stream, originalNumOutputSamples)) {
-		return 0;
-	    }
-	}
+        if(stream->pitch != 1.0f) {
+            if(!adjustPitch(stream, originalNumOutputSamples)) {
+                return 0;
+            }
+        }
     } else if(rate != 1.0f) {
-	if(!adjustRate(stream, rate, originalNumOutputSamples)) {
-	    return 0;
-	}
+        if(!adjustRate(stream, rate, originalNumOutputSamples)) {
+            return 0;
+        }
     }
     if(stream->volume != 1.0f) {
-	/* Adjust output volume. */
+        /* Adjust output volume. */
         scaleSamples(stream->outputBuffer + originalNumOutputSamples*stream->numChannels,
-	    (stream->numOutputSamples - originalNumOutputSamples)*stream->numChannels,
-	    stream->volume);
+            (stream->numOutputSamples - originalNumOutputSamples)*stream->numChannels,
+            stream->volume);
     }
     return 1;
 }
@@ -1089,7 +1089,7 @@ int sonicWriteFloatToStream(
     int numSamples)
 {
     if(!addFloatSamplesToInputBuffer(stream, samples, numSamples)) {
-	return 0;
+        return 0;
     }
     return processStreamInput(stream);
 }
@@ -1102,7 +1102,7 @@ int sonicWriteShortToStream(
     int numSamples)
 {
     if(!addShortSamplesToInputBuffer(stream, samples, numSamples)) {
-	return 0;
+        return 0;
     }
     return processStreamInput(stream);
 }
@@ -1115,7 +1115,7 @@ int sonicWriteUnsignedCharToStream(
     int numSamples)
 {
     if(!addUnsignedCharSamplesToInputBuffer(stream, samples, numSamples)) {
-	return 0;
+        return 0;
     }
     return processStreamInput(stream);
 }

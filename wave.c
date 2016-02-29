@@ -247,8 +247,8 @@ waveFile openInputWaveFile(
     FILE *soundFile = fopen(fileName, "rb");
 
     if(soundFile == NULL) {
-	fprintf(stderr, "Unable to open wave file %s for reading\n", fileName);
-	return NULL;
+        fprintf(stderr, "Unable to open wave file %s for reading\n", fileName);
+        return NULL;
     }
     file = (waveFile)calloc(1, sizeof(struct waveFileStruct));
     file->soundFile = soundFile;
@@ -272,8 +272,8 @@ waveFile openOutputWaveFile(
     FILE *soundFile = fopen(fileName, "wb");
 
     if(soundFile == NULL) {
-	fprintf(stderr, "Unable to open wave file %s for writing\n", fileName);
-	return NULL;
+        fprintf(stderr, "Unable to open wave file %s for writing\n", fileName);
+        return NULL;
     }
     file = (waveFile)calloc(1, sizeof(struct waveFileStruct));
     file->soundFile = soundFile;
