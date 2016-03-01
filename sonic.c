@@ -270,6 +270,7 @@ sonicStream sonicCreateStream(
     stream->newRatePosition = 0;
     stream->useChordPitch = 0;
     stream->quality = 0;
+    stream->avePower = 50.0f;
     return stream;
 }
 
