@@ -19,8 +19,8 @@ LIBDIR=$(PREFIX)/lib
 
 all: sonic libsonic.so.$(LIB_TAG) libsonic.a
 
-sonic: wave.o main.o libsonic.so.$(LIB_TAG)
-	$(CC) $(CFLAGS) -o sonic wave.o main.o libsonic.so.$(LIB_TAG)
+sonic: wave.o main.o libsonic.a
+	$(CC) $(CFLAGS) -o sonic wave.o main.o libsonic.a -lm
 
 sonic.o: sonic.c sonic.h
 	$(CC) $(CFLAGS) -c sonic.c

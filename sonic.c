@@ -10,11 +10,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>
-#ifdef SONIC_USE_SIN
 #include <math.h>
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
-#endif
 #endif
 #include "sonic.h"
 
@@ -45,6 +43,9 @@ struct sonicStreamStruct {
     int sampleRate;
     int prevPeriod;
     int prevMinDiff;
+    float localSpeedup;
+    float avePower;
+    int enableNonlinearSpeedup;
 };
 
 /* Just used for debugging */
@@ -655,9 +656,11 @@ static int prevPeriodBetter(
     int maxDiff,
     int preferNewPeriod)
 {
+    stream->localSpeedup = 1.0f;
     if(minDiff == 0 || stream->prevPeriod == 0) {
         return 0;
     }
+    stream->localSpeedup = 1.0f + (float)minDiff/(3*maxDiff);
     if(preferNewPeriod) {
         if(maxDiff > minDiff*3) {
             /* Got a reasonable match this period */
@@ -951,6 +954,53 @@ static int adjustRate(
     return 1;
 }
 
+/* Find the average change in value over the pitch period. */
+static float findAveragePower(
+    short *samples,
+    int numSamples)
+{
+    long total = 0;
+    int i;
+    float mean;
+    double totalPower = 0.0;
+    float val, avePower;
+
+    for(i = 0; i < numSamples; i++) {
+        total += samples[i];
+    }
+    mean = (float)total/numSamples;
+    for(i = 0; i < numSamples; i++) {
+        val = samples[i] - mean;
+        totalPower += val*val;
+    }
+    avePower = totalPower/numSamples;
+    return 10*log10(avePower + 1.0);
+}
+
+/* Try to speed up speech more when we can witout losing much clarity. */
+static float nonlinearSpeedup(
+    sonicStream stream,
+    short *samples,
+    float speed,
+    int period)
+{
+    if(stream->localSpeedup > 1.0f) {
+        printf("Speeding up by %f\n", stream->localSpeedup*speed);
+        speed *= stream->localSpeedup;
+    }
+    /* Detect silence */
+    float avePower = findAveragePower(samples, period*2);
+    float prevAvePower = stream->avePower;
+    float localSpeed;
+    stream->avePower = prevAvePower*0.99 + 0.01*avePower;
+    if(avePower < prevAvePower) {
+        localSpeed = speed*(5.0f + prevAvePower - avePower)/5.0f;
+        printf("Speeding up by %f to skip silence\n", localSpeed);
+        return localSpeed;
+    }
+    printf("Average power: %f, current power: %f\n", prevAvePower, avePower);
+    return speed;
+}
 
 /* Skip over a pitch period, and copy period/speed samples to the output */
 static int skipPitchPeriod(
@@ -961,12 +1011,14 @@ static int skipPitchPeriod(
 {
     long newSamples;
     int numChannels = stream->numChannels;
+    float localSpeed = nonlinearSpeedup(stream, samples, speed, period);
 
-    if(speed >= 2.0f) {
-        newSamples = period/(speed - 1.0f);
+    printf("localSpeed = %f\n", localSpeed);
+    if(localSpeed >= 2.0f) {
+        newSamples = period/(localSpeed - 1.0f);
     } else {
         newSamples = period;
-        stream->remainingInputToCopy = period*(2.0f - speed)/(speed - 1.0f);
+        stream->remainingInputToCopy = period*(2.0f - localSpeed)/(localSpeed - 1.0f);
     }
     if(!enlargeOutputBufferIfNeeded(stream, newSamples)) {
         return 0;
@@ -1016,6 +1068,7 @@ static int changeSpeed(
     int position = 0, period, newSamples;
     int maxRequired = stream->maxRequired;
 
+    printf("Changing speed to %f\n", speed);
     if(stream->numInputSamples < maxRequired) {
         return 1;
     }
@@ -1172,4 +1225,9 @@ int sonicChangeShortSpeed(
     sonicReadShortFromStream(stream, samples, numSamples);
     sonicDestroyStream(stream);
     return numSamples;
+}
+
+/* Enable non-linear speech speedup */
+void sonicEnableNonlinearSpeedup(sonicStream stream, int enable) {
+    stream->enableNonlinearSpeedup = enable;
 }

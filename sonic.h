@@ -141,6 +141,7 @@ int sonicChangeFloatSpeed(float *samples, int numSamples, float speed, float pit
    speed*numSamples available space in the array. Returns the new number of samples. */
 int sonicChangeShortSpeed(short *samples, int numSamples, float speed, float pitch,
     float rate, float volume, int useChordPitch, int sampleRate, int numChannels);
+void sonicEnableNonlinearSpeedup(sonicStream stream, int enable);
 
 #ifdef  __cplusplus
 }

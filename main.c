@@ -23,6 +23,7 @@ static void runSonic(
     float volume,
     int emulateChordPitch,
     int quality,
+    int enableNonlinearSpeedup,
     int sampleRate,
     int numChannels)
 {
@@ -36,6 +37,7 @@ static void runSonic(
     sonicSetVolume(stream, volume);
     sonicSetChordPitch(stream, emulateChordPitch);
     sonicSetQuality(stream, quality);
+    sonicEnableNonlinearSpeedup(stream, enableNonlinearSpeedup);
     do {
         samplesRead = readFromWaveFile(inFile, inBuffer, BUFFER_SIZE/numChannels);
         if(samplesRead == 0) {
@@ -60,6 +62,7 @@ static void usage(void)
     fprintf(stderr, "Usage: sonic [OPTION]... infile outfile\n"
         "    -c         -- Modify pitch by emulating vocal chords vibrating\n"
         "                  faster or slower.\n"
+        "    -n         -- Enable nonlinear speedup\n"
         "    -p pitch   -- Set pitch scaling factor.  1.3 means 30%% higher.\n"
         "    -q         -- Disable speed-up heuristics.  May increase quality.\n"
         "    -r rate    -- Set playback rate.  2.0 means 2X faster, and 2X pitch.\n"
@@ -82,11 +85,15 @@ int main(
     int quality = 0;
     int sampleRate, numChannels;
     int xArg = 1;
+    int enableNonlinearSpeedup = 0;
 
     while(xArg < argc && *(argv[xArg]) == '-') {
         if(!strcmp(argv[xArg], "-c")) {
             emulateChordPitch = 1;
             printf("Scaling pitch linearly.\n");
+        } else if(!strcmp(argv[xArg], "-n")) {
+            enableNonlinearSpeedup = 1;
+            printf("Enabling nonlinear speedup.\n");
         } else if(!strcmp(argv[xArg], "-p")) {
             xArg++;
             if(xArg < argc) {
@@ -132,7 +139,7 @@ int main(
         return 1;
     }
     runSonic(inFile, outFile, speed, pitch, rate, volume, emulateChordPitch, quality,
-        sampleRate, numChannels);
+        enableNonlinearSpeedup, sampleRate, numChannels);
     closeWaveFile(inFile);
     closeWaveFile(outFile);
     return 0;
