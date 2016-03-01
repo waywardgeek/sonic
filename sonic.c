@@ -985,19 +985,24 @@ static float nonlinearSpeedup(
     float speed,
     int period)
 {
+    if(!stream->enableNonlinearSpeedup) {
+        return speed;
+    }
+    float localSpeed = speed;
     if(stream->localSpeedup > 1.0f) {
         printf("Speeding up by %f\n", stream->localSpeedup*speed);
-        speed *= stream->localSpeedup;
+        localSpeed *= stream->localSpeedup;
     }
     /* Detect silence */
     float avePower = findAveragePower(samples, period*2);
     float prevAvePower = stream->avePower;
-    stream->avePower = prevAvePower*0.99 + 0.01*avePower;
     if(avePower < prevAvePower) {
-        speed *= 1.0f + (prevAvePower - avePower)/0.5f;
+        localSpeed *= 1.0f + (prevAvePower - avePower)/(prevAvePower/10.0f);
     }
-    printf("Speed:%f, average power: %f, current power: %f\n", speed, prevAvePower, avePower);
-    return speed;
+    float delta = 0.01f*speed/localSpeed;
+    stream->avePower = prevAvePower*(1.0f - delta) + delta*avePower;
+    printf("Speed:%f, average power: %f, current power: %f\n", localSpeed, prevAvePower, avePower);
+    return localSpeed;
 }
 
 /* Skip over a pitch period, and copy period/speed samples to the output */
