@@ -996,7 +996,7 @@ static float nonlinearSpeedup(
     if(avePower < prevAvePower) {
         speed *= 1.0f + (prevAvePower - avePower)/0.5f;
     }
-    printf("Speed:%f, verage power: %f, current power: %f\n", speed, prevAvePower, avePower);
+    printf("Speed:%f, average power: %f, current power: %f\n", speed, prevAvePower, avePower);
     return speed;
 }
 
