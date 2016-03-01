@@ -991,14 +991,11 @@ static float nonlinearSpeedup(
     /* Detect silence */
     float avePower = findAveragePower(samples, period*2);
     float prevAvePower = stream->avePower;
-    float localSpeed;
     stream->avePower = prevAvePower*0.99 + 0.01*avePower;
     if(avePower < prevAvePower) {
-        localSpeed = speed*(5.0f + prevAvePower - avePower)/5.0f;
-        printf("Speeding up by %f to skip silence\n", localSpeed);
-        return localSpeed;
+        speed *= 1.0f + (prevAvePower - avePower)/0.5f;
     }
-    printf("Average power: %f, current power: %f\n", prevAvePower, avePower);
+    printf("Speed:%f, verage power: %f, current power: %f\n", speed, prevAvePower, avePower);
     return speed;
 }
 
