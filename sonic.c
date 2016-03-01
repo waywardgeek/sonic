@@ -660,7 +660,7 @@ static int prevPeriodBetter(
     if(minDiff == 0 || stream->prevPeriod == 0) {
         return 0;
     }
-    stream->localSpeedup = 1.0f + (float)minDiff/(3*maxDiff);
+    stream->localSpeedup = 1.0f + (float)minDiff/(2.0f*maxDiff);
     if(preferNewPeriod) {
         if(maxDiff > minDiff*3) {
             /* Got a reasonable match this period */
