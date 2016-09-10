@@ -25,14 +25,17 @@ sonic: wave.o main.o libsonic.a
 sonic.o: sonic.c sonic.h
 	$(CC) $(CFLAGS) -c sonic.c
 
+spectrogram.o: spectrogram.c spectrogram.h
+	$(CC) $(CFLAGS) -c spectrogram.c
+
 wave.o: wave.c wave.h
 	$(CC) $(CFLAGS) -c wave.c
 
 main.o: main.c sonic.h wave.h
 	$(CC) $(CFLAGS) -c main.c
 
-libsonic.so.$(LIB_TAG): sonic.o
-	$(CC) $(CFLAGS) -shared -Wl,-$(SONAME),libsonic.so.0 sonic.o -o libsonic.so.$(LIB_TAG)
+libsonic.so.$(LIB_TAG): sonic.o spectrogram.o
+	$(CC) $(CFLAGS) -shared -Wl,-$(SONAME),libsonic.so.0 sonic.o spectrogram.o -o libsonic.so.$(LIB_TAG)
 	ln -sf libsonic.so.$(LIB_TAG) libsonic.so
 	ln -sf libsonic.so.$(LIB_TAG) libsonic.so.0
 

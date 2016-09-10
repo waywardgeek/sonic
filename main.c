@@ -67,6 +67,7 @@ static void usage(void)
         "    -q         -- Disable speed-up heuristics.  May increase quality.\n"
         "    -r rate    -- Set playback rate.  2.0 means 2X faster, and 2X pitch.\n"
         "    -s speed   -- Set speed up factor.  2.0 means 2X faster.\n"
+        "    -S         -- Generate a spectrogram.\n"
         "    -v volume  -- Scale volume by a constant factor.\n");
     exit(1);
 }
