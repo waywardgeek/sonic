@@ -23,14 +23,17 @@ typedef struct sonicSpectrumStruct *sonicSpectrum;
 
 struct sonicSpectrogramStruct {
     sonicSpectrum *spectrums;
+    double minPower, maxPower;
     int numSpectrums;
     int allocatedSpectrums;
-    double minPower, maxPower;
+    int totalSamples;
 };
 
 struct sonicSpectrumStruct {
     double *power;
     int numFreqs;  /* Number of frequencies */
+    int numSamples;
+    int startingSample;
 };
 
 /* Create an new spectrum. */
@@ -43,6 +46,9 @@ static sonicSpectrum sonicCreateSpectrum(sonicSpectrogram spectrogram) {
         spectrogram->allocatedSpectrums <<= 1;
         spectrogram->spectrums = (sonicSpectrum *)realloc(spectrogram->spectrums,
             spectrogram->allocatedSpectrums*sizeof(sonicSpectrum));
+        if(spectrogram->spectrums == NULL) {
+            return NULL;
+        }
     }
     spectrogram->spectrums[spectrogram->numSpectrums++] = spectrum;
     return spectrum;
@@ -120,7 +126,7 @@ void sonicDestroyBitmap(sonicBitmap bitmap) {
 static void computeOverlapAdd(short* samples, int period, int numChannels, double *ola_samples) {
     int i;
     for(i = 0; i < period; i++) {
-        double sinx = sin(M_PI*i/2.0);
+        double weight = (1.0 - cos(M_PI*i/period))/2.0;
         short sample1, sample2;
         if(numChannels == 1) {
             sample1 = samples[i];
@@ -137,7 +143,7 @@ static void computeOverlapAdd(short* samples, int period, int numChannels, doubl
             sample1 = (total1 + (numChannels >> 1))/numChannels;
             sample2 = (total2 + (numChannels >> 1))/numChannels;
         }
-        ola_samples[i] = (1.0 - sinx)*sample1 + sinx*sample2;
+        ola_samples[i] = weight*sample1 + (1.0 - weight)*sample2;
     }
 }
 
@@ -149,20 +155,23 @@ static double magnitude(fftw_complex c) {
 /* Add two pitch periods worth of samples to the spectrogram.  There must be
    2*period samples.  Time should advance one pitch period for each call to
    this function. */
-void sonicAddPitchPeriodToSpectrogram(sonicSpectrogram spectrogram, short *samples, int period,
+void sonicAddPitchPeriodToSpectrogram(sonicSpectrogram spectrogram, short *samples, int numSamples,
         int numChannels) {
     sonicSpectrum spectrum = sonicCreateSpectrum(spectrogram);
+    spectrum->startingSample = spectrogram->totalSamples;
+    spectrogram->totalSamples += numSamples;
     /* TODO: convert to fixed-point */
-    double in[period];
-    fftw_complex out[period/2 + 1];
-    spectrum->numFreqs = period/2;
+    double in[numSamples];
+    fftw_complex out[numSamples/2 + 1];
+    spectrum->numFreqs = numSamples/2;
+    spectrum->numSamples = numSamples;
     spectrum->power = (double*)calloc(spectrum->numFreqs, sizeof(double));
-    computeOverlapAdd(samples, period, numChannels, in);
-    fftw_plan p = fftw_plan_dft_r2c_1d(period, in, out, FFTW_ESTIMATE);
+    computeOverlapAdd(samples, numSamples, numChannels, in);
+    fftw_plan p = fftw_plan_dft_r2c_1d(numSamples, in, out, FFTW_ESTIMATE);
     fftw_execute(p);
     int i;
     /* Start at 1 to skip the DC power, which is just noise. */
-    for(i = 1; i < period/2 + 1; ++i) {
+    for(i = 1; i < numSamples/2 + 1; ++i) {
         double power = magnitude(out[i]);
         spectrum->power[i - 1] = power;
         if(power > spectrogram->maxPower) {
@@ -179,36 +188,55 @@ void sonicAddPitchPeriodToSpectrogram(sonicSpectrogram spectrogram, short *sampl
 static double interpolateSpectrum(sonicSpectrum spectrum, int row, int numRows) {
     /* Flip the row so that we show lowest frequency on the bottom. */
     row = numRows - row - 1;
-    /* Does it fall exactly on a row? If not, what row is it between?  */
-    int topIndex = spectrum->numFreqs*row/numRows;
-    int remainder = spectrum->numFreqs*row - topIndex*numRows;
-    double topPower = spectrum->power[topIndex];
-    if(remainder == 0) {
-        /* Falls exactly on one row. */
-        return topPower;
-    }
-    double bottomPower = spectrum->power[topIndex + 1];
-    double position = (double)remainder/numRows;
-    return (1.0 - position)*topPower + position*bottomPower;
+    /* We want the max row to be 1/2 the Niquist frequency, or 4 samples worth. */
+    double maxFreq = 1.0/4.0; /* Normalize to sampleFreq = 1Hz */
+    double spectrumFreqSpacing = 1.0/spectrum->numSamples;
+    double rowFreqSpacing = maxFreq/(numRows - 1);
+    double targetFreq = row*rowFreqSpacing;
+    int bottomIndex = targetFreq/spectrumFreqSpacing;
+    double bottomPower = spectrum->power[bottomIndex];
+    double topPower = spectrum->power[bottomIndex + 1];
+    double position = (targetFreq - bottomIndex*spectrumFreqSpacing)/spectrumFreqSpacing;
+    return (1.0 - position)*bottomPower + position*topPower;
 }
 
 
 /* Linearly interpolate the power at a given position in the spectrogram. */
-static double interpolateSpectrogram(sonicSpectrogram spectrogram, int row, int col,
-        int numRows, int numCols) {
-    /* Does it fall exactly on a column? If not, what columns is it between?  */
-    int leftIndex = spectrogram->numSpectrums*col/numCols;
-    int remainder = spectrogram->numSpectrums*col - leftIndex*numCols;
-    sonicSpectrum leftSpectrum = spectrogram->spectrums[leftIndex];
-    if(remainder == 0) {
-        /* Falls exactly on one column. */
-        return interpolateSpectrum(leftSpectrum, row, numRows);
-    }
-    sonicSpectrum rightSpectrum = spectrogram->spectrums[leftIndex + 1];
+static double interpolateSpectrogram(sonicSpectrum leftSpectrum, sonicSpectrum rightSpectrum,
+        int row, int numRows, int colTime, int totalTime) {
     double leftPower = interpolateSpectrum(leftSpectrum, row, numRows);
     double rightPower = interpolateSpectrum(rightSpectrum, row, numRows);
-    double position = (double)remainder/numCols;
+    if(rightSpectrum->startingSample != leftSpectrum->startingSample + leftSpectrum->numSamples) {
+        fprintf(stderr, "Invalid sample spacing\n");
+        exit(1);
+    }
+    int remainder = colTime - leftSpectrum->startingSample;
+    double position = (double)remainder/leftSpectrum->numSamples;
     return (1.0 - position)*leftPower + position*rightPower;
+}
+
+/* Add one column of data to the output bitmap data. */
+static void addBitmapCol(unsigned char *data, int col, int numCols, int numRows,
+        sonicSpectrogram spectrogram, sonicSpectrum spectrum, sonicSpectrum nextSpectrum,
+        int colTime, int totalTime) {
+    double minPower = spectrogram->minPower;
+    double maxPower = spectrogram->maxPower;
+    int row;
+    for(row = 0; row < numRows; row++) {
+        double power = interpolateSpectrogram(spectrum, nextSpectrum, row, numRows, colTime, totalTime);
+        if(power < minPower && power > maxPower) {
+            fprintf(stderr, "Power outside min/max range\n");
+            exit(1);
+        }
+        double range = maxPower - minPower;
+        /* Use log scale such that log(min) = 0, and log(max) = 255. */
+        int value = 256.0*sqrt(log((M_E - 1.0)*(power - minPower)/range + 1.0));
+        /* int value = (unsigned char)(((power - minPower)/range)*256); */
+        if(value == 256) {
+            value = 255;
+        }
+        data[row*numCols + col] = value;
+    }
 }
 
 /* Convert the spectrogram to a bitmap.  The returned array must be freed by
@@ -222,26 +250,19 @@ sonicBitmap sonicConvertSpectrogramToBitmap(sonicSpectrogram spectrogram, int nu
     if(data == NULL) {
         return NULL;
     }
-    double minPower = spectrogram->minPower;
-    double maxPower = spectrogram->maxPower;
-    int row, col;
-    unsigned char *p = data;
-    for(row = 0; row < numRows; row++) {
-        for(col = 0; col < numCols; col++) {
-            double power = interpolateSpectrogram(spectrogram, row, col, numRows, numCols);
-            if(power < minPower && power > maxPower) {
-                fprintf(stderr, "Power outside min/max range\n");
-                exit(1);
-            }
-            double range = maxPower - minPower;
-            /* Use log scale such that log(min) = 0, and log(max) = 255. */
-            int value = 256.0*sqrt(sqrt(log((M_E - 1.0)*(power - minPower)/range + 1.0)));
-            /* int value = (unsigned char)(((power - minPower)/range)*256); */
-            if(value == 256) {
-                value = 255;
-            }
-            *p++ = value;
+    int xSpectrum = 0; /* xSpectrum is index of nextSpectrum */
+    sonicSpectrum spectrum = spectrogram->spectrums[xSpectrum++];
+    sonicSpectrum nextSpectrum = spectrogram->spectrums[xSpectrum];
+    int totalTime = spectrogram->spectrums[spectrogram->numSpectrums - 1]->startingSample;
+    int col;
+    for(col = 0; col < numCols; col++) {
+        /* There must be at least two spectrums for this to work right. */
+        double colTime = (double)totalTime*col/(numCols - 1);
+        while(xSpectrum + 1 < spectrogram->numSpectrums && colTime >= nextSpectrum->startingSample) {
+            spectrum = nextSpectrum;
+            nextSpectrum = spectrogram->spectrums[++xSpectrum];
         }
+        addBitmapCol(data, col, numCols, numRows, spectrogram, spectrum, nextSpectrum, colTime, totalTime);
     }
     return sonicCreateBitmap(data, numRows, numCols);
 }
