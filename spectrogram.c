@@ -14,6 +14,9 @@
 #ifndef M_PI
 #    define M_PI 3.14159265358979323846
 #endif
+#ifndef M_E
+#    define M_E 2.7182818284590452354
+#endif
 
 struct sonicSpectrumStruct;
 typedef struct sonicSpectrumStruct *sonicSpectrum;
@@ -42,8 +45,6 @@ static sonicSpectrum sonicCreateSpectrum(sonicSpectrogram spectrogram) {
             spectrogram->allocatedSpectrums*sizeof(sonicSpectrum));
     }
     spectrogram->spectrums[spectrogram->numSpectrums++] = spectrum;
-    spectrogram->minPower = DBL_MAX;
-    spectrogram->maxPower = DBL_MIN;
     return spectrum;
 }
 
@@ -72,6 +73,8 @@ sonicSpectrogram sonicCreateSpectrogram(void) {
         sonicDestroySpectrogram(spectrogram);
         return NULL;
     }
+    spectrogram->minPower = DBL_MAX;
+    spectrogram->maxPower = DBL_MIN;
     return spectrogram;
 }
 
@@ -134,7 +137,7 @@ static void computeOverlapAdd(short* samples, int period, int numChannels, doubl
             sample1 = (total1 + (numChannels >> 1))/numChannels;
             sample2 = (total2 + (numChannels >> 1))/numChannels;
         }
-        ola_samples[i] = sinx*sample1 + (1.0 - sinx)*sample2;
+        ola_samples[i] = (1.0 - sinx)*sample1 + sinx*sample2;
     }
 }
 
@@ -152,15 +155,15 @@ void sonicAddPitchPeriodToSpectrogram(sonicSpectrogram spectrogram, short *sampl
     /* TODO: convert to fixed-point */
     double in[period];
     fftw_complex out[period/2 + 1];
-    spectrum->power = (double*)calloc(period/2, sizeof(double));
+    spectrum->numFreqs = period/2;
+    spectrum->power = (double*)calloc(spectrum->numFreqs, sizeof(double));
     computeOverlapAdd(samples, period, numChannels, in);
     fftw_plan p = fftw_plan_dft_r2c_1d(period, in, out, FFTW_ESTIMATE);
     fftw_execute(p);
     int i;
     /* Start at 1 to skip the DC power, which is just noise. */
     for(i = 1; i < period/2 + 1; ++i) {
-        double m = magnitude(out[i]);
-        double power = m*m;
+        double power = magnitude(out[i]);
         spectrum->power[i - 1] = power;
         if(power > spectrogram->maxPower) {
             spectrogram->maxPower = power;
@@ -219,19 +222,21 @@ sonicBitmap sonicConvertSpectrogramToBitmap(sonicSpectrogram spectrogram, int nu
     if(data == NULL) {
         return NULL;
     }
+    double minPower = spectrogram->minPower;
+    double maxPower = spectrogram->maxPower;
     int row, col;
     unsigned char *p = data;
     for(row = 0; row < numRows; row++) {
         for(col = 0; col < numCols; col++) {
             double power = interpolateSpectrogram(spectrogram, row, col, numRows, numCols);
-            double minPower = spectrogram->minPower;
-            double maxPower = spectrogram->maxPower;
             if(power < minPower && power > maxPower) {
                 fprintf(stderr, "Power outside min/max range\n");
                 exit(1);
             }
             double range = maxPower - minPower;
-            int value = (unsigned char)(((power - minPower)/range)*256);
+            /* Use log scale such that log(min) = 0, and log(max) = 255. */
+            int value = 256.0*sqrt(sqrt(log((M_E - 1.0)*(power - minPower)/range + 1.0)));
+            /* int value = (unsigned char)(((power - minPower)/range)*256); */
             if(value == 256) {
                 value = 255;
             }
@@ -254,7 +259,7 @@ int sonicWritePGM(sonicBitmap bitmap, char *fileName) {
     if(file == NULL) {
         return 0;
     }
-    if(fprintf(file, "P2\n# CREATOR: libsonic\n%d %d\n", bitmap->numCols, bitmap->numRows) < 0) {
+    if(fprintf(file, "P2\n# CREATOR: libsonic\n%d %d\n255\n", bitmap->numCols, bitmap->numRows) < 0) {
         fclose(file);
         return 0;
     }
@@ -262,7 +267,7 @@ int sonicWritePGM(sonicBitmap bitmap, char *fileName) {
     int numPixels = bitmap->numRows*bitmap->numCols;
     unsigned char *p = bitmap->data;
     for(i = 0; i < numPixels; i++) {
-        if(fprintf(file, "%d\n", *p++) < 0) {
+        if(fprintf(file, "%d\n", 255 - *p++) < 0) {
             fclose(file);
             return 0;
         }
