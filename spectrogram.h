@@ -45,10 +45,19 @@ void sonicDestroySpectrogram(sonicSpectrogram spectrogram);
 /* Add two pitch periods worth of samples to the spectrogram.  There must be
    2*period samples.  Time should advance one pitch period for each call to
    this function. */
-void sonicAddPitchPeriodToSpectrogram(sonicSpectrogram spectrogram, short *samples, int period);
+void sonicAddPitchPeriodToSpectrogram(sonicSpectrogram spectrogram, short *samples,
+    int period, int numChannels);
 /* Convert the spectrogram to a bitmap. */
 sonicBitmap sonicConvertSpectrogramToBitmap(sonicSpectrogram spectrogram, int numRows, int numCols);
 /* Create a new bitmap.  This takes ownership of data. */
 sonicBitmap sonicCreateBitmap(unsigned char *data, int numRows, int numCols);
 /* Destroy the bitmap. */
 void sonicDestroyBitmap(sonicBitmap bitmap);
+/* Write a PGM image file, which is 8-bit grayscale and looks like:
+    P2
+    # CREATOR: libsonic
+    640 400
+    255
+    ...
+*/
+int sonicWritePGM(sonicBitmap bitmap, char *fileName);

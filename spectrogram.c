@@ -10,9 +10,7 @@
 #include <math.h>
 #include <float.h>
 #include <fftw3.h>
-#include "spectrogram.h"
-
-/* Deal with lack of M_PI in ANSI C. */
+#include "sonic.h"
 #ifndef M_PI
 #    define M_PI 3.14159265358979323846
 #endif
@@ -116,11 +114,27 @@ void sonicDestroyBitmap(sonicBitmap bitmap) {
 }
 
 /* Overlap-add the two pitch periods using a Hann window.  Caller must free the result. */
-static void computeOverlapAdd(short* samples, int period, double *ola_samples) {
+static void computeOverlapAdd(short* samples, int period, int numChannels, double *ola_samples) {
     int i;
     for(i = 0; i < period; i++) {
         double sinx = sin(M_PI*i/2.0);
-        ola_samples[i] = sinx*samples[i] + (1.0 - sinx)*samples[i + period];
+        short sample1, sample2;
+        if(numChannels == 1) {
+            sample1 = samples[i];
+            sample2 = samples[i + period];
+        } else {
+            /* Average the samples */
+            int total1 = 0;
+            int total2 = 0;
+            int j;
+            for(j = 0; j < numChannels; j++) {
+                total1 += samples[i*numChannels + j];
+                total2 += samples[(i + period)*numChannels + j];
+            }
+            sample1 = (total1 + (numChannels >> 1))/numChannels;
+            sample2 = (total2 + (numChannels >> 1))/numChannels;
+        }
+        ola_samples[i] = sinx*sample1 + (1.0 - sinx)*sample2;
     }
 }
 
@@ -132,20 +146,28 @@ static double magnitude(fftw_complex c) {
 /* Add two pitch periods worth of samples to the spectrogram.  There must be
    2*period samples.  Time should advance one pitch period for each call to
    this function. */
-void sonicAddPitchPeriodToSpectrogram(sonicSpectrogram spectrogram, short *samples, int period) {
+void sonicAddPitchPeriodToSpectrogram(sonicSpectrogram spectrogram, short *samples, int period,
+        int numChannels) {
     sonicSpectrum spectrum = sonicCreateSpectrum(spectrogram);
     /* TODO: convert to fixed-point */
     double in[period];
     fftw_complex out[period/2 + 1];
     spectrum->power = (double*)calloc(period/2, sizeof(double));
-    computeOverlapAdd(samples, period, in);
+    computeOverlapAdd(samples, period, numChannels, in);
     fftw_plan p = fftw_plan_dft_r2c_1d(period, in, out, FFTW_ESTIMATE);
     fftw_execute(p);
     int i;
     /* Start at 1 to skip the DC power, which is just noise. */
     for(i = 1; i < period/2 + 1; ++i) {
         double m = magnitude(out[i]);
-        spectrum->power[i - 1] = m*m;
+        double power = m*m;
+        spectrum->power[i - 1] = power;
+        if(power > spectrogram->maxPower) {
+            spectrogram->maxPower = power;
+        }
+        if(power < spectrogram->minPower) {
+            spectrogram->minPower = power;
+        }
     }
     fftw_destroy_plan(p);
 }
@@ -217,4 +239,34 @@ sonicBitmap sonicConvertSpectrogramToBitmap(sonicSpectrogram spectrogram, int nu
         }
     }
     return sonicCreateBitmap(data, numRows, numCols);
+}
+
+/* Write a PGM image file, which is 8-bit grayscale and looks like:
+    P2
+    # CREATOR: libsonic
+    640 400
+    255
+    ...
+*/
+int sonicWritePGM(sonicBitmap bitmap, char *fileName) {
+    printf("Writing PGM\n");
+    FILE *file = fopen(fileName, "w");
+    if(file == NULL) {
+        return 0;
+    }
+    if(fprintf(file, "P2\n# CREATOR: libsonic\n%d %d\n", bitmap->numCols, bitmap->numRows) < 0) {
+        fclose(file);
+        return 0;
+    }
+    int i;
+    int numPixels = bitmap->numRows*bitmap->numCols;
+    unsigned char *p = bitmap->data;
+    for(i = 0; i < numPixels; i++) {
+        if(fprintf(file, "%d\n", *p++) < 0) {
+            fclose(file);
+            return 0;
+        }
+    }
+    fclose(file);
+    return 1;
 }

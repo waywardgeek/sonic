@@ -10,8 +10,8 @@ UNAME := $(shell uname)
 ifeq ($(UNAME), Darwin)
   SONAME=install_name
 endif
-#CFLAGS=-Wall -g -ansi -fPIC -pthread
-CFLAGS=-Wall -O3 -ansi -fPIC -pthread
+CFLAGS=-Wall -g -ansi -fPIC -pthread
+#CFLAGS=-Wall -O3 -ansi -fPIC -pthread
 LIB_TAG=0.2.0
 CC=gcc
 PREFIX=/usr
@@ -20,7 +20,7 @@ LIBDIR=$(PREFIX)/lib
 all: sonic libsonic.so.$(LIB_TAG) libsonic.a
 
 sonic: wave.o main.o libsonic.a
-	$(CC) $(CFLAGS) -o sonic wave.o main.o libsonic.a -lm
+	$(CC) $(CFLAGS) -o sonic wave.o main.o libsonic.a -lm -lfftw3
 
 sonic.o: sonic.c sonic.h
 	$(CC) $(CFLAGS) -c sonic.c
@@ -39,8 +39,8 @@ libsonic.so.$(LIB_TAG): sonic.o spectrogram.o
 	ln -sf libsonic.so.$(LIB_TAG) libsonic.so
 	ln -sf libsonic.so.$(LIB_TAG) libsonic.so.0
 
-libsonic.a: sonic.o
-	$(AR) cqs libsonic.a sonic.o
+libsonic.a: sonic.o spectrogram.o
+	$(AR) cqs libsonic.a sonic.o spectrogram.o
 
 install: sonic libsonic.so.$(LIB_TAG) sonic.h
 	install -d $(DESTDIR)$(PREFIX)/bin $(DESTDIR)$(PREFIX)/include $(DESTDIR)$(PREFIX)/lib

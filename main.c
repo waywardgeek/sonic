@@ -24,6 +24,9 @@ static void runSonic(
     int emulateChordPitch,
     int quality,
     int enableNonlinearSpeedup,
+    int computeSpectrogram,
+    int numRows,
+    int numCols,
     int sampleRate,
     int numChannels)
 {
@@ -38,6 +41,9 @@ static void runSonic(
     sonicSetChordPitch(stream, emulateChordPitch);
     sonicSetQuality(stream, quality);
     sonicEnableNonlinearSpeedup(stream, enableNonlinearSpeedup);
+    if(computeSpectrogram) {
+        sonicComputeSpectrogram(stream);
+    }
     do {
         samplesRead = readFromWaveFile(inFile, inBuffer, BUFFER_SIZE/numChannels);
         if(samplesRead == 0) {
@@ -53,6 +59,12 @@ static void runSonic(
             }
         } while(samplesWritten > 0);
     } while(samplesRead > 0);
+    if(computeSpectrogram) {
+        sonicSpectrogram spectrogram = sonicGetSpectrogram(stream);
+        sonicBitmap bitmap = sonicConvertSpectrogramToBitmap(spectrogram, numRows, numCols);
+        sonicWritePGM(bitmap, "sonic.pgm");
+        sonicDestroyBitmap(bitmap);
+    }
     sonicDestroyStream(stream);
 }
 
@@ -67,7 +79,7 @@ static void usage(void)
         "    -q         -- Disable speed-up heuristics.  May increase quality.\n"
         "    -r rate    -- Set playback rate.  2.0 means 2X faster, and 2X pitch.\n"
         "    -s speed   -- Set speed up factor.  2.0 means 2X faster.\n"
-        "    -S         -- Generate a spectrogram.\n"
+        "    -S width height -- Generate a spectrogram in sonic.pgm in PGM format.\n"
         "    -v volume  -- Scale volume by a constant factor.\n");
     exit(1);
 }
@@ -87,6 +99,8 @@ int main(
     int sampleRate, numChannels;
     int xArg = 1;
     int enableNonlinearSpeedup = 0;
+    int computeSpectrogram = 0;
+    int numRows = 0, numCols = 0;
 
     while(xArg < argc && *(argv[xArg]) == '-') {
         if(!strcmp(argv[xArg], "-c")) {
@@ -116,6 +130,17 @@ int main(
                 speed = atof(argv[xArg]);
                 printf("Setting speed to %0.2fX\n", speed);
             }
+        } else if(!strcmp(argv[xArg], "-S")) {
+            xArg++;
+            if(xArg < argc) {
+                numCols = atof(argv[xArg]);
+            }
+            xArg++;
+            if(xArg < argc) {
+                numRows = atof(argv[xArg]);
+                computeSpectrogram = 1;
+                printf("Computing spectrogram %d wide and %d tall\n", numCols, numRows);
+            }
         } else if(!strcmp(argv[xArg], "-v")) {
             xArg++;
             if(xArg < argc) {
@@ -140,7 +165,7 @@ int main(
         return 1;
     }
     runSonic(inFile, outFile, speed, pitch, rate, volume, emulateChordPitch, quality,
-        enableNonlinearSpeedup, sampleRate, numChannels);
+        enableNonlinearSpeedup, computeSpectrogram, numRows, numCols, sampleRate, numChannels);
     closeWaveFile(inFile);
     closeWaveFile(outFile);
     return 0;

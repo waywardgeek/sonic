@@ -63,6 +63,7 @@ extern "C" {
 /* These are used to down-sample some inputs to improve speed */
 #define SONIC_AMDF_FREQ 4000
 
+#include "spectrogram.h"
 struct sonicStreamStruct;
 typedef struct sonicStreamStruct *sonicStream;
 
@@ -141,7 +142,13 @@ int sonicChangeFloatSpeed(float *samples, int numSamples, float speed, float pit
    speed*numSamples available space in the array. Returns the new number of samples. */
 int sonicChangeShortSpeed(short *samples, int numSamples, float speed, float pitch,
     float rate, float volume, int useChordPitch, int sampleRate, int numChannels);
+
+/* Enable non-linear speedup. */
 void sonicEnableNonlinearSpeedup(sonicStream stream, int enable);
+/* Compute a spectrogram on the fly. */
+void sonicComputeSpectrogram(sonicStream stream);
+/* Get the spectrogram. */
+sonicSpectrogram sonicGetSpectrogram(sonicStream stream);
 
 #ifdef  __cplusplus
 }

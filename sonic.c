@@ -11,12 +11,13 @@
 #include <string.h>
 #include <stdarg.h>
 #include <math.h>
+#include "sonic.h"
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
 #endif
-#include "sonic.h"
 
 struct sonicStreamStruct {
+    sonicSpectrogram spectrogram;
     short *inputBuffer;
     short *outputBuffer;
     short *pitchBuffer;
@@ -200,6 +201,9 @@ static void freeStreamBuffers(
 void sonicDestroyStream(
     sonicStream stream)
 {
+    if(stream->spectrogram != NULL) {
+        sonicDestroySpectrogram(stream->spectrogram);
+    }
     freeStreamBuffers(stream);
     free(stream);
 }
@@ -296,6 +300,13 @@ int sonicGetNumChannels(
     sonicStream stream)
 {
     return stream->numChannels;
+}
+
+/* Get the spectrogram. */
+sonicSpectrogram sonicGetSpectrogram(
+    sonicStream stream)
+{
+    return stream->spectrogram;
 }
 
 /* Set the num channels of the stream.  This will cause samples buffered in the stream to
@@ -1061,7 +1072,7 @@ static int insertPitchPeriod(
 }
 
 /* Resample as many pitch periods as we have buffered on the input.  Return 0 if
-   we fail to resize an input or output buffer.  Also scale the output by the volume. */
+   we fail to resize an input or output buffer. */
 static int changeSpeed(
     sonicStream stream,
     float speed)
@@ -1082,6 +1093,9 @@ static int changeSpeed(
         } else {
             samples = stream->inputBuffer + position*stream->numChannels;
             period = findPitchPeriod(stream, samples, 1);
+            if(stream->spectrogram != NULL) {
+                sonicAddPitchPeriodToSpectrogram(stream->spectrogram, samples, period, stream->numChannels);
+            }
             if(speed > 1.0) {
                 newSamples = skipPitchPeriod(stream, samples, speed, period);
                 position += period + newSamples;
@@ -1233,4 +1247,9 @@ int sonicChangeShortSpeed(
 /* Enable non-linear speech speedup */
 void sonicEnableNonlinearSpeedup(sonicStream stream, int enable) {
     stream->enableNonlinearSpeedup = enable;
+}
+
+/* Compute a spectrogram on the fly. */
+void sonicComputeSpectrogram(sonicStream stream) {
+    stream->spectrogram = sonicCreateSpectrogram();
 }
