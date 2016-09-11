@@ -66,4 +66,4 @@ uninstall:
 	rm -f $(DESTDIR)$(LIBDIR)/libsonic.a
 
 clean:
-	rm -f *.o sonic libsonic.so* libsonic.a
+	rm -f *.o sonic funcgen libsonic.so* libsonic.a

@@ -259,10 +259,10 @@ static void addBitmapCol(unsigned char *data, int col, int numCols, int numRows,
         /* Use log scale such that log(min) = 0, and log(max) = 255. */
         int value = 256.0*sqrt(sqrt(log((M_E - 1.0)*(power - minPower)/range + 1.0)));
         /* int value = (unsigned char)(((power - minPower)/range)*256); */
-        if(value == 256) {
+        if(value >= 256) {
             value = 255;
         }
-        data[row*numCols + col] = value;
+        data[row*numCols + col] = 255 - value;
     }
 }
 

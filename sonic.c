@@ -645,8 +645,9 @@ static int findPitchPeriodInRange(
         /* Note that the highest number of samples we add into diff will be less
            than 256, since we skip samples.  Thus, diff is a 24 bit number, and
            we can safely multiply by numSamples without overflow */
-        if (bestPeriod == 0 || (bestPeriod*3/2 > period && diff*bestPeriod < minDiff*period) ||
-                diff*bestPeriod < (minDiff >> 1)*period) {
+        /* if (bestPeriod == 0 || (bestPeriod*3/2 > period && diff*bestPeriod < minDiff*period) ||
+                diff*bestPeriod < (minDiff >> 1)*period) {*/
+        if (bestPeriod == 0 || diff*bestPeriod < minDiff*period) {
             minDiff = diff;
             bestPeriod = period;
         }
