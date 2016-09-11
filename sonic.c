@@ -645,7 +645,8 @@ static int findPitchPeriodInRange(
         /* Note that the highest number of samples we add into diff will be less
            than 256, since we skip samples.  Thus, diff is a 24 bit number, and
            we can safely multiply by numSamples without overflow */
-        if(diff*bestPeriod < minDiff*period) {
+        if (bestPeriod == 0 || (bestPeriod*3/2 > period && diff*bestPeriod < minDiff*period) ||
+                diff*bestPeriod < (minDiff >> 1)*period) {
             minDiff = diff;
             bestPeriod = period;
         }
@@ -1001,7 +1002,7 @@ static float nonlinearSpeedup(
     }
     float localSpeed = speed;
     if(stream->localSpeedup > 1.0f) {
-        printf("Speeding up by %f\n", stream->localSpeedup*speed);
+        /* printf("Speeding up by %f\n", stream->localSpeedup*speed); */
         localSpeed *= stream->localSpeedup;
     }
     /* Detect silence */
@@ -1012,7 +1013,7 @@ static float nonlinearSpeedup(
     }
     float delta = 0.01f*speed/localSpeed;
     stream->avePower = prevAvePower*(1.0f - delta) + delta*avePower;
-    printf("Speed:%f, average power: %f, current power: %f\n", localSpeed, prevAvePower, avePower);
+    /* printf("Speed:%f, average power: %f, current power: %f\n", localSpeed, prevAvePower, avePower); */
     return localSpeed;
 }
 
@@ -1027,7 +1028,7 @@ static int skipPitchPeriod(
     int numChannels = stream->numChannels;
     float localSpeed = nonlinearSpeedup(stream, samples, speed, period);
 
-    printf("localSpeed = %f\n", localSpeed);
+    /* printf("localSpeed = %f\n", localSpeed); */
     if(localSpeed >= 2.0f) {
         newSamples = period/(localSpeed - 1.0f);
     } else {
@@ -1082,7 +1083,7 @@ static int changeSpeed(
     int position = 0, period, newSamples;
     int maxRequired = stream->maxRequired;
 
-    printf("Changing speed to %f\n", speed);
+    /* printf("Changing speed to %f\n", speed); */
     if(stream->numInputSamples < maxRequired) {
         return 1;
     }
@@ -1095,13 +1096,15 @@ static int changeSpeed(
             period = findPitchPeriod(stream, samples, 1);
             if(stream->spectrogram != NULL) {
                 sonicAddPitchPeriodToSpectrogram(stream->spectrogram, samples, period, stream->numChannels);
-            }
-            if(speed > 1.0) {
-                newSamples = skipPitchPeriod(stream, samples, speed, period);
-                position += period + newSamples;
+                position += period;
             } else {
-                newSamples = insertPitchPeriod(stream, samples, speed, period);
-                position += newSamples;
+                if(speed > 1.0) {
+                    newSamples = skipPitchPeriod(stream, samples, speed, period);
+                    position += period + newSamples;
+                } else {
+                    newSamples = insertPitchPeriod(stream, samples, speed, period);
+                    position += newSamples;
+                }
             }
         }
         if(newSamples == 0) {
@@ -1251,5 +1254,5 @@ void sonicEnableNonlinearSpeedup(sonicStream stream, int enable) {
 
 /* Compute a spectrogram on the fly. */
 void sonicComputeSpectrogram(sonicStream stream) {
-    stream->spectrogram = sonicCreateSpectrogram();
+    stream->spectrogram = sonicCreateSpectrogram(stream->sampleRate);
 }

@@ -24,6 +24,8 @@ To generate a bitmap, linear interpolation is used to render the grayscale
 value at any particular point in time and frequency.
 */
 
+#define SONIC_MAX_SPECTRUM_FREQ 5000
+
 struct sonicSpectrogramStruct;
 typedef struct sonicSpectrogramStruct *sonicSpectrogram;
 
@@ -39,7 +41,7 @@ struct sonicBitmapStruct {
 typedef struct sonicBitmapStruct *sonicBitmap;
 
 /* Create an empty spectrogram. */
-sonicSpectrogram sonicCreateSpectrogram(void);
+sonicSpectrogram sonicCreateSpectrogram(int sampleRate);
 /* Destroy the spectrotram. */
 void sonicDestroySpectrogram(sonicSpectrogram spectrogram);
 /* Add two pitch periods worth of samples to the spectrogram.  There must be

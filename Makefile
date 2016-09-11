@@ -17,12 +17,12 @@ CC=gcc
 PREFIX=/usr
 LIBDIR=$(PREFIX)/lib
 
-all: sonic libsonic.so.$(LIB_TAG) libsonic.a
+all: sonic libsonic.so.$(LIB_TAG) libsonic.a funcgen
 
 sonic: wave.o main.o libsonic.a
 	$(CC) $(CFLAGS) -o sonic wave.o main.o libsonic.a -lm -lfftw3
 
-sonic.o: sonic.c sonic.h
+sonic.o: sonic.c sonic.h spectrogram.h
 	$(CC) $(CFLAGS) -c sonic.c
 
 spectrogram.o: spectrogram.c spectrogram.h
@@ -31,8 +31,14 @@ spectrogram.o: spectrogram.c spectrogram.h
 wave.o: wave.c wave.h
 	$(CC) $(CFLAGS) -c wave.c
 
-main.o: main.c sonic.h wave.h
+main.o: main.c sonic.h spectrogram.h wave.h
 	$(CC) $(CFLAGS) -c main.c
+
+funcgen.o: funcgen.c wave.h
+	$(CC) $(CFLAGS) -c funcgen.c
+
+funcgen: funcgen.o
+	$(CC) $(CFLAGS) -o funcgen wave.o funcgen.o -lm
 
 libsonic.so.$(LIB_TAG): sonic.o spectrogram.o
 	$(CC) $(CFLAGS) -shared -Wl,-$(SONAME),libsonic.so.0 sonic.o spectrogram.o -o libsonic.so.$(LIB_TAG)

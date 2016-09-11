@@ -26,15 +26,39 @@ struct sonicSpectrogramStruct {
     double minPower, maxPower;
     int numSpectrums;
     int allocatedSpectrums;
+    int sampleRate;
     int totalSamples;
 };
 
 struct sonicSpectrumStruct {
+    sonicSpectrogram spectrogram;
     double *power;
     int numFreqs;  /* Number of frequencies */
     int numSamples;
     int startingSample;
 };
+
+/* Print out spectrum data for debugging. */
+static void dumpSpectrum(sonicSpectrum spectrum) {
+    printf("spectrum numFreqs:%d numSamples:%d startingSample:%d\n",
+        spectrum->numFreqs, spectrum->numSamples, spectrum->startingSample);
+    printf("   ");
+    int i;
+    for(i = 0; i < spectrum->numFreqs; i++) {
+        printf(" %.1f", spectrum->power[i]);
+    }
+    printf("\n");
+}
+
+/* Print out spectrogram data for debugging. */
+static void dumpSpectrogram(sonicSpectrogram spectrogram) {
+    printf("spectrogram minPower:%f maxPower:%f numSpectrums:%d totalSamples:%d\n",
+        spectrogram->minPower, spectrogram->maxPower, spectrogram->numSpectrums, spectrogram->totalSamples);
+    int i;
+    for(i = 0; i < spectrogram->numSpectrums; i++) {
+        dumpSpectrum(spectrogram->spectrums[i]);
+    }
+}
 
 /* Create an new spectrum. */
 static sonicSpectrum sonicCreateSpectrum(sonicSpectrogram spectrogram) {
@@ -51,12 +75,11 @@ static sonicSpectrum sonicCreateSpectrum(sonicSpectrogram spectrogram) {
         }
     }
     spectrogram->spectrums[spectrogram->numSpectrums++] = spectrum;
+    spectrum->spectrogram = spectrogram;
     return spectrum;
 }
 
-/* Destroy the spectrum.  Since the spectrum does not have a pointer to its
-   spectrogram, this destructor cannot remove the spectrum from the
-   spectrogram.  It is up to the spectrogram destructor to do this. */
+/* Destroy the spectrum. */
 static void sonicDestroySpectrum(sonicSpectrum spectrum) {
     if(spectrum == NULL) {
         return;
@@ -68,7 +91,7 @@ static void sonicDestroySpectrum(sonicSpectrum spectrum) {
 }
 
 /* Create an empty spectrogram. */
-sonicSpectrogram sonicCreateSpectrogram(void) {
+sonicSpectrogram sonicCreateSpectrogram(int sampleRate) {
     sonicSpectrogram spectrogram = (sonicSpectrogram)calloc(1, sizeof(struct sonicSpectrogramStruct));
     if(spectrogram == NULL) {
         return NULL;
@@ -79,6 +102,7 @@ sonicSpectrogram sonicCreateSpectrogram(void) {
         sonicDestroySpectrogram(spectrogram);
         return NULL;
     }
+    spectrogram->sampleRate = sampleRate;
     spectrogram->minPower = DBL_MAX;
     spectrogram->maxPower = DBL_MIN;
     return spectrogram;
@@ -162,18 +186,20 @@ void sonicAddPitchPeriodToSpectrogram(sonicSpectrogram spectrogram, short *sampl
     spectrogram->totalSamples += numSamples;
     /* TODO: convert to fixed-point */
     double in[numSamples];
-    fftw_complex out[numSamples/2 + 1];
-    spectrum->numFreqs = numSamples/2;
+    int numFreqs = numSamples/2 + 1;
+    spectrum->numFreqs = numFreqs;
+    fftw_complex out[numFreqs];
     spectrum->numSamples = numSamples;
     spectrum->power = (double*)calloc(spectrum->numFreqs, sizeof(double));
     computeOverlapAdd(samples, numSamples, numChannels, in);
     fftw_plan p = fftw_plan_dft_r2c_1d(numSamples, in, out, FFTW_ESTIMATE);
     fftw_execute(p);
     int i;
-    /* Start at 1 to skip the DC power, which is just noise. */
-    for(i = 1; i < numSamples/2 + 1; ++i) {
-        double power = magnitude(out[i]);
-        spectrum->power[i - 1] = power;
+    /* Set the DC power to 0. */
+    spectrum->power[0] = 0.0;
+    for(i = 1; i < numFreqs; ++i) {
+        double power = magnitude(out[i])/numSamples;
+        spectrum->power[i] = power;
         if(power > spectrogram->maxPower) {
             spectrogram->maxPower = power;
         }
@@ -189,9 +215,10 @@ static double interpolateSpectrum(sonicSpectrum spectrum, int row, int numRows) 
     /* Flip the row so that we show lowest frequency on the bottom. */
     row = numRows - row - 1;
     /* We want the max row to be 1/2 the Niquist frequency, or 4 samples worth. */
-    double maxFreq = 1.0/4.0; /* Normalize to sampleFreq = 1Hz */
-    double spectrumFreqSpacing = 1.0/spectrum->numSamples;
-    double rowFreqSpacing = maxFreq/(numRows - 1);
+    printf("sample rate: %d, num samples: %d\n", spectrum->spectrogram->sampleRate, spectrum->numSamples);
+    double spectrumFreqSpacing = (double)spectrum->spectrogram->sampleRate/spectrum->numSamples;
+    double rowFreqSpacing = SONIC_MAX_SPECTRUM_FREQ/(numRows - 1);
+    printf("spectrum freq spacing:%f, row freq spacing:%f\n", spectrumFreqSpacing, rowFreqSpacing);
     double targetFreq = row*rowFreqSpacing;
     int bottomIndex = targetFreq/spectrumFreqSpacing;
     double bottomPower = spectrum->power[bottomIndex];
@@ -203,7 +230,7 @@ static double interpolateSpectrum(sonicSpectrum spectrum, int row, int numRows) 
 
 /* Linearly interpolate the power at a given position in the spectrogram. */
 static double interpolateSpectrogram(sonicSpectrum leftSpectrum, sonicSpectrum rightSpectrum,
-        int row, int numRows, int colTime, int totalTime) {
+        int row, int numRows, int colTime) {
     double leftPower = interpolateSpectrum(leftSpectrum, row, numRows);
     double rightPower = interpolateSpectrum(rightSpectrum, row, numRows);
     if(rightSpectrum->startingSample != leftSpectrum->startingSample + leftSpectrum->numSamples) {
@@ -218,19 +245,19 @@ static double interpolateSpectrogram(sonicSpectrum leftSpectrum, sonicSpectrum r
 /* Add one column of data to the output bitmap data. */
 static void addBitmapCol(unsigned char *data, int col, int numCols, int numRows,
         sonicSpectrogram spectrogram, sonicSpectrum spectrum, sonicSpectrum nextSpectrum,
-        int colTime, int totalTime) {
+        int colTime) {
     double minPower = spectrogram->minPower;
     double maxPower = spectrogram->maxPower;
     int row;
     for(row = 0; row < numRows; row++) {
-        double power = interpolateSpectrogram(spectrum, nextSpectrum, row, numRows, colTime, totalTime);
+        double power = interpolateSpectrogram(spectrum, nextSpectrum, row, numRows, colTime);
         if(power < minPower && power > maxPower) {
             fprintf(stderr, "Power outside min/max range\n");
             exit(1);
         }
         double range = maxPower - minPower;
         /* Use log scale such that log(min) = 0, and log(max) = 255. */
-        int value = 256.0*sqrt(log((M_E - 1.0)*(power - minPower)/range + 1.0));
+        int value = 256.0*sqrt(sqrt(log((M_E - 1.0)*(power - minPower)/range + 1.0)));
         /* int value = (unsigned char)(((power - minPower)/range)*256); */
         if(value == 256) {
             value = 255;
@@ -246,6 +273,7 @@ static void addBitmapCol(unsigned char *data, int col, int numCols, int numRows,
    position 128*4 + 18.  NULL is returned if calloc fails to allocate the
    memory. */
 sonicBitmap sonicConvertSpectrogramToBitmap(sonicSpectrogram spectrogram, int numRows, int numCols) {
+dumpSpectrogram(spectrogram);
     unsigned char *data = (unsigned char*)calloc(numRows*numCols, sizeof(unsigned char));
     if(data == NULL) {
         return NULL;
@@ -262,7 +290,7 @@ sonicBitmap sonicConvertSpectrogramToBitmap(sonicSpectrogram spectrogram, int nu
             spectrum = nextSpectrum;
             nextSpectrum = spectrogram->spectrums[++xSpectrum];
         }
-        addBitmapCol(data, col, numCols, numRows, spectrogram, spectrum, nextSpectrum, colTime, totalTime);
+        addBitmapCol(data, col, numCols, numRows, spectrogram, spectrum, nextSpectrum, colTime);
     }
     return sonicCreateBitmap(data, numRows, numCols);
 }
