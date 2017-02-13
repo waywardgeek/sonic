@@ -544,7 +544,6 @@ public class Sonic {
     // At abrupt ends of voiced words, we can have pitch periods that are better
     // approximated by the previous pitch period estimate.  Try to detect this case.
     private boolean prevPeriodBetter(
-        int period,
         int minDiff,
         int maxDiff,
         boolean preferNewPeriod)
@@ -608,7 +607,7 @@ public class Sonic {
                 }
             }
         }
-        if(prevPeriodBetter(period, minDiff, maxDiff, preferNewPeriod)) {
+        if(prevPeriodBetter(minDiff, maxDiff, preferNewPeriod)) {
             retPeriod = prevPeriod;
         } else {
             retPeriod = period;
