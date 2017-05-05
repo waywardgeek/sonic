@@ -945,7 +945,7 @@ static int adjustRate(
                 return 0;
             }
             out = stream->outputBuffer + stream->numOutputSamples*numChannels;
-            in = stream->pitchBuffer + position;
+            in = stream->pitchBuffer + position*numChannels;
             for(i = 0; i < numChannels; i++) {
                 *out++ = interpolate(stream, in, oldSampleRate, newSampleRate);
                 in++;

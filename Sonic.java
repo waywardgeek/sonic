@@ -736,12 +736,12 @@ public class Sonic {
     // Interpolate the new output sample.
     private short interpolate(
         short in[],
-        int inPos,
+        int inPos,  // Index to first sample which already includes channel offset.
         int oldSampleRate,
         int newSampleRate)
     {
-        short left = in[inPos*numChannels];
-        short right = in[inPos*numChannels + numChannels];
+        short left = in[inPos];
+        short right = in[inPos + numChannels];
         int position = newRatePosition*oldSampleRate;
         int leftPosition = oldRatePosition*newSampleRate;
         int rightPosition = (oldRatePosition + 1)*newSampleRate;
@@ -774,8 +774,8 @@ public class Sonic {
             while((oldRatePosition + 1)*newSampleRate > newRatePosition*oldSampleRate) {
                 enlargeOutputBufferIfNeeded(1);
                 for(int i = 0; i < numChannels; i++) {
-                    outputBuffer[numOutputSamples*numChannels + i] = interpolate(pitchBuffer, position + i,
-                            oldSampleRate, newSampleRate);
+                    outputBuffer[numOutputSamples*numChannels + i] = interpolate(pitchBuffer,
+                            position*numChannels + i, oldSampleRate, newSampleRate);
                 }
                 newRatePosition++;
                 numOutputSamples++;

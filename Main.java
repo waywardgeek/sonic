@@ -60,14 +60,14 @@ public class Main {
     public static void main(
     	String[] argv) throws UnsupportedAudioFileException, IOException, LineUnavailableException
     {
-        float speed = 2.0f;
+        float speed = 1.0f;
         float pitch = 1.0f;
-        float rate = 1.0f;
+        float rate = 1.5f;
         float volume = 1.0f;
         boolean emulateChordPitch = false;
         int quality = 0;
         
-        AudioInputStream stream = AudioSystem.getAudioInputStream(new File("talking.wav"));
+        AudioInputStream stream = AudioSystem.getAudioInputStream(new File("stereo_test.wav"));
         AudioFormat format = stream.getFormat();
         int sampleRate = (int)format.getSampleRate();
         int numChannels = format.getChannels(); 
