@@ -10,6 +10,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>
+#include <limits.h>
 #include <math.h>
 #include "sonic.h"
 #ifndef M_PI
@@ -48,23 +49,6 @@ struct sonicStreamStruct {
     float avePower;
     int enableNonlinearSpeedup;
 };
-
-/* Just used for debugging */
-/*
-void sonicMSG(char *format, ...)
-{
-    char buffer[4096];
-    va_list ap;
-    FILE *file;
-
-    va_start(ap, format);
-    vsprintf((char *)buffer, (char *)format, ap);
-    va_end(ap);
-    file=fopen("/tmp/sonic.log", "a");
-    fprintf(file, "%s", buffer);
-    fclose(file);
-}
-*/
 
 /* Scale the samples by the factor. */
 static void scaleSamples(
@@ -895,25 +879,62 @@ static int adjustPitch(
     return 1;
 }
 
+/* Find the Hann window weight at the i-th point in an N-point window when
+   delayed by ratio/width of a point. */
+static double findHannWeight(int N, double x) {
+    return 0.5*(1.0 - cos(2*M_PI*x/(N - 1)));
+}
+
+/* Find the value of the sinc filter at the i-th point, delayed by ratio/width
+   fraction of a point. */
+static double findSincCoefficient(int N, double x) {
+    double hannWindowWeight = findHannWeight(N, x);
+    double sincWeight;
+    
+    x -= (N - 1)/2.0;  /* Center the sinc function in the window */
+    if (x > 1e-9 || x < -1e-9) {
+        sincWeight = sin(M_PI*x)/(M_PI*x);
+    } else {
+        sincWeight = 1.0;  /* Close enough. */
+    }
+    return hannWindowWeight*sincWeight;
+}
+
 /* Interpolate the new output sample. */
 static short interpolate(
     sonicStream stream,
+    int N,
     short *in,
     int oldSampleRate,
     int newSampleRate)
 {
-    short left = *in;
-    short right = in[stream->numChannels];
+    /* Compute N-point sinc FIR-filter here.  Clip rather than overflow. */
+    int i;
+    double total = 0;
     int position = stream->newRatePosition*oldSampleRate;
     int leftPosition = stream->oldRatePosition*newSampleRate;
     int rightPosition = (stream->oldRatePosition + 1)*newSampleRate;
     int ratio = rightPosition - position;
     int width = rightPosition - leftPosition;
+    double fraction = ((double)ratio)/width;
+    double value;
+    double x;
 
-    return (ratio*left + (width - ratio)*right)/width;
+    for (i = 0; i < N; i++) {
+        x = i + fraction;
+        value = findSincCoefficient(N, x);
+        /* printf("%u %f\n", i, value); */
+        total += in[i*stream->numChannels]*value;
+    }
+    if (total > SHRT_MAX) {
+        total = SHRT_MAX;
+    } else if (total < SHRT_MIN) {
+        total = SHRT_MIN;
+    }
+    return total;
 }
 
-/* Change the rate. */
+/* Change the rate.  Interpolate with a sinc FIR filter using a Hann window. */
 static int adjustRate(
     sonicStream stream,
     float rate,
@@ -925,6 +946,7 @@ static int adjustRate(
     int position = 0;
     short *in, *out;
     int i;
+    int N = 11; /* I am not able to hear improvement with higher N. */
 
     /* Set these values to help with the integer math */
     while(newSampleRate > (1 << 14) || oldSampleRate > (1 << 14)) {
@@ -937,8 +959,8 @@ static int adjustRate(
     if(!moveNewSamplesToPitchBuffer(stream, originalNumOutputSamples)) {
         return 0;
     }
-    /* Leave at least one pitch sample in the buffer */
-    for(position = 0; position < stream->numPitchSamples - 1; position++) {
+    /* Leave at least N pitch sample in the buffer */
+    for(position = 0; position < stream->numPitchSamples - N; position++) {
         while((stream->oldRatePosition + 1)*newSampleRate >
                 stream->newRatePosition*oldSampleRate) {
             if(!enlargeOutputBufferIfNeeded(stream, 1)) {
@@ -947,7 +969,7 @@ static int adjustRate(
             out = stream->outputBuffer + stream->numOutputSamples*numChannels;
             in = stream->pitchBuffer + position*numChannels;
             for(i = 0; i < numChannels; i++) {
-                *out++ = interpolate(stream, in, oldSampleRate, newSampleRate);
+                *out++ = interpolate(stream, N, in, oldSampleRate, newSampleRate);
                 in++;
             }
             stream->newRatePosition++;

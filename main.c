@@ -122,6 +122,9 @@ int main(
             xArg++;
             if(xArg < argc) {
                 rate = atof(argv[xArg]);
+                if (rate == 0.0f) {
+                    usage();
+                }
                 printf("Setting rate to %0.2fX\n", rate);
             }
         } else if(!strcmp(argv[xArg], "-s")) {
