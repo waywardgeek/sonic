@@ -40,10 +40,6 @@ static void runSonic(
     sonicSetVolume(stream, volume);
     sonicSetChordPitch(stream, emulateChordPitch);
     sonicSetQuality(stream, quality);
-    sonicEnableNonlinearSpeedup(stream, enableNonlinearSpeedup);
-    if(computeSpectrogram) {
-        sonicComputeSpectrogram(stream);
-    }
     do {
         samplesRead = readFromWaveFile(inFile, inBuffer, BUFFER_SIZE/numChannels);
         if(samplesRead == 0) {
@@ -59,12 +55,6 @@ static void runSonic(
             }
         } while(samplesWritten > 0);
     } while(samplesRead > 0);
-    if(computeSpectrogram) {
-        sonicSpectrogram spectrogram = sonicGetSpectrogram(stream);
-        sonicBitmap bitmap = sonicConvertSpectrogramToBitmap(spectrogram, numRows, numCols);
-        sonicWritePGM(bitmap, "sonic.pgm");
-        sonicDestroyBitmap(bitmap);
-    }
     sonicDestroyStream(stream);
 }
 

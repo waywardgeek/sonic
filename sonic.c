@@ -110,7 +110,6 @@ static short sincTable[SINC_TABLE_SIZE] = {
 };
 
 struct sonicStreamStruct {
-    sonicSpectrogram spectrogram;
     short *inputBuffer;
     short *outputBuffer;
     short *pitchBuffer;
@@ -137,9 +136,7 @@ struct sonicStreamStruct {
     int sampleRate;
     int prevPeriod;
     int prevMinDiff;
-    float localSpeedup;
     float avePower;
-    int enableNonlinearSpeedup;
 };
 
 /* Scale the samples by the factor. */
@@ -277,9 +274,6 @@ static void freeStreamBuffers(
 void sonicDestroyStream(
     sonicStream stream)
 {
-    if(stream->spectrogram != NULL) {
-        sonicDestroySpectrogram(stream->spectrogram);
-    }
     freeStreamBuffers(stream);
     free(stream);
 }
@@ -376,13 +370,6 @@ int sonicGetNumChannels(
     sonicStream stream)
 {
     return stream->numChannels;
-}
-
-/* Get the spectrogram. */
-sonicSpectrogram sonicGetSpectrogram(
-    sonicStream stream)
-{
-    return stream->spectrogram;
 }
 
 /* Set the num channels of the stream.  This will cause samples buffered in the stream to
@@ -746,11 +733,9 @@ static int prevPeriodBetter(
     int maxDiff,
     int preferNewPeriod)
 {
-    stream->localSpeedup = 1.0f;
     if(minDiff == 0 || stream->prevPeriod == 0) {
         return 0;
     }
-    stream->localSpeedup = 1.0f + (float)minDiff/(2.0f*maxDiff);
     if(preferNewPeriod) {
         if(maxDiff > minDiff*3) {
             /* Got a reasonable match this period */
@@ -1001,11 +986,11 @@ static short interpolate(
     int position = stream->newRatePosition*oldSampleRate;
     int leftPosition = stream->oldRatePosition*newSampleRate;
     int rightPosition = (stream->oldRatePosition + 1)*newSampleRate;
-    int ratio = rightPosition - position;
+    int ratio = rightPosition - position - 1;
     int width = rightPosition - leftPosition;
     int weight, value;
     int oldSign;
-    int overflowCount;
+    int overflowCount = 0;
 
     for (i = 0; i < SINC_FILTER_POINTS; i++) {
         weight = findSincCoefficient(i, ratio, width);
@@ -1083,56 +1068,6 @@ static int adjustRate(
     return 1;
 }
 
-/* Find the average change in value over the pitch period. */
-static float findAveragePower(
-    short *samples,
-    int numSamples)
-{
-    long total = 0;
-    int i;
-    float mean;
-    double totalPower = 0.0;
-    float val, avePower;
-
-    for(i = 0; i < numSamples; i++) {
-        total += samples[i];
-    }
-    mean = (float)total/numSamples;
-    for(i = 0; i < numSamples; i++) {
-        val = samples[i] - mean;
-        totalPower += val*val;
-    }
-    avePower = totalPower/numSamples;
-    return 10*log10(avePower + 1.0);
-}
-
-/* Try to speed up speech more when we can witout losing much clarity. */
-static float nonlinearSpeedup(
-    sonicStream stream,
-    short *samples,
-    float speed,
-    int period)
-{
-    if(!stream->enableNonlinearSpeedup) {
-        return speed;
-    }
-    float localSpeed = speed;
-    if(stream->localSpeedup > 1.0f) {
-        /* printf("Speeding up by %f\n", stream->localSpeedup*speed); */
-        localSpeed *= stream->localSpeedup;
-    }
-    /* Detect silence */
-    float avePower = findAveragePower(samples, period*2);
-    float prevAvePower = stream->avePower;
-    if(avePower < prevAvePower) {
-        localSpeed *= 1.0f + (prevAvePower - avePower)/(prevAvePower/10.0f);
-    }
-    float delta = 0.01f*speed/localSpeed;
-    stream->avePower = prevAvePower*(1.0f - delta) + delta*avePower;
-    /* printf("Speed:%f, average power: %f, current power: %f\n", localSpeed, prevAvePower, avePower); */
-    return localSpeed;
-}
-
 /* Skip over a pitch period, and copy period/speed samples to the output */
 static int skipPitchPeriod(
     sonicStream stream,
@@ -1142,14 +1077,12 @@ static int skipPitchPeriod(
 {
     long newSamples;
     int numChannels = stream->numChannels;
-    float localSpeed = nonlinearSpeedup(stream, samples, speed, period);
 
-    /* printf("localSpeed = %f\n", localSpeed); */
-    if(localSpeed >= 2.0f) {
-        newSamples = period/(localSpeed - 1.0f);
+    if(speed >= 2.0f) {
+        newSamples = period/(speed - 1.0f);
     } else {
         newSamples = period;
-        stream->remainingInputToCopy = period*(2.0f - localSpeed)/(localSpeed - 1.0f);
+        stream->remainingInputToCopy = period*(2.0f - speed)/(speed - 1.0f);
     }
     if(!enlargeOutputBufferIfNeeded(stream, newSamples)) {
         return 0;
@@ -1210,17 +1143,12 @@ static int changeSpeed(
         } else {
             samples = stream->inputBuffer + position*stream->numChannels;
             period = findPitchPeriod(stream, samples, 1);
-            if(stream->spectrogram != NULL) {
-                sonicAddPitchPeriodToSpectrogram(stream->spectrogram, samples, period, stream->numChannels);
-                position += period;
+            if(speed > 1.0) {
+                newSamples = skipPitchPeriod(stream, samples, speed, period);
+                position += period + newSamples;
             } else {
-                if(speed > 1.0) {
-                    newSamples = skipPitchPeriod(stream, samples, speed, period);
-                    position += period + newSamples;
-                } else {
-                    newSamples = insertPitchPeriod(stream, samples, speed, period);
-                    position += newSamples;
-                }
+                newSamples = insertPitchPeriod(stream, samples, speed, period);
+                position += newSamples;
             }
         }
         if(newSamples == 0) {
@@ -1361,14 +1289,4 @@ int sonicChangeShortSpeed(
     sonicReadShortFromStream(stream, samples, numSamples);
     sonicDestroyStream(stream);
     return numSamples;
-}
-
-/* Enable non-linear speech speedup */
-void sonicEnableNonlinearSpeedup(sonicStream stream, int enable) {
-    stream->enableNonlinearSpeedup = enable;
-}
-
-/* Compute a spectrogram on the fly. */
-void sonicComputeSpectrogram(sonicStream stream) {
-    stream->spectrogram = sonicCreateSpectrogram(stream->sampleRate);
 }

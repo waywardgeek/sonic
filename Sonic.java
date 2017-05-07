@@ -10,10 +10,65 @@ package sonic;
 
 public class Sonic {
 
-        private static final int SONIC_MIN_PITCH = 65;
-        private static final int SONIC_MAX_PITCH = 400;
-        /* This is used to down-sample some inputs to improve speed */
-        private static final int SONIC_AMDF_FREQ = 4000;
+    private static final int SONIC_MIN_PITCH = 65;
+    private static final int SONIC_MAX_PITCH = 400;
+    // This is used to down-sample some inputs to improve speed
+    private static final int SONIC_AMDF_FREQ = 4000;
+    // The number of points to use in the sinc FIR filter for resampling.
+    private static final int SINC_FILTER_POINTS = 12;
+    private static final int SINC_TABLE_SIZE = 601;
+
+    // Lookup table for windowed sinc function of SINC_FILTER_POINTS points.
+    private static final short sincTable[] = {
+        0, 0, 0, 0, 0, 0, 0, -1, -1, -2, -2, -3, -4, -6, -7, -9, -10, -12, -14,
+        -17, -19, -21, -24, -26, -29, -32, -34, -37, -40, -42, -44, -47, -48, -50,
+        -51, -52, -53, -53, -53, -52, -50, -48, -46, -43, -39, -34, -29, -22, -16,
+        -8, 0, 9, 19, 29, 41, 53, 65, 79, 92, 107, 121, 137, 152, 168, 184, 200,
+        215, 231, 247, 262, 276, 291, 304, 317, 328, 339, 348, 357, 363, 369, 372,
+        374, 375, 373, 369, 363, 355, 345, 332, 318, 300, 281, 259, 234, 208, 178,
+        147, 113, 77, 39, 0, -41, -85, -130, -177, -225, -274, -324, -375, -426,
+        -478, -530, -581, -632, -682, -731, -779, -825, -870, -912, -951, -989,
+        -1023, -1053, -1080, -1104, -1123, -1138, -1149, -1154, -1155, -1151,
+        -1141, -1125, -1105, -1078, -1046, -1007, -963, -913, -857, -796, -728,
+        -655, -576, -492, -403, -309, -210, -107, 0, 111, 225, 342, 462, 584, 708,
+        833, 958, 1084, 1209, 1333, 1455, 1575, 1693, 1807, 1916, 2022, 2122, 2216,
+        2304, 2384, 2457, 2522, 2579, 2625, 2663, 2689, 2706, 2711, 2705, 2687,
+        2657, 2614, 2559, 2491, 2411, 2317, 2211, 2092, 1960, 1815, 1658, 1489,
+        1308, 1115, 912, 698, 474, 241, 0, -249, -506, -769, -1037, -1310, -1586,
+        -1864, -2144, -2424, -2703, -2980, -3254, -3523, -3787, -4043, -4291,
+        -4529, -4757, -4972, -5174, -5360, -5531, -5685, -5819, -5935, -6029,
+        -6101, -6150, -6175, -6175, -6149, -6096, -6015, -5905, -5767, -5599,
+        -5401, -5172, -4912, -4621, -4298, -3944, -3558, -3141, -2693, -2214,
+        -1705, -1166, -597, 0, 625, 1277, 1955, 2658, 3386, 4135, 4906, 5697, 6506,
+        7332, 8173, 9027, 9893, 10769, 11654, 12544, 13439, 14335, 15232, 16128,
+        17019, 17904, 18782, 19649, 20504, 21345, 22170, 22977, 23763, 24527,
+        25268, 25982, 26669, 27327, 27953, 28547, 29107, 29632, 30119, 30569,
+        30979, 31349, 31678, 31964, 32208, 32408, 32565, 32677, 32744, 32767,
+        32744, 32677, 32565, 32408, 32208, 31964, 31678, 31349, 30979, 30569,
+        30119, 29632, 29107, 28547, 27953, 27327, 26669, 25982, 25268, 24527,
+        23763, 22977, 22170, 21345, 20504, 19649, 18782, 17904, 17019, 16128,
+        15232, 14335, 13439, 12544, 11654, 10769, 9893, 9027, 8173, 7332, 6506,
+        5697, 4906, 4135, 3386, 2658, 1955, 1277, 625, 0, -597, -1166, -1705,
+        -2214, -2693, -3141, -3558, -3944, -4298, -4621, -4912, -5172, -5401,
+        -5599, -5767, -5905, -6015, -6096, -6149, -6175, -6175, -6150, -6101,
+        -6029, -5935, -5819, -5685, -5531, -5360, -5174, -4972, -4757, -4529,
+        -4291, -4043, -3787, -3523, -3254, -2980, -2703, -2424, -2144, -1864,
+        -1586, -1310, -1037, -769, -506, -249, 0, 241, 474, 698, 912, 1115, 1308,
+        1489, 1658, 1815, 1960, 2092, 2211, 2317, 2411, 2491, 2559, 2614, 2657,
+        2687, 2705, 2711, 2706, 2689, 2663, 2625, 2579, 2522, 2457, 2384, 2304,
+        2216, 2122, 2022, 1916, 1807, 1693, 1575, 1455, 1333, 1209, 1084, 958, 833,
+        708, 584, 462, 342, 225, 111, 0, -107, -210, -309, -403, -492, -576, -655,
+        -728, -796, -857, -913, -963, -1007, -1046, -1078, -1105, -1125, -1141,
+        -1151, -1155, -1154, -1149, -1138, -1123, -1104, -1080, -1053, -1023, -989,
+        -951, -912, -870, -825, -779, -731, -682, -632, -581, -530, -478, -426,
+        -375, -324, -274, -225, -177, -130, -85, -41, 0, 39, 77, 113, 147, 178,
+        208, 234, 259, 281, 300, 318, 332, 345, 355, 363, 369, 373, 375, 374, 372,
+        369, 363, 357, 348, 339, 328, 317, 304, 291, 276, 262, 247, 231, 215, 200,
+        184, 168, 152, 137, 121, 107, 92, 79, 65, 53, 41, 29, 19, 9, 0, -8, -16,
+        -22, -29, -34, -39, -43, -46, -48, -50, -52, -53, -53, -53, -52, -51, -50,
+        -48, -47, -44, -42, -40, -37, -34, -32, -29, -26, -24, -21, -19, -17, -14,
+        -12, -10, -9, -7, -6, -4, -3, -2, -2, -1, -1, 0, 0, 0, 0, 0, 0, 0
+    };
 
     private short inputBuffer[];
     private short outputBuffer[];
@@ -46,10 +101,10 @@ public class Sonic {
 
     // Resize the array.
     private short[] resize(
-            short[] oldArray,
-            int newLength)
+        short[] oldArray,
+        int newLength)
     {
-            newLength *= numChannels;
+        newLength *= numChannels;
         short[]        newArray = new short[newLength];
         int length = oldArray.length <= newLength? oldArray.length : newLength;
 
@@ -59,11 +114,11 @@ public class Sonic {
 
     // Move samples from one array to another.  May move samples down within an array, but not up.
     private void move(
-            short dest[],
-            int destPos,
-            short source[],
-            int sourcePos,
-            int numSamples)
+        short dest[],
+        int destPos,
+        short source[],
+        int sourcePos,
+        int numSamples)
     {
         System.arraycopy(source, sourcePos*numChannels, dest, destPos*numChannels, numSamples*numChannels);
     }
@@ -733,6 +788,23 @@ public class Sonic {
         removePitchSamples(position);
     }
 
+    // Aproximate the sinc function times a Hann window from the sinc table.
+    private int findSincCoefficient(int i, int ratio, int width) {
+        int lobePoints = (SINC_TABLE_SIZE-1)/SINC_FILTER_POINTS;
+        int left = i*lobePoints + (ratio*lobePoints)/width;
+        int right = left + 1;
+        int position = i*lobePoints*width + ratio*lobePoints - left*width;
+        int leftVal = sincTable[left];
+        int rightVal = sincTable[right];
+
+        return (leftVal*(width - position) + rightVal*position)/width;
+    }
+
+    // Return 1 if value >= 0, else -1.  This represents the sign of value.
+    private int getSign(int value) {
+        return value >= 0? 1 : 0;
+    }
+
     // Interpolate the new output sample.
     private short interpolate(
         short in[],
@@ -740,15 +812,36 @@ public class Sonic {
         int oldSampleRate,
         int newSampleRate)
     {
-        short left = in[inPos];
-        short right = in[inPos + numChannels];
+        // Compute N-point sinc FIR-filter here.  Clip rather than overflow.
+        int i;
+        int total = 0;
         int position = newRatePosition*oldSampleRate;
         int leftPosition = oldRatePosition*newSampleRate;
         int rightPosition = (oldRatePosition + 1)*newSampleRate;
-        int ratio = rightPosition - position;
+        int ratio = rightPosition - position - 1;
         int width = rightPosition - leftPosition;
+        int weight, value;
+        int oldSign;
+        int overflowCount = 0;
 
-        return (short)((ratio*left + (width - ratio)*right)/width);
+        for (i = 0; i < SINC_FILTER_POINTS; i++) {
+            weight = findSincCoefficient(i, ratio, width);
+            /* printf("%u %f\n", i, weight); */
+            value = in[inPos + i*numChannels]*weight;
+            oldSign = getSign(total);
+            total += value;
+            if (oldSign != getSign(total) && getSign(value) == oldSign) {
+                /* We must have overflowed.  This can happen with a sinc filter. */
+                overflowCount += oldSign;
+            }
+        }
+        /* It is better to clip than to wrap if there was a overflow. */
+        if (overflowCount > 0) {
+            return Short.MAX_VALUE;
+        } else if (overflowCount < 0) {
+            return Short.MIN_VALUE;
+        }
+        return (short)(total >> 16);
     }
 
     // Change the rate.

@@ -10,8 +10,8 @@ UNAME := $(shell uname)
 ifeq ($(UNAME), Darwin)
   SONAME=install_name
 endif
-CFLAGS=-Wall -g -ansi -fPIC -pthread
-#CFLAGS=-Wall -O3 -ansi -fPIC -pthread
+#CFLAGS=-Wall -g -ansi -fPIC -pthread
+CFLAGS=-Wall -O3 -ansi -fPIC -pthread
 LIB_TAG=0.2.0
 CC=gcc
 PREFIX=/usr
@@ -22,16 +22,13 @@ all: sonic libsonic.so.$(LIB_TAG) libsonic.a funcgen
 sonic: wave.o main.o libsonic.a
 	$(CC) $(CFLAGS) -o sonic wave.o main.o libsonic.a -lm -lfftw3
 
-sonic.o: sonic.c sonic.h spectrogram.h
+sonic.o: sonic.c sonic.h
 	$(CC) $(CFLAGS) -c sonic.c
-
-spectrogram.o: spectrogram.c spectrogram.h
-	$(CC) $(CFLAGS) -c spectrogram.c
 
 wave.o: wave.c wave.h
 	$(CC) $(CFLAGS) -c wave.c
 
-main.o: main.c sonic.h spectrogram.h wave.h
+main.o: main.c sonic.h wave.h
 	$(CC) $(CFLAGS) -c main.c
 
 funcgen.o: funcgen.c wave.h
@@ -40,13 +37,13 @@ funcgen.o: funcgen.c wave.h
 funcgen: funcgen.o
 	$(CC) $(CFLAGS) -o funcgen wave.o funcgen.o -lm
 
-libsonic.so.$(LIB_TAG): sonic.o spectrogram.o
-	$(CC) $(CFLAGS) -shared -Wl,-$(SONAME),libsonic.so.0 sonic.o spectrogram.o -o libsonic.so.$(LIB_TAG)
+libsonic.so.$(LIB_TAG): sonic.o
+	$(CC) $(CFLAGS) -shared -Wl,-$(SONAME),libsonic.so.0 sonic.o -o libsonic.so.$(LIB_TAG)
 	ln -sf libsonic.so.$(LIB_TAG) libsonic.so
 	ln -sf libsonic.so.$(LIB_TAG) libsonic.so.0
 
-libsonic.a: sonic.o spectrogram.o
-	$(AR) cqs libsonic.a sonic.o spectrogram.o
+libsonic.a: sonic.o
+	$(AR) cqs libsonic.a sonic.o
 
 install: sonic libsonic.so.$(LIB_TAG) sonic.h
 	install -d $(DESTDIR)$(PREFIX)/bin $(DESTDIR)$(PREFIX)/include $(DESTDIR)$(PREFIX)/lib
