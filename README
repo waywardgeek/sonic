@@ -32,5 +32,14 @@ real    0m52.043s
 user    0m51.190s
 sys     0m0.310s
 
+Update, May 7, 2017
+-------------------
+I upgraded the pitch change algorithm to use a 12-point sinc FIR filter for
+interpolation, rather than linearly interpolating between points.  This
+significantly reduces noise introduced by the pitch change algorithm.  It is
+most noticable in low-sample-rate streams, such as the 11,025 Hz output of the
+Eloquence TTS engine.  The upgrade is in both the C and Java versions.
+
+
 Author: Bill Cox
 email: waywardgeek@gmail.com
