@@ -25,7 +25,7 @@ Description: Simple library to speed up or slow down speech
  This package contains just the actual library.
  libsonic is a very simple library for speeding up or slowing
  down speech.  It has only basic dependencies, and is meant to
- work on both Linux destop machines and embedded systems.
+ work on both Linux desktop machines and embedded systems.
  The key new feature in Sonic versus other libraries is very
  high quality at speed up factors well over 2X.
 

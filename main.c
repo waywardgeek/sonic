@@ -2,7 +2,7 @@
    2.0 license.
 
    This file is meant as a simple example for how to use libsonic.  It is also a
-   useful utility on it's own, which can speed up or slow down wav files, change
+   useful utility on its own, which can speed up or slow down wav files, change
    pitch, and scale volume. */
 
 #include <stdio.h>
