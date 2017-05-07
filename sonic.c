@@ -754,9 +754,10 @@ static int prevPeriodBetter(
 }
 
 /* Find the pitch period.  This is a critical step, and we may have to try
-   multiple ways to get a good answer.  This version uses AMDF.  To improve
-   speed, we down sample by an integer factor get in the 11KHz range, and then
-   do it again with a narrower frequency range without down sampling */
+   multiple ways to get a good answer.  This version uses Average Magnitude
+   Difference Function (AMDF).  To improve speed, we down sample by an integer
+   factor get in the 11KHz range, and then do it again with a narrower
+   frequency range without down sampling */
 static int findPitchPeriod(
     sonicStream stream,
     short *samples,

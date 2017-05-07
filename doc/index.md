@@ -39,7 +39,7 @@ Sonic is Copyright 2010, 2011, Bill Cox, all rights reserved.  It is released
 as under the Apache 2.0 license.  Feel free to contact me at
 <waywardgeek@gmail.com>.  One user was concerned about patents.  I believe the
 sonic algorithms do not violate any patents, as most of it is very old, based
-on [PICOLA](http://keizai.yokkaichi-u.ac.jp/~ikeda/research/picola.html), and
+on [PICOLA](https://web.archive.org/web/20120731100136/http://keizai.yokkaichi-u.ac.jp/~ikeda/research/picola.html), and
 the new part, for greater than 2X speed up, is clearly a capability most
 developers ignore, and would not bother to patent.
 
