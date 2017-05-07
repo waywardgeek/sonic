@@ -840,7 +840,7 @@ public class Sonic {
         } else if (overflowCount < 0) {
             return Short.MIN_VALUE;
         }
-        return (short)(total >> 16);
+        return (short)(total >> 15);
     }
 
     // Change the rate.
