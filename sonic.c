@@ -972,48 +972,59 @@ static int adjustPitch(
 }
 
 /* Aproximate the sinc function times a Hann window from the sinc table. */
-static double findSincCoefficient(int N, double x) {
-    int left = (int)(x*(SINC_TABLE_SIZE-1)/N);
+static int findSincCoefficient(int i, int ratio, int width) {
+    int lobePoints = (SINC_TABLE_SIZE-1)/SINC_FILTER_POINTS;
+    int left = i*lobePoints + (ratio*lobePoints)/width;
     int right = left + 1;
-    double position = x*(SINC_TABLE_SIZE-1)/N - left;
+    int position = i*lobePoints*width + ratio*lobePoints - left*width;
     int leftVal = sincTable[left];
     int rightVal = sincTable[right];
 
-    return (double)(leftVal*(1.0 - position) + rightVal*position)/SHRT_MAX;
+    return (leftVal*(width - position) + rightVal*position)/width;
+}
+
+/* Return 1 if value >= 0, else -1.  This represents the sign of value. */
+static int getSign(int value) {
+    return value >= 0? 1 : 0;
 }
 
 /* Interpolate the new output sample. */
 static short interpolate(
     sonicStream stream,
-    int N,
     short *in,
     int oldSampleRate,
     int newSampleRate)
 {
     /* Compute N-point sinc FIR-filter here.  Clip rather than overflow. */
     int i;
-    double total = 0;
+    int total = 0;
     int position = stream->newRatePosition*oldSampleRate;
     int leftPosition = stream->oldRatePosition*newSampleRate;
     int rightPosition = (stream->oldRatePosition + 1)*newSampleRate;
     int ratio = rightPosition - position;
     int width = rightPosition - leftPosition;
-    double fraction = ((double)ratio)/width;
-    double value;
-    double x;
+    int weight, value;
+    int oldSign;
+    int overflowCount;
 
-    for (i = 0; i < N; i++) {
-        x = i + fraction;
-        value = findSincCoefficient(N, x);
-        /* printf("%u %f\n", i, value); */
-        total += in[i*stream->numChannels]*value;
+    for (i = 0; i < SINC_FILTER_POINTS; i++) {
+        weight = findSincCoefficient(i, ratio, width);
+        /* printf("%u %f\n", i, weight); */
+        value = in[i*stream->numChannels]*weight;
+        oldSign = getSign(total);
+        total += value;
+        if (oldSign != getSign(total) && getSign(value) == oldSign) {
+            /* We must have overflowed.  This can happen with a sinc filter. */
+            overflowCount += oldSign;
+        }
     }
-    if (total > SHRT_MAX) {
-        total = SHRT_MAX;
-    } else if (total < SHRT_MIN) {
-        total = SHRT_MIN;
+    /* It is better to clip than to wrap if there was a overflow. */
+    if (overflowCount > 0) {
+        return SHRT_MAX;
+    } else if (overflowCount < 0) {
+        return SHRT_MIN;
     }
-    return total;
+    return total >> 16;
 }
 
 /* Change the rate.  Interpolate with a sinc FIR filter using a Hann window. */
@@ -1051,7 +1062,7 @@ static int adjustRate(
             out = stream->outputBuffer + stream->numOutputSamples*numChannels;
             in = stream->pitchBuffer + position*numChannels;
             for(i = 0; i < numChannels; i++) {
-                *out++ = interpolate(stream, N, in, oldSampleRate, newSampleRate);
+                *out++ = interpolate(stream, in, oldSampleRate, newSampleRate);
                 in++;
             }
             stream->newRatePosition++;
