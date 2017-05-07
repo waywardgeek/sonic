@@ -17,7 +17,7 @@ CC=gcc
 PREFIX=/usr
 LIBDIR=$(PREFIX)/lib
 
-all: sonic libsonic.so.$(LIB_TAG) libsonic.a funcgen
+all: sonic libsonic.so.$(LIB_TAG) libsonic.a
 
 sonic: wave.o main.o libsonic.a
 	$(CC) $(CFLAGS) -o sonic wave.o main.o libsonic.a -lm -lfftw3
@@ -30,12 +30,6 @@ wave.o: wave.c wave.h
 
 main.o: main.c sonic.h wave.h
 	$(CC) $(CFLAGS) -c main.c
-
-funcgen.o: funcgen.c wave.h
-	$(CC) $(CFLAGS) -c funcgen.c
-
-funcgen: funcgen.o
-	$(CC) $(CFLAGS) -o funcgen wave.o funcgen.o -lm
 
 libsonic.so.$(LIB_TAG): sonic.o
 	$(CC) $(CFLAGS) -shared -Wl,-$(SONAME),libsonic.so.0 sonic.o -o libsonic.so.$(LIB_TAG)
@@ -63,4 +57,4 @@ uninstall:
 	rm -f $(DESTDIR)$(LIBDIR)/libsonic.a
 
 clean:
-	rm -f *.o sonic funcgen libsonic.so* libsonic.a
+	rm -f *.o sonic libsonic.so* libsonic.a
