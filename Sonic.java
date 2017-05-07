@@ -796,7 +796,7 @@ public class Sonic {
         int leftVal = sincTable[left];
         int rightVal = sincTable[right];
 
-        return (leftVal*(width - position) + rightVal*position)/width;
+        return ((leftVal*(width - position) + rightVal*position) << 1)/width;
     }
 
     // Return 1 if value >= 0, else -1.  This represents the sign of value.
@@ -840,7 +840,7 @@ public class Sonic {
         } else if (overflowCount < 0) {
             return Short.MIN_VALUE;
         }
-        return (short)(total >> 15);
+        return (short)(total >> 16);
     }
 
     // Change the rate.
