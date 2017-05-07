@@ -1010,7 +1010,7 @@ static short interpolate(
     } else if (overflowCount < 0) {
         return SHRT_MIN;
     }
-    return total >> 16;
+    return total >> 15;
 }
 
 /* Change the rate.  Interpolate with a sinc FIR filter using a Hann window. */
