@@ -10,17 +10,21 @@ UNAME := $(shell uname)
 ifeq ($(UNAME), Darwin)
   SONAME=install_name
 endif
-#CFLAGS=-Wall -g -ansi -fPIC -pthread
-CFLAGS=-Wall -O3 -ansi -fPIC -pthread
+# Remove -DSONIC_SPECTROGRAM if not using spectrgrams.
+#CFLAGS=-Wall -g -ansi -fPIC -pthread -DSONIC_SPECTROGRAM
+CFLAGS=-Wall -O3 -ansi -fPIC -pthread -DSONIC_SPECTROGRAM
 LIB_TAG=0.2.0
 CC=gcc
 PREFIX=/usr
 LIBDIR=$(PREFIX)/lib
 
+# Set this to empty if not using spectrograms.
+FFTLIB=-lfftw3
+
 all: sonic libsonic.so.$(LIB_TAG) libsonic.a
 
 sonic: wave.o main.o libsonic.a
-	$(CC) $(CFLAGS) -o sonic wave.o main.o libsonic.a -lm -lfftw3
+	$(CC) $(CFLAGS) -o sonic wave.o main.o libsonic.a -lm $(FFTLIB)
 
 sonic.o: sonic.c sonic.h
 	$(CC) $(CFLAGS) -c sonic.c
