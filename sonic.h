@@ -150,6 +150,7 @@ int sonicChangeShortSpeed(short* samples, int numSamples, float speed,
                           float pitch, float rate, float volume,
                           int useChordPitch, int sampleRate, int numChannels);
 
+#ifdef SONIC_SPECTROGRAM
 /*
 This code generates high quality spectrograms from sound samples, using
 Time-Aliased-FFTs as described at:
@@ -171,7 +172,9 @@ value at any particular point in time and frequency.
 #define SONIC_MAX_SPECTRUM_FREQ 5000
 
 struct sonicSpectrogramStruct;
+struct sonicBitmapStruct;
 typedef struct sonicSpectrogramStruct* sonicSpectrogram;
+typedef struct sonicBitmapStruct* sonicBitmap;
 
 /* sonicBitmap objects represent spectrograms as grayscale bitmaps where each
    pixel is from 0 (black) to 255 (white).  Bitmaps are rows*cols in size.
@@ -190,6 +193,14 @@ void sonicComputeSpectrogram(sonicStream stream);
 /* Get the spectrogram. */
 sonicSpectrogram sonicGetSpectrogram(sonicStream stream);
 
+/* Create an empty spectrogram. Called automatically if sonicComputeSpectrogram
+   has been called. */
+sonicSpectrogram sonicCreateSpectrogram(int sampleRate);
+
+/* Destroy the spectrotram.  This is called automatically when calling
+   sonicDestroyStream. */
+void sonicDestroySpectrogram(sonicSpectrogram spectrogram);
+
 /* Convert the spectrogram to a bitmap. Caller must destroy bitmap when done. */
 sonicBitmap sonicConvertSpectrogramToBitmap(sonicSpectrogram spectrogram,
                                             int numRows, int numCols);
@@ -198,6 +209,14 @@ sonicBitmap sonicConvertSpectrogramToBitmap(sonicSpectrogram spectrogram,
 void sonicDestroyBitmap(sonicBitmap bitmap);
 
 int sonicWritePGM(sonicBitmap bitmap, char* fileName);
+
+/* Add two pitch periods worth of samples to the spectrogram.  There must be
+   2*period samples.  Time should advance one pitch period for each call to
+   this function. */
+void sonicAddPitchPeriodToSpectrogram(sonicSpectrogram spectrogram,
+                                      short* samples, int period,
+                                      int numChannels);
+#endif  /* SONIC_SPECTROGRAM */
 
 #ifdef __cplusplus
 }

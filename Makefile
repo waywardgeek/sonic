@@ -5,21 +5,29 @@
 # safe.  We call malloc, and older Linux versions only linked in the thread-safe
 # malloc if -pthread is specified.
 
+# Set this to 0 if you do not want to link in spectrogram generation.
+USE_SPECTROGRAM=1
 SONAME=soname
 UNAME := $(shell uname)
 ifeq ($(UNAME), Darwin)
   SONAME=install_name
 endif
-# Remove -DSONIC_SPECTROGRAM if not using spectrgrams.
-#CFLAGS=-Wall -g -ansi -fPIC -pthread -DSONIC_SPECTROGRAM
-CFLAGS=-Wall -O3 -ansi -fPIC -pthread -DSONIC_SPECTROGRAM
+CFLAGS=-Wall -g -ansi -fPIC -pthread
+#CFLAGS=-Wall -O3 -ansi -fPIC -pthread -DSONIC_SPECTROGRAM
 LIB_TAG=0.2.0
 CC=gcc
 PREFIX=/usr
 LIBDIR=$(PREFIX)/lib
+SRC=sonic.c
+FFTLIB=
+ifeq ($(USE_SPECTROGRAM), 1)
+  CFLAGS+= -DSONIC_SPECTROGRAM
+  SRC+= spectrogram.c
+  FFTLIB=-lfftw3
+endif
+OBJ=$(SRC:.c=.o)
 
 # Set this to empty if not using spectrograms.
-FFTLIB=-lfftw3
 
 all: sonic libsonic.so.$(LIB_TAG) libsonic.a
 
@@ -35,13 +43,16 @@ wave.o: wave.c wave.h
 main.o: main.c sonic.h wave.h
 	$(CC) $(CFLAGS) -c main.c
 
-libsonic.so.$(LIB_TAG): sonic.o
-	$(CC) $(CFLAGS) -shared -Wl,-$(SONAME),libsonic.so.0 sonic.o -o libsonic.so.$(LIB_TAG)
+spectrogram.o: spectrogram.c spectrogram.h
+	$(CC) $(CFLAGS) -c spectrogram.c
+
+libsonic.so.$(LIB_TAG): $(OBJ)
+	$(CC) $(CFLAGS) -shared -Wl,-$(SONAME),libsonic.so.0 $(OBJ) -o libsonic.so.$(LIB_TAG)
 	ln -sf libsonic.so.$(LIB_TAG) libsonic.so
 	ln -sf libsonic.so.$(LIB_TAG) libsonic.so.0
 
-libsonic.a: sonic.o
-	$(AR) cqs libsonic.a sonic.o
+libsonic.a: $(OBJ)
+	$(AR) cqs libsonic.a $(OBJ)
 
 install: sonic libsonic.so.$(LIB_TAG) sonic.h
 	install -d $(DESTDIR)$(PREFIX)/bin $(DESTDIR)$(PREFIX)/include $(DESTDIR)$(PREFIX)/lib
@@ -52,8 +63,8 @@ install: sonic libsonic.so.$(LIB_TAG) sonic.h
 	ln -sf libsonic.so.$(LIB_TAG) $(DESTDIR)$(PREFIX)/lib/libsonic.so
 	ln -sf libsonic.so.$(LIB_TAG) $(DESTDIR)$(PREFIX)/lib/libsonic.so.0
 
-uninstall: 
-	rm -f $(DESTDIR)$(PREFIX)/bin/sonic 
+uninstall:
+	rm -f $(DESTDIR)$(PREFIX)/bin/sonic
 	rm -f $(DESTDIR)$(PREFIX)/include/sonic.h
 	rm -f $(DESTDIR)$(PREFIX)/lib/libsonic.so.$(LIB_TAG)
 	rm -f $(DESTDIR)$(PREFIX)/lib/libsonic.so

@@ -30,9 +30,11 @@ static void runSonic(waveFile inFile, waveFile outFile, float speed,
   sonicSetVolume(stream, volume);
   sonicSetChordPitch(stream, emulateChordPitch);
   sonicSetQuality(stream, quality);
+#ifdef SONIC_SPECTROGRAM
   if (computeSpectrogram) {
     sonicComputeSpectrogram(stream);
   }
+#endif  /* SONIC_SPECTROGRAM */
   do {
     samplesRead = readFromWaveFile(inFile, inBuffer, BUFFER_SIZE / numChannels);
     if (samplesRead == 0) {
@@ -48,6 +50,7 @@ static void runSonic(waveFile inFile, waveFile outFile, float speed,
       }
     } while (samplesWritten > 0);
   } while (samplesRead > 0);
+#ifdef SONIC_SPECTROGRAM
   if (computeSpectrogram) {
     sonicSpectrogram spectrogram = sonicGetSpectrogram(stream);
     sonicBitmap bitmap =
@@ -55,6 +58,7 @@ static void runSonic(waveFile inFile, waveFile outFile, float speed,
     sonicWritePGM(bitmap, "sonic.pgm");
     sonicDestroyBitmap(bitmap);
   }
+#endif  /* SONIC_SPECTROGRAM */
   sonicDestroyStream(stream);
 }
 
@@ -71,8 +75,10 @@ static void usage(void) {
       "    -r rate    -- Set playback rate.  2.0 means 2X faster, and 2X "
       "pitch.\n"
       "    -s speed   -- Set speed up factor.  2.0 means 2X faster.\n"
+#ifdef SONIC_SPECTROGRAM
       "    -S width height -- Generate a spectrogram in sonic.pgm in PGM "
       "format.\n"
+#endif  /* SONIC_SPECTROGRAM */
       "    -v volume  -- Scale volume by a constant factor.\n");
   exit(1);
 }
@@ -127,6 +133,7 @@ int main(int argc, char** argv) {
         speed = atof(argv[xArg]);
         printf("Setting speed to %0.2fX\n", speed);
       }
+#ifdef SONIC_SPECTROGRAM
     } else if (!strcmp(argv[xArg], "-S")) {
       xArg++;
       if (xArg < argc) {
@@ -138,6 +145,7 @@ int main(int argc, char** argv) {
         computeSpectrogram = 1;
         printf("Computing spectrogram %d wide and %d tall\n", numCols, numRows);
       }
+#endif  /* SONIC_SPECTROGRAM */
     } else if (!strcmp(argv[xArg], "-v")) {
       xArg++;
       if (xArg < argc) {
