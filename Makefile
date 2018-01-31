@@ -12,8 +12,8 @@ UNAME := $(shell uname)
 ifeq ($(UNAME), Darwin)
   SONAME=install_name
 endif
-CFLAGS=-Wall -g -ansi -fPIC -pthread
-#CFLAGS=-Wall -O3 -ansi -fPIC -pthread -DSONIC_SPECTROGRAM
+#CFLAGS=-Wall -Wno-unused-function -g -ansi -fPIC -pthread
+CFLAGS=-Wall -Wno-unused-function -O3 -ansi -fPIC -pthread
 LIB_TAG=0.2.0
 CC=gcc
 PREFIX=/usr
