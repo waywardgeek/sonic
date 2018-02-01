@@ -8,12 +8,11 @@
 
 #include "sonic.h"
 
-#include <float.h>
 #include <limits.h>
 #include <math.h>
 #include <stdarg.h>
-#include <stdlib.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 /*
@@ -196,7 +195,7 @@ void sonicSetPitch(sonicStream stream, float pitch) { stream->pitch = pitch; }
 float sonicGetRate(sonicStream stream) { return stream->rate; }
 
 /* Set the playback rate of the stream. This scales pitch and speed at the same
- * time. */
+   time. */
 void sonicSetRate(sonicStream stream, float rate) {
   stream->rate = rate;
 
@@ -216,7 +215,7 @@ void sonicSetChordPitch(sonicStream stream, int useChordPitch) {
 int sonicGetQuality(sonicStream stream) { return stream->quality; }
 
 /* Set the "quality".  Default 0 is virtually as good as 1, but very much
- * faster. */
+   faster. */
 void sonicSetQuality(sonicStream stream, int quality) {
   stream->quality = quality;
 }
@@ -265,26 +264,26 @@ static int allocateStreamBuffers(sonicStream stream, int sampleRate,
 
   stream->inputBufferSize = maxRequired;
   stream->inputBuffer =
-      (short *)calloc(maxRequired, sizeof(short) * numChannels);
+      (short*)calloc(maxRequired, sizeof(short) * numChannels);
   if (stream->inputBuffer == NULL) {
     sonicDestroyStream(stream);
     return 0;
   }
   stream->outputBufferSize = maxRequired;
   stream->outputBuffer =
-      (short *)calloc(maxRequired, sizeof(short) * numChannels);
+      (short*)calloc(maxRequired, sizeof(short) * numChannels);
   if (stream->outputBuffer == NULL) {
     sonicDestroyStream(stream);
     return 0;
   }
   stream->pitchBufferSize = maxRequired;
   stream->pitchBuffer =
-      (short *)calloc(maxRequired, sizeof(short) * numChannels);
+      (short*)calloc(maxRequired, sizeof(short) * numChannels);
   if (stream->pitchBuffer == NULL) {
     sonicDestroyStream(stream);
     return 0;
   }
-  stream->downSampleBuffer = (short *)calloc(maxRequired, sizeof(short));
+  stream->downSampleBuffer = (short*)calloc(maxRequired, sizeof(short));
   if (stream->downSampleBuffer == NULL) {
     sonicDestroyStream(stream);
     return 0;
@@ -347,7 +346,7 @@ void sonicSetNumChannels(sonicStream stream, int numChannels) {
 static int enlargeOutputBufferIfNeeded(sonicStream stream, int numSamples) {
   if (stream->numOutputSamples + numSamples > stream->outputBufferSize) {
     stream->outputBufferSize += (stream->outputBufferSize >> 1) + numSamples;
-    stream->outputBuffer = (short *)realloc(
+    stream->outputBuffer = (short*)realloc(
         stream->outputBuffer,
         stream->outputBufferSize * sizeof(short) * stream->numChannels);
     if (stream->outputBuffer == NULL) {
@@ -361,7 +360,7 @@ static int enlargeOutputBufferIfNeeded(sonicStream stream, int numSamples) {
 static int enlargeInputBufferIfNeeded(sonicStream stream, int numSamples) {
   if (stream->numInputSamples + numSamples > stream->inputBufferSize) {
     stream->inputBufferSize += (stream->inputBufferSize >> 1) + numSamples;
-    stream->inputBuffer = (short *)realloc(
+    stream->inputBuffer = (short*)realloc(
         stream->inputBuffer,
         stream->inputBufferSize * sizeof(short) * stream->numChannels);
     if (stream->inputBuffer == NULL) {
@@ -761,7 +760,7 @@ static void overlapAdd(int numSamples, int numChannels, short* out,
 static void overlapAddWithSeparation(int numSamples, int numChannels,
                                      int separation, short* out,
                                      short* rampDown, short* rampUp) {
-  short* o, *u, *d;
+  short *o, *u, *d;
   int i, t;
 
   for (i = 0; i < numChannels; i++) {
@@ -794,8 +793,8 @@ static int moveNewSamplesToPitchBuffer(sonicStream stream,
   if (stream->numPitchSamples + numSamples > stream->pitchBufferSize) {
     stream->pitchBufferSize += (stream->pitchBufferSize >> 1) + numSamples;
     stream->pitchBuffer =
-        (short *)realloc(stream->pitchBuffer,
-                         stream->pitchBufferSize * sizeof(short) * numChannels);
+        (short*)realloc(stream->pitchBuffer,
+                        stream->pitchBufferSize * sizeof(short) * numChannels);
     if (stream->pitchBuffer == NULL) {
       return 0;
     }
@@ -833,7 +832,7 @@ static int adjustPitch(sonicStream stream, int originalNumOutputSamples) {
   int position = 0;
   short* out;
   short* rampDown;
-  short *rampUp;
+  short* rampUp;
 
   if (stream->numOutputSamples == originalNumOutputSamples) {
     return 1;
@@ -925,7 +924,7 @@ static int adjustRate(sonicStream stream, float rate,
   int oldSampleRate = stream->sampleRate;
   int numChannels = stream->numChannels;
   int position = 0;
-  short* in, *out;
+  short *in, *out;
   int i;
   int N = SINC_FILTER_POINTS;
 
@@ -1046,7 +1045,7 @@ static int changeSpeed(sonicStream stream, float speed) {
         position += period;
       } else
 #endif  /* SONIC_SPECTROGRAM */
-      if (speed > 1.0) {
+          if (speed > 1.0) {
         newSamples = skipPitchPeriod(stream, samples, speed, period);
         position += period + newSamples;
       } else {
