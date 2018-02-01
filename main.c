@@ -14,16 +14,30 @@
 #define BUFFER_SIZE 2048
 
 /* Run sonic. */
-static void runSonic(waveFile inFile, waveFile outFile, float speed,
+static void runSonic(char* inFileName, char* outFileName, float speed,
                      float pitch, float rate, float volume,
                      int emulateChordPitch, int quality,
                      int enableNonlinearSpeedup, int computeSpectrogram,
-                     int numRows, int numCols, int sampleRate,
-                     int numChannels) {
-  sonicStream stream = sonicCreateStream(sampleRate, numChannels);
+                     int numRows, int numCols) {
+  waveFile inFile, outFile;
+  sonicStream stream;
   short inBuffer[BUFFER_SIZE], outBuffer[BUFFER_SIZE];
-  int samplesRead, samplesWritten;
+  int sampleRate, numChannels, samplesRead, samplesWritten;
 
+  inFile = openInputWaveFile(inFileName, &sampleRate, &numChannels);
+  if (inFile == NULL) {
+    fprintf(stderr, "Unable to read wave file %s\n", inFileName);
+    exit(1);
+  }
+  if (!computeSpectrogram) {
+    outFile = openOutputWaveFile(outFileName, sampleRate, numChannels);
+    if (outFile == NULL) {
+      closeWaveFile(inFile);
+      fprintf(stderr, "Unable to open wave file %s for writing\n", outFileName);
+      exit(1);
+    }
+  }
+  stream = sonicCreateStream(sampleRate, numChannels);
   sonicSetSpeed(stream, speed);
   sonicSetPitch(stream, pitch);
   sonicSetRate(stream, rate);
@@ -45,7 +59,7 @@ static void runSonic(waveFile inFile, waveFile outFile, float speed,
     do {
       samplesWritten = sonicReadShortFromStream(stream, outBuffer,
                                                 BUFFER_SIZE / numChannels);
-      if (samplesWritten > 0) {
+      if (samplesWritten > 0 && !computeSpectrogram) {
         writeToWaveFile(outFile, outBuffer, samplesWritten);
       }
     } while (samplesWritten > 0);
@@ -55,11 +69,15 @@ static void runSonic(waveFile inFile, waveFile outFile, float speed,
     sonicSpectrogram spectrogram = sonicGetSpectrogram(stream);
     sonicBitmap bitmap =
         sonicConvertSpectrogramToBitmap(spectrogram, numRows, numCols);
-    sonicWritePGM(bitmap, "sonic.pgm");
+    sonicWritePGM(bitmap, outFileName);
     sonicDestroyBitmap(bitmap);
   }
 #endif  /* SONIC_SPECTROGRAM */
   sonicDestroyStream(stream);
+  closeWaveFile(inFile);
+  if (!computeSpectrogram) {
+    closeWaveFile(outFile);
+  }
 }
 
 /* Print the usage. */
@@ -76,8 +94,7 @@ static void usage(void) {
       "pitch.\n"
       "    -s speed   -- Set speed up factor.  2.0 means 2X faster.\n"
 #ifdef SONIC_SPECTROGRAM
-      "    -S width height -- Generate a spectrogram in sonic.pgm in PGM "
-      "format.\n"
+      "    -S width height -- Write a spectrogram in outfile in PGM format.\n"
 #endif  /* SONIC_SPECTROGRAM */
       "    -v volume  -- Scale volume by a constant factor.\n");
   exit(1);
@@ -87,7 +104,6 @@ static void usage(void) {
 double findSincCoefficient(int N, double x);
 
 int main(int argc, char** argv) {
-  waveFile inFile, outFile;
   char* inFileName;
   char* outFileName;
   float speed = 1.0f;
@@ -96,7 +112,6 @@ int main(int argc, char** argv) {
   float volume = 1.0f;
   int emulateChordPitch = 0;
   int quality = 0;
-  int sampleRate, numChannels;
   int xArg = 1;
   int enableNonlinearSpeedup = 0;
   int computeSpectrogram = 0;
@@ -160,19 +175,8 @@ int main(int argc, char** argv) {
   }
   inFileName = argv[xArg];
   outFileName = argv[xArg + 1];
-  inFile = openInputWaveFile(inFileName, &sampleRate, &numChannels);
-  if (inFile == NULL) {
-    return 1;
-  }
-  outFile = openOutputWaveFile(outFileName, sampleRate, numChannels);
-  if (outFile == NULL) {
-    closeWaveFile(inFile);
-    return 1;
-  }
-  runSonic(inFile, outFile, speed, pitch, rate, volume, emulateChordPitch,
-           quality, enableNonlinearSpeedup, computeSpectrogram, numRows,
-           numCols, sampleRate, numChannels);
-  closeWaveFile(inFile);
-  closeWaveFile(outFile);
+  runSonic(inFileName, outFileName, speed, pitch, rate, volume,
+           emulateChordPitch, quality, enableNonlinearSpeedup,
+           computeSpectrogram, numRows, numCols);
   return 0;
 }
