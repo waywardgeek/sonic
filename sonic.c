@@ -1042,6 +1042,7 @@ static int changeSpeed(sonicStream stream, float speed) {
       if (stream->spectrogram != NULL) {
         sonicAddPitchPeriodToSpectrogram(stream->spectrogram, samples, period,
                                          stream->numChannels);
+        newSamples = period;
         position += period;
       } else
 #endif  /* SONIC_SPECTROGRAM */

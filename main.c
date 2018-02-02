@@ -19,7 +19,7 @@ static void runSonic(char* inFileName, char* outFileName, float speed,
                      int emulateChordPitch, int quality,
                      int enableNonlinearSpeedup, int computeSpectrogram,
                      int numRows, int numCols) {
-  waveFile inFile, outFile;
+  waveFile inFile, outFile = NULL;
   sonicStream stream;
   short inBuffer[BUFFER_SIZE], outBuffer[BUFFER_SIZE];
   int sampleRate, numChannels, samplesRead, samplesWritten;
@@ -56,13 +56,15 @@ static void runSonic(char* inFileName, char* outFileName, float speed,
     } else {
       sonicWriteShortToStream(stream, inBuffer, samplesRead);
     }
-    do {
-      samplesWritten = sonicReadShortFromStream(stream, outBuffer,
-                                                BUFFER_SIZE / numChannels);
-      if (samplesWritten > 0 && !computeSpectrogram) {
-        writeToWaveFile(outFile, outBuffer, samplesWritten);
-      }
-    } while (samplesWritten > 0);
+    if (!computeSpectrogram) {
+      do {
+        samplesWritten = sonicReadShortFromStream(stream, outBuffer,
+                                                  BUFFER_SIZE / numChannels);
+        if (samplesWritten > 0 && !computeSpectrogram) {
+          writeToWaveFile(outFile, outBuffer, samplesWritten);
+        }
+      } while (samplesWritten > 0);
+    }
   } while (samplesRead > 0);
 #ifdef SONIC_SPECTROGRAM
   if (computeSpectrogram) {

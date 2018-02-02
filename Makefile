@@ -14,7 +14,7 @@ ifeq ($(UNAME), Darwin)
 endif
 #CFLAGS=-Wall -Wno-unused-function -g -ansi -fPIC -pthread
 CFLAGS=-Wall -Wno-unused-function -O3 -ansi -fPIC -pthread
-LIB_TAG=0.2.0
+LIB_TAG=0.3.0
 CC=gcc
 PREFIX=/usr
 LIBDIR=$(PREFIX)/lib
