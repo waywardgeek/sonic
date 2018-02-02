@@ -43,7 +43,7 @@ wave.o: wave.c wave.h
 main.o: main.c sonic.h wave.h
 	$(CC) $(CFLAGS) -c main.c
 
-spectrogram.o: spectrogram.c spectrogram.h
+spectrogram.o: spectrogram.c sonic.h
 	$(CC) $(CFLAGS) -c spectrogram.c
 
 libsonic.so.$(LIB_TAG): $(OBJ)
