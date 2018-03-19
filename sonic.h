@@ -51,6 +51,10 @@ similar to high speed factors is used.
    sound quality slightly, at the expense of lots of floating point math. */
 /* #define SONIC_USE_SIN */
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* This specifies the range of voice pitches we try to match.
    Note that if we go lower than 65, we could overflow in findPitchInRange */
 #define SONIC_MIN_PITCH 65

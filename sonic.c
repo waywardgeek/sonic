@@ -880,7 +880,7 @@ static int findSincCoefficient(int i, int ratio, int width) {
 }
 
 /* Return 1 if value >= 0, else -1.  This represents the sign of value. */
-static int getSign(int value) { return value >= 0 ? 1 : 0; }
+static int getSign(int value) { return value >= 0 ? 1 : -1; }
 
 /* Interpolate the new output sample. */
 static short interpolate(sonicStream stream, short* in, int oldSampleRate,
