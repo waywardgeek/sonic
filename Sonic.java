@@ -801,7 +801,7 @@ public class Sonic {
 
     // Return 1 if value >= 0, else -1.  This represents the sign of value.
     private int getSign(int value) {
-        return value >= 0? 1 : 0;
+        return value >= 0? 1 : -1;
     }
 
     // Interpolate the new output sample.
