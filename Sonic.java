@@ -423,7 +423,7 @@ public class Sonic {
             numSamples = maxSamples;
         }
         for(int xSample = 0; xSample < numSamples*numChannels; xSample++) {
-            samples[xSample++] = (outputBuffer[xSample])/32767.0f;
+            samples[xSample] = (outputBuffer[xSample])/32767.0f;
         }
         move(outputBuffer, 0, outputBuffer, numSamples, remainingSamples);
         numOutputSamples = remainingSamples;
