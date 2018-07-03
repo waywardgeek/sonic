@@ -47,7 +47,7 @@ spectrogram.o: spectrogram.c sonic.h
 	$(CC) $(CFLAGS) -c spectrogram.c
 
 libsonic.so.$(LIB_TAG): $(OBJ)
-	$(CC) $(CFLAGS) -shared -Wl,-$(SONAME),libsonic.so.0 $(OBJ) -o libsonic.so.$(LIB_TAG)
+	$(CC) $(CFLAGS) -shared -Wl,-$(SONAME),libsonic.so.0 $(OBJ) -o libsonic.so.$(LIB_TAG) $(FFTLIB)
 	ln -sf libsonic.so.$(LIB_TAG) libsonic.so
 	ln -sf libsonic.so.$(LIB_TAG) libsonic.so.0
 
