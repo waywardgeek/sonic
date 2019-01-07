@@ -194,9 +194,21 @@ static int readHeader(waveFile file) {
   if (chunkSize == 18) { /* ffmpeg writes 18, and so has 2 extra bytes here */
     data = readShort(file);
   }
-  expectString(file, "data"); /* 36 - data */
-  readInt(file);              /* 40 - how big is this data chunk */
-  return 1;
+
+  /* Read and discard chunks until we find the "data" chunk or fail */
+  char chunk[5];
+  chunk[4] = 0;
+
+  while (1) {
+    readExactBytes(file, chunk, 4);  /* chunk id */
+    int size = readInt(file);        /* how big is this data chunk */
+    if (strcmp(chunk, "data") == 0) return 1;
+
+    if (fseek(file->soundFile, size, SEEK_CUR) != 0) {
+      fprintf(stderr, "Failed to seek on input file.\n");
+      return 0;
+    }
+  }
 }
 
 /* Close the input or output file and free the waveFile. */
