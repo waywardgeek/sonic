@@ -7,29 +7,40 @@
 
 # Set this to 0 if you do not want to link in spectrogram generation.
 USE_SPECTROGRAM=1
-SONAME=soname
+
+PREFIX=/usr/local
+BINDIR=$(PREFIX)/bin
+LIBDIR=$(PREFIX)/lib
+INCDIR=$(PREFIX)/include
+
+SONAME=-soname,
+SHARED_OPT=-shared
+LIB_NAME=libsonic.so
+LIB_TAG=.0.3.0
+
 UNAME := $(shell uname)
 ifeq ($(UNAME), Darwin)
-  SONAME=install_name
+  SONAME=-install_name,$(LIBDIR)/
+  SHARED_OPT=-dynamiclib
+  LIB_NAME=libsonic.dylib
+  LIB_TAG=
 endif
+
 #CFLAGS=-Wall -Wno-unused-function -g -ansi -fPIC -pthread
 CFLAGS=-Wall -Wno-unused-function -O3 -ansi -fPIC -pthread
-LIB_TAG=0.3.0
-CC=gcc
-PREFIX=/usr
-LIBDIR=$(PREFIX)/lib
+
 SRC=sonic.c
+# Set this to empty if not using spectrograms.
 FFTLIB=
 ifeq ($(USE_SPECTROGRAM), 1)
   CFLAGS+= -DSONIC_SPECTROGRAM
   SRC+= spectrogram.c
-  FFTLIB=-lfftw3
+  FFTLIB= -L/opt/local/lib -lfftw3
 endif
 OBJ=$(SRC:.c=.o)
 
-# Set this to empty if not using spectrograms.
 
-all: sonic libsonic.so.$(LIB_TAG) libsonic.a
+all: sonic $(LIB_NAME)$(LIB_TAG) libsonic.a
 
 sonic: wave.o main.o libsonic.a
 	$(CC) $(CFLAGS) -o sonic wave.o main.o libsonic.a -lm $(FFTLIB)
@@ -46,30 +57,37 @@ main.o: main.c sonic.h wave.h
 spectrogram.o: spectrogram.c sonic.h
 	$(CC) $(CFLAGS) -c spectrogram.c
 
-libsonic.so.$(LIB_TAG): $(OBJ)
-	$(CC) $(CFLAGS) -shared -Wl,-$(SONAME),libsonic.so.0 $(OBJ) -o libsonic.so.$(LIB_TAG)
-	ln -sf libsonic.so.$(LIB_TAG) libsonic.so
-	ln -sf libsonic.so.$(LIB_TAG) libsonic.so.0
+$(LIB_NAME)$(LIB_TAG): $(OBJ)
+	$(CC) $(CFLAGS) $(SHARED_OPT) -Wl,$(SONAME)$(LIB_NAME) $(OBJ) -o $(LIB_NAME)$(LIB_TAG)
+ifneq ($(UNAME), Darwin)
+	ln -sf $(LIB_NAME)$(LIB_TAG) $(LIB_NAME)
+	ln -sf $(LIB_NAME)$(LIB_TAG) $(LIB_NAME).0
+endif
 
 libsonic.a: $(OBJ)
 	$(AR) cqs libsonic.a $(OBJ)
 
-install: sonic libsonic.so.$(LIB_TAG) sonic.h
-	install -d $(DESTDIR)$(PREFIX)/bin $(DESTDIR)$(PREFIX)/include $(DESTDIR)$(PREFIX)/lib
-	install sonic $(DESTDIR)$(PREFIX)/bin
-	install sonic.h $(DESTDIR)$(PREFIX)/include
-	install libsonic.so.$(LIB_TAG) $(DESTDIR)$(PREFIX)/lib
+install: sonic $(LIB_NAME)$(LIB_TAG) sonic.h
+	install -d $(DESTDIR)$(BINDIR) $(DESTDIR)$(INCDIR) $(DESTDIR)$(LIBDIR)
+	install sonic $(DESTDIR)$(BINDIR)
+	install sonic.h $(DESTDIR)$(INCDIR)
 	install libsonic.a $(DESTDIR)$(LIBDIR)
-	ln -sf libsonic.so.$(LIB_TAG) $(DESTDIR)$(PREFIX)/lib/libsonic.so
-	ln -sf libsonic.so.$(LIB_TAG) $(DESTDIR)$(PREFIX)/lib/libsonic.so.0
+	install $(LIB_NAME)$(LIB_TAG) $(DESTDIR)$(LIBDIR)
+ifneq ($(UNAME), Darwin)
+	ln -sf $(LIB_NAME)$(LIB_TAG) $(DESTDIR)$(LIBDIR)/$(LIB_NAME)
+	ln -sf $(LIB_NAME)$(LIB_TAG) $(DESTDIR)$(LIBDIR)/$(LIB_NAME).0
+endif
 
 uninstall:
-	rm -f $(DESTDIR)$(PREFIX)/bin/sonic
-	rm -f $(DESTDIR)$(PREFIX)/include/sonic.h
-	rm -f $(DESTDIR)$(PREFIX)/lib/libsonic.so.$(LIB_TAG)
-	rm -f $(DESTDIR)$(PREFIX)/lib/libsonic.so
-	rm -f $(DESTDIR)$(PREFIX)/lib/libsonic.so.0
+	rm -f $(DESTDIR)$(BINDIR)/sonic
+	rm -f $(DESTDIR)$(INCDIR)/sonic.h
 	rm -f $(DESTDIR)$(LIBDIR)/libsonic.a
+	rm -f $(DESTDIR)$(LIBDIR)/$(LIB_NAME)$(LIB_TAG)
+	rm -f $(DESTDIR)$(LIBDIR)/$(LIB_NAME).0
+	rm -f $(DESTDIR)$(LIBDIR)/$(LIB_NAME)
 
 clean:
-	rm -f *.o sonic libsonic.so* libsonic.a
+	rm -f *.o sonic $(LIB_NAME)* libsonic.a test.wav
+
+check:
+	./sonic -s 2.0 ./samples/talking.wav ./test.wav
