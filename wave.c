@@ -129,7 +129,8 @@ static void expectString(waveFile file, char* expectedString) {
     readExactBytes(file, buf, length);
     buf[length] = '\0';
     if (strcmp(expectedString, buf)) {
-      fprintf(stderr, "Unsupported wave file format\n");
+      fprintf(stderr, "Unsupported wave file format: Expected '%s', got '%s;\n",
+          expectedString, buf);
       file->failed = 1;
     }
   }

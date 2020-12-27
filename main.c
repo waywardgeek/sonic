@@ -15,7 +15,7 @@
 
 /* Run sonic. */
 static void runSonic(char* inFileName, char* outFileName, float speed,
-                     float pitch, float rate, float volume,
+                     float pitch, float rate, float volume, int outputSampleRate,
                      int emulateChordPitch, int quality,
                      int enableNonlinearSpeedup, int computeSpectrogram,
                      int numRows, int numCols) {
@@ -25,6 +25,9 @@ static void runSonic(char* inFileName, char* outFileName, float speed,
   int sampleRate, numChannels, samplesRead, samplesWritten;
 
   inFile = openInputWaveFile(inFileName, &sampleRate, &numChannels);
+  if (outputSampleRate != 0) {
+    sampleRate = outputSampleRate;
+  }
   if (inFile == NULL) {
     fprintf(stderr, "Unable to read wave file %s\n", inFileName);
     exit(1);
@@ -90,6 +93,9 @@ static void usage(void) {
       "    -c         -- Modify pitch by emulating vocal chords vibrating\n"
       "                  faster or slower.\n"
       "    -n         -- Enable nonlinear speedup\n"
+      "    -o         -- Override the sample rate of the output.  -o 44200\n"
+      "                  on an input file at 22100 KHz will paly twice as fast\n"
+      "                  and have twice the pitch.\n"
       "    -p pitch   -- Set pitch scaling factor.  1.3 means 30%% higher.\n"
       "    -q         -- Disable speed-up heuristics.  May increase quality.\n"
       "    -r rate    -- Set playback rate.  2.0 means 2X faster, and 2X "
@@ -112,6 +118,7 @@ int main(int argc, char** argv) {
   float pitch = 1.0f;
   float rate = 1.0f;
   float volume = 1.0f;
+  int outputSampleRate = 0;  /* Means use the input file sample rate. */
   int emulateChordPitch = 0;
   int quality = 0;
   int xArg = 1;
@@ -126,6 +133,12 @@ int main(int argc, char** argv) {
     } else if (!strcmp(argv[xArg], "-n")) {
       enableNonlinearSpeedup = 1;
       printf("Enabling nonlinear speedup.\n");
+    } else if (!strcmp(argv[xArg], "-o")) {
+      xArg++;
+      if (xArg < argc) {
+        outputSampleRate = atoi(argv[xArg]);
+        printf("Setting output sample rate to %d\n", outputSampleRate);
+      }
     } else if (!strcmp(argv[xArg], "-p")) {
       xArg++;
       if (xArg < argc) {
@@ -178,7 +191,7 @@ int main(int argc, char** argv) {
   inFileName = argv[xArg];
   outFileName = argv[xArg + 1];
   runSonic(inFileName, outFileName, speed, pitch, rate, volume,
-           emulateChordPitch, quality, enableNonlinearSpeedup,
-           computeSpectrogram, numRows, numCols);
+           outputSampleRate, emulateChordPitch, quality,
+           enableNonlinearSpeedup, computeSpectrogram, numRows, numCols);
   return 0;
 }

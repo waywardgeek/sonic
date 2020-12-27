@@ -5,8 +5,12 @@
 # safe.  We call malloc, and older Linux versions only linked in the thread-safe
 # malloc if -pthread is specified.
 
-# Set this to 0 if you do not want to link in spectrogram generation.
-USE_SPECTROGRAM=1
+# Uncomment this if you want to link in spectrogram generation.  It is not
+# needed to adjust speech speed or pitch.  It is included primarily to provide
+# high-quality spectrograms with low CPU overhead, for applications such a
+# speech recognition.
+#USE_SPECTROGRAM=1
+
 SONAME=soname
 UNAME := $(shell uname)
 ifeq ($(UNAME), Darwin)
