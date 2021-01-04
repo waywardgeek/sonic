@@ -17,7 +17,8 @@ ifeq ($(UNAME), Darwin)
   SONAME=install_name
 endif
 #CFLAGS=-Wall -Wno-unused-function -g -ansi -fPIC -pthread
-CFLAGS=-Wall -Wno-unused-function -O3 -ansi -fPIC -pthread
+CFLAGS ?= -O3
+CFLAGS += -Wall -Wno-unused-function -ansi -fPIC -pthread
 LIB_TAG=0.3.0
 CC=gcc
 PREFIX=/usr
@@ -36,22 +37,22 @@ OBJ=$(SRC:.c=.o)
 all: sonic libsonic.so.$(LIB_TAG) libsonic.a
 
 sonic: wave.o main.o libsonic.a
-	$(CC) $(CFLAGS) -o sonic wave.o main.o libsonic.a -lm $(FFTLIB)
+	$(CC) $(CFLAGS) $(LDFLAGS) -o sonic wave.o main.o libsonic.a -lm $(FFTLIB)
 
 sonic.o: sonic.c sonic.h
-	$(CC) $(CFLAGS) -c sonic.c
+	$(CC) $(CPPFLAGS) $(CFLAGS) -c sonic.c
 
 wave.o: wave.c wave.h
-	$(CC) $(CFLAGS) -c wave.c
+	$(CC) $(CPPFLAGS) $(CFLAGS) -c wave.c
 
 main.o: main.c sonic.h wave.h
-	$(CC) $(CFLAGS) -c main.c
+	$(CC) $(CPPFLAGS) $(CFLAGS) -c main.c
 
 spectrogram.o: spectrogram.c sonic.h
-	$(CC) $(CFLAGS) -c spectrogram.c
+	$(CC) $(CPPFLAGS) $(CFLAGS) -c spectrogram.c
 
 libsonic.so.$(LIB_TAG): $(OBJ)
-	$(CC) $(CFLAGS) -shared -Wl,-$(SONAME),libsonic.so.0 $(OBJ) -o libsonic.so.$(LIB_TAG) $(FFTLIB)
+	$(CC) $(CFLAGS) $(LDFLAGS) -shared -Wl,-$(SONAME),libsonic.so.0 $(OBJ) -o libsonic.so.$(LIB_TAG) $(FFTLIB)
 	ln -sf libsonic.so.$(LIB_TAG) libsonic.so
 	ln -sf libsonic.so.$(LIB_TAG) libsonic.so.0
 
