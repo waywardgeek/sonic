@@ -5,10 +5,19 @@
 # safe.  We call malloc, and older Linux versions only linked in the thread-safe
 # malloc if -pthread is specified.
 
-# Set this to 0 if you do not want to link in spectrogram generation.
-USE_SPECTROGRAM=1
+# Uncomment this if you want to link in spectrogram generation.  It is not
+# needed to adjust speech speed or pitch.  It is included primarily to provide
+# high-quality spectrograms with low CPU overhead, for applications such a
+# speech recognition.
+#USE_SPECTROGRAM=1
 
-PREFIX=/usr/local
+PREFIX=/usr
+
+UNAME := $(shell uname)
+ifeq ($(UNAME), Darwin)
+  PREFIX=/usr/local
+endif
+
 BINDIR=$(PREFIX)/bin
 LIBDIR=$(PREFIX)/lib
 INCDIR=$(PREFIX)/include
@@ -18,7 +27,6 @@ SHARED_OPT=-shared
 LIB_NAME=libsonic.so
 LIB_TAG=.0.3.0
 
-UNAME := $(shell uname)
 ifeq ($(UNAME), Darwin)
   SONAME=-install_name,$(LIBDIR)/
   SHARED_OPT=-dynamiclib
@@ -27,7 +35,10 @@ ifeq ($(UNAME), Darwin)
 endif
 
 #CFLAGS=-Wall -Wno-unused-function -g -ansi -fPIC -pthread
-CFLAGS=-Wall -Wno-unused-function -O3 -ansi -fPIC -pthread
+CFLAGS ?= -O3
+CFLAGS += -Wall -Wno-unused-function -ansi -fPIC -pthread
+
+CC=gcc
 
 SRC=sonic.c
 # Set this to empty if not using spectrograms.
@@ -35,30 +46,29 @@ FFTLIB=
 ifeq ($(USE_SPECTROGRAM), 1)
   CFLAGS+= -DSONIC_SPECTROGRAM
   SRC+= spectrogram.c
-  FFTLIB= -L/opt/local/lib -lfftw3
+  FFTLIB= -L$(LIBDIR) -lfftw3
 endif
 OBJ=$(SRC:.c=.o)
-
 
 all: sonic $(LIB_NAME)$(LIB_TAG) libsonic.a
 
 sonic: wave.o main.o libsonic.a
-	$(CC) $(CFLAGS) -o sonic wave.o main.o libsonic.a -lm $(FFTLIB)
+	$(CC) $(CFLAGS) $(LDFLAGS) -o sonic wave.o main.o libsonic.a -lm $(FFTLIB)
 
 sonic.o: sonic.c sonic.h
-	$(CC) $(CFLAGS) -c sonic.c
+	$(CC) $(CPPFLAGS) $(CFLAGS) -c sonic.c
 
 wave.o: wave.c wave.h
-	$(CC) $(CFLAGS) -c wave.c
+	$(CC) $(CPPFLAGS) $(CFLAGS) -c wave.c
 
 main.o: main.c sonic.h wave.h
-	$(CC) $(CFLAGS) -c main.c
+	$(CC) $(CPPFLAGS) $(CFLAGS) -c main.c
 
 spectrogram.o: spectrogram.c sonic.h
-	$(CC) $(CFLAGS) -c spectrogram.c
+	$(CC) $(CPPFLAGS) $(CFLAGS) -c spectrogram.c
 
 $(LIB_NAME)$(LIB_TAG): $(OBJ)
-	$(CC) $(CFLAGS) $(SHARED_OPT) -Wl,$(SONAME)$(LIB_NAME) $(OBJ) -o $(LIB_NAME)$(LIB_TAG)
+	$(CC) $(CFLAGS) $(LDFLAGS) $(SHARED_OPT) -Wl,$(SONAME)$(LIB_NAME) $(OBJ) -o $(LIB_NAME)$(LIB_TAG) $(FFTLIB)
 ifneq ($(UNAME), Darwin)
 	ln -sf $(LIB_NAME)$(LIB_TAG) $(LIB_NAME)
 	ln -sf $(LIB_NAME)$(LIB_TAG) $(LIB_NAME).0
