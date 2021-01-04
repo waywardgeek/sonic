@@ -203,8 +203,9 @@ static int readHeader(waveFile file) {
   while (1) {
     readExactBytes(file, chunk, 4);  /* chunk id */
     int size = readInt(file);        /* how big is this data chunk */
-    if (strcmp(chunk, "data") == 0) return 1;
-
+    if (strcmp(chunk, "data") == 0) {
+      return 1;
+    }
     if (fseek(file->soundFile, size, SEEK_CUR) != 0) {
       fprintf(stderr, "Failed to seek on input file.\n");
       return 0;

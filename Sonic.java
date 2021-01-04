@@ -851,6 +851,7 @@ public class Sonic {
         int newSampleRate = (int)(sampleRate/rate);
         int oldSampleRate = sampleRate;
         int position;
+        int N = SINC_FILTER_POINTS;
 
         // Set these values to help with the integer math
         while(newSampleRate > (1 << 14) || oldSampleRate > (1 << 14)) {
@@ -861,8 +862,8 @@ public class Sonic {
             return;
         }
         moveNewSamplesToPitchBuffer(originalNumOutputSamples);
-        // Leave at least one pitch sample in the buffer
-        for(position = 0; position < numPitchSamples - 1; position++) {
+        // Leave at least N pitch samples in the buffer
+        for(position = 0; position < numPitchSamples - N; position++) {
             while((oldRatePosition + 1)*newSampleRate > newRatePosition*oldSampleRate) {
                 enlargeOutputBufferIfNeeded(1);
                 for(int i = 0; i < numChannels; i++) {

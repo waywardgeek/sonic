@@ -923,7 +923,7 @@ static int adjustRate(sonicStream stream, float rate,
   int newSampleRate = stream->sampleRate / rate;
   int oldSampleRate = stream->sampleRate;
   int numChannels = stream->numChannels;
-  int position = 0;
+  int position;
   short *in, *out;
   int i;
   int N = SINC_FILTER_POINTS;
