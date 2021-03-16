@@ -652,7 +652,7 @@ static int findPitchPeriodInRange(short* samples, int minPeriod, int maxPeriod,
 /* At abrupt ends of voiced words, we can have pitch periods that are better
    approximated by the previous pitch period estimate.  Try to detect this case.
  */
-static int prevPeriodBetter(sonicStream stream, int period, int minDiff,
+static int prevPeriodBetter(sonicStream stream, int minDiff,
                             int maxDiff, int preferNewPeriod) {
   if (minDiff == 0 || stream->prevPeriod == 0) {
     return 0;
@@ -718,7 +718,7 @@ static int findPitchPeriod(sonicStream stream, short* samples,
       }
     }
   }
-  if (prevPeriodBetter(stream, period, minDiff, maxDiff, preferNewPeriod)) {
+  if (prevPeriodBetter(stream, minDiff, maxDiff, preferNewPeriod)) {
     retPeriod = stream->prevPeriod;
   } else {
     retPeriod = period;
