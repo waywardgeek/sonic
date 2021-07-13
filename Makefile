@@ -56,10 +56,10 @@ sonic: wave.o main.o libsonic.a
 	$(CC) $(CFLAGS) $(LDFLAGS) -o sonic wave.o main.o libsonic.a -lm $(FFTLIB)
 
 sonic.o: sonic.c sonic.h
-	$(CC) $(CPPFLAGS) $(CFLAGS) -c sonic.c
+	$(CC) $(CPPFLAGS) $(CFLAGS) -c sonic.c -DSONIC_EXPORTS
 
 wave.o: wave.c wave.h
-	$(CC) $(CPPFLAGS) $(CFLAGS) -c wave.c
+	$(CC) $(CPPFLAGS) $(CFLAGS) -c wave.c -DSONIC_EXPORTS
 
 main.o: main.c sonic.h wave.h
 	$(CC) $(CPPFLAGS) $(CFLAGS) -c main.c
