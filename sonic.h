@@ -51,6 +51,26 @@ similar to high speed factors is used.
    sound quality slightly, at the expense of lots of floating point math. */
 /* #define SONIC_USE_SIN */
 
+#pragma once
+#if defined(MSC_VER)
+   #define SONIC_EXPORT_API __declspec(dllexport)
+   #define SONIC_IMPORT_API __declspec(dllimport)
+#else
+   #if defined(_WIN32) && _WIN32
+      #define SONIC_EXPORT_API __attribute__((dllexport))
+      #define SONIC_IMPORT_API __attribute__((dllimport))
+   #else
+      #define SONIC_EXPORT_API __attribute__((visibility("default")))
+      #define SONIC_IMPORT_API
+   #endif
+#endif
+
+#ifdef SONIC_EXPORTS
+#   define SONIC_API SONIC_EXPORT_API
+#else
+#   define SONIC_API SONIC_IMPORT_API
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -71,78 +91,79 @@ typedef struct sonicStreamStruct* sonicStream;
 
 /* Create a sonic stream.  Return NULL only if we are out of memory and cannot
   allocate the stream. Set numChannels to 1 for mono, and 2 for stereo. */
-sonicStream sonicCreateStream(int sampleRate, int numChannels);
+SONIC_API sonicStream sonicCreateStream(int sampleRate, int numChannels);
 /* Destroy the sonic stream. */
-void sonicDestroyStream(sonicStream stream);
+SONIC_API void sonicDestroyStream(sonicStream stream);
 /* Use this to write floating point data to be speed up or down into the stream.
    Values must be between -1 and 1.  Return 0 if memory realloc failed,
    otherwise 1 */
-int sonicWriteFloatToStream(sonicStream stream, float* samples, int numSamples);
+SONIC_API int sonicWriteFloatToStream(sonicStream stream, float* samples, int numSamples);
 /* Use this to write 16-bit data to be speed up or down into the stream.
    Return 0 if memory realloc failed, otherwise 1 */
-int sonicWriteShortToStream(sonicStream stream, short* samples, int numSamples);
+SONIC_API int sonicWriteShortToStream(sonicStream stream, short* samples, int numSamples);
 /* Use this to write 8-bit unsigned data to be speed up or down into the stream.
    Return 0 if memory realloc failed, otherwise 1 */
-int sonicWriteUnsignedCharToStream(sonicStream stream, unsigned char* samples,
+SONIC_API int sonicWriteUnsignedCharToStream(sonicStream stream, unsigned char* samples,
                                    int numSamples);
 /* Use this to read floating point data out of the stream.  Sometimes no data
    will be available, and zero is returned, which is not an error condition. */
-int sonicReadFloatFromStream(sonicStream stream, float* samples,
+SONIC_API int sonicReadFloatFromStream(sonicStream stream, float* samples,
                              int maxSamples);
 /* Use this to read 16-bit data out of the stream.  Sometimes no data will
    be available, and zero is returned, which is not an error condition. */
-int sonicReadShortFromStream(sonicStream stream, short* samples,
+SONIC_API int sonicReadShortFromStream(sonicStream stream, short* samples,
                              int maxSamples);
 /* Use this to read 8-bit unsigned data out of the stream.  Sometimes no data
    will be available, and zero is returned, which is not an error condition. */
-int sonicReadUnsignedCharFromStream(sonicStream stream, unsigned char* samples,
+SONIC_API int sonicReadUnsignedCharFromStream(sonicStream stream, unsigned char* samples,
                                     int maxSamples);
 /* Force the sonic stream to generate output using whatever data it currently
    has.  No extra delay will be added to the output, but flushing in the middle
    of words could introduce distortion. */
-int sonicFlushStream(sonicStream stream);
+SONIC_API int sonicFlushStream(sonicStream stream);
 /* Return the number of samples in the output buffer */
-int sonicSamplesAvailable(sonicStream stream);
+SONIC_API int sonicSamplesAvailable(sonicStream stream);
 /* Get the speed of the stream. */
-float sonicGetSpeed(sonicStream stream);
+SONIC_API float sonicGetSpeed(sonicStream stream);
 /* Set the speed of the stream. */
-void sonicSetSpeed(sonicStream stream, float speed);
+SONIC_API void sonicSetSpeed(sonicStream stream, float speed);
 /* Get the pitch of the stream. */
-float sonicGetPitch(sonicStream stream);
+SONIC_API float sonicGetPitch(sonicStream stream);
 /* Set the pitch of the stream. */
-void sonicSetPitch(sonicStream stream, float pitch);
+SONIC_API void sonicSetPitch(sonicStream stream, float pitch);
 /* Get the rate of the stream. */
-float sonicGetRate(sonicStream stream);
+SONIC_API float sonicGetRate(sonicStream stream);
 /* Set the rate of the stream. */
-void sonicSetRate(sonicStream stream, float rate);
+SONIC_API void sonicSetRate(sonicStream stream, float rate);
 /* Get the scaling factor of the stream. */
-float sonicGetVolume(sonicStream stream);
+SONIC_API float sonicGetVolume(sonicStream stream);
 /* Set the scaling factor of the stream. */
-void sonicSetVolume(sonicStream stream, float volume);
+SONIC_API void sonicSetVolume(sonicStream stream, float volume);
 /* Get the chord pitch setting. */
-int sonicGetChordPitch(sonicStream stream);
+SONIC_API int sonicGetChordPitch(sonicStream stream);
 /* Set chord pitch mode on or off.  Default is off.  See the documentation
    page for a description of this feature. */
-void sonicSetChordPitch(sonicStream stream, int useChordPitch);
+SONIC_API void sonicSetChordPitch(sonicStream stream, int useChordPitch);
 /* Get the quality setting. */
-int sonicGetQuality(sonicStream stream);
+SONIC_API int sonicGetQuality(sonicStream stream);
 /* Set the "quality".  Default 0 is virtually as good as 1, but very much
  * faster. */
-void sonicSetQuality(sonicStream stream, int quality);
+SONIC_API void sonicSetQuality(sonicStream stream, int quality);
 /* Get the sample rate of the stream. */
-int sonicGetSampleRate(sonicStream stream);
+SONIC_API int sonicGetSampleRate(sonicStream stream);
 /* Set the sample rate of the stream.  This will drop any samples that have not
  * been read. */
-void sonicSetSampleRate(sonicStream stream, int sampleRate);
+SONIC_API void sonicSetSampleRate(sonicStream stream, int sampleRate);
 /* Get the number of channels. */
-int sonicGetNumChannels(sonicStream stream);
+SONIC_API int sonicGetNumChannels(sonicStream stream);
 /* Set the number of channels.  This will drop any samples that have not been
  * read. */
-void sonicSetNumChannels(sonicStream stream, int numChannels);
+SONIC_API void sonicSetNumChannels(sonicStream stream, int numChannels);
 /* This is a non-stream oriented interface to just change the speed of a sound
    sample.  It works in-place on the sample array, so there must be at least
    speed*numSamples available space in the array. Returns the new number of
    samples. */
+SONIC_API 
 int sonicChangeFloatSpeed(float* samples, int numSamples, float speed,
                           float pitch, float rate, float volume,
                           int useChordPitch, int sampleRate, int numChannels);
@@ -150,6 +171,7 @@ int sonicChangeFloatSpeed(float* samples, int numSamples, float speed,
    sample.  It works in-place on the sample array, so there must be at least
    speed*numSamples available space in the array. Returns the new number of
    samples. */
+SONIC_API 
 int sonicChangeShortSpeed(short* samples, int numSamples, float speed,
                           float pitch, float rate, float volume,
                           int useChordPitch, int sampleRate, int numChannels);
@@ -192,31 +214,33 @@ struct sonicBitmapStruct {
 typedef struct sonicBitmapStruct* sonicBitmap;
 
 /* Enable coomputation of a spectrogram on the fly. */
-void sonicComputeSpectrogram(sonicStream stream);
+SONIC_API void sonicComputeSpectrogram(sonicStream stream);
 
 /* Get the spectrogram. */
-sonicSpectrogram sonicGetSpectrogram(sonicStream stream);
+SONIC_API sonicSpectrogram sonicGetSpectrogram(sonicStream stream);
 
 /* Create an empty spectrogram. Called automatically if sonicComputeSpectrogram
    has been called. */
-sonicSpectrogram sonicCreateSpectrogram(int sampleRate);
+SONIC_API sonicSpectrogram sonicCreateSpectrogram(int sampleRate);
 
 /* Destroy the spectrotram.  This is called automatically when calling
    sonicDestroyStream. */
-void sonicDestroySpectrogram(sonicSpectrogram spectrogram);
+SONIC_API void sonicDestroySpectrogram(sonicSpectrogram spectrogram);
 
 /* Convert the spectrogram to a bitmap. Caller must destroy bitmap when done. */
+SONIC_API
 sonicBitmap sonicConvertSpectrogramToBitmap(sonicSpectrogram spectrogram,
                                             int numRows, int numCols);
 
 /* Destroy a bitmap returned by sonicConvertSpectrogramToBitmap. */
-void sonicDestroyBitmap(sonicBitmap bitmap);
+SONIC_API void sonicDestroyBitmap(sonicBitmap bitmap);
 
-int sonicWritePGM(sonicBitmap bitmap, char* fileName);
+SONIC_API int sonicWritePGM(sonicBitmap bitmap, char* fileName);
 
 /* Add two pitch periods worth of samples to the spectrogram.  There must be
    2*period samples.  Time should advance one pitch period for each call to
    this function. */
+SONIC_API
 void sonicAddPitchPeriodToSpectrogram(sonicSpectrogram spectrogram,
                                       short* samples, int period,
                                       int numChannels);
