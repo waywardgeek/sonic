@@ -16,8 +16,7 @@
 /* Run sonic. */
 static void runSonic(char* inFileName, char* outFileName, float speed,
                      float pitch, float rate, float volume, int outputSampleRate,
-                     int emulateChordPitch, int quality,
-                     int enableNonlinearSpeedup, int computeSpectrogram,
+                     int emulateChordPitch, int quality, int computeSpectrogram,
                      int numRows, int numCols) {
   waveFile inFile, outFile = NULL;
   sonicStream stream;
@@ -92,7 +91,6 @@ static void usage(void) {
       "Usage: sonic [OPTION]... infile outfile\n"
       "    -c         -- Modify pitch by emulating vocal chords vibrating\n"
       "                  faster or slower.\n"
-      "    -n         -- Enable nonlinear speedup\n"
       "    -o         -- Override the sample rate of the output.  -o 44200\n"
       "                  on an input file at 22100 KHz will play twice as fast\n"
       "                  and have twice the pitch.\n"
@@ -122,7 +120,6 @@ int main(int argc, char** argv) {
   int emulateChordPitch = 0;
   int quality = 0;
   int xArg = 1;
-  int enableNonlinearSpeedup = 0;
   int computeSpectrogram = 0;
   int numRows = 0, numCols = 0;
 
@@ -130,9 +127,6 @@ int main(int argc, char** argv) {
     if (!strcmp(argv[xArg], "-c")) {
       emulateChordPitch = 1;
       printf("Scaling pitch linearly.\n");
-    } else if (!strcmp(argv[xArg], "-n")) {
-      enableNonlinearSpeedup = 1;
-      printf("Enabling nonlinear speedup.\n");
     } else if (!strcmp(argv[xArg], "-o")) {
       xArg++;
       if (xArg < argc) {
@@ -192,6 +186,6 @@ int main(int argc, char** argv) {
   outFileName = argv[xArg + 1];
   runSonic(inFileName, outFileName, speed, pitch, rate, volume,
            outputSampleRate, emulateChordPitch, quality,
-           enableNonlinearSpeedup, computeSpectrogram, numRows, numCols);
+           computeSpectrogram, numRows, numCols);
   return 0;
 }

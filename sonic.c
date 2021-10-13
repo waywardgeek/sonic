@@ -136,8 +136,8 @@ static void sonicFree(void *p) {
 #else
 
 #ifndef SONIC_MAX_MEMORY
-/* Large enough for speedup/slowdown at 48,000 16-bit mono samples/second. */
-#define SONIC_MAX_MEMORY (32 * 1024)
+/* Large enough for speedup/slowdown at 8KHz, 16-bit mono samples/second. */
+#define SONIC_MAX_MEMORY (16 * 1024)
 #endif
 
 /* This static buffer is used to hold data allocated for the sonicStream struct
