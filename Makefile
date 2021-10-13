@@ -34,9 +34,9 @@ ifeq ($(UNAME), Darwin)
   LIB_TAG=
 endif
 
-CFLAGS=-Wall -Wno-unused-function -g -ansi -fPIC -pthread
+#CFLAGS=-Wall -Wno-unused-function -g -ansi -fPIC -pthread
 CFLAGS ?= -O3
-#CFLAGS += -Wall -Wno-unused-function -ansi -fPIC -pthread
+CFLAGS += -Wall -Wno-unused-function -ansi -fPIC -pthread
 
 CC=gcc
 
