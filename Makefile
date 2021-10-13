@@ -34,11 +34,23 @@ ifeq ($(UNAME), Darwin)
   LIB_TAG=
 endif
 
-#CFLAGS=-Wall -Wno-unused-function -g -ansi -fPIC -pthread
+CFLAGS=-Wall -Wno-unused-function -g -ansi -fPIC -pthread
 CFLAGS ?= -O3
-CFLAGS += -Wall -Wno-unused-function -ansi -fPIC -pthread
+#CFLAGS += -Wall -Wno-unused-function -ansi -fPIC -pthread
 
 CC=gcc
+
+# Set NO_MALLOC=1 as a parameter to make to compile Sonic with static buffers
+# instead of calling malloc.  This is usefule primarily on microcontrollers.
+ifeq ($(NO_MALLOC), 1)
+  CFLAGS+= -DSONIC_NO_MALLOC
+  # Set MAX_MEMORY=<memory size> if you need to incease the static memory buffer
+  ifdef MAX_MEMORY
+    CFLAGS+= -DSONIC_MAX_MEMORY=$(MAX_MEMORY)
+  else
+    CFLAGS+= -DSONIC_MAX_MEMORY=4096
+  endif
+endif
 
 SRC=sonic.c
 # Set this to empty if not using spectrograms.

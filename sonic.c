@@ -10,8 +10,6 @@
 
 #include <limits.h>
 #include <math.h>
-#include <stdarg.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -113,6 +111,74 @@ static short sincTable[SINC_TABLE_SIZE] = {
     -40,   -37,   -34,   -32,   -29,   -26,   -24,   -21,   -19,   -17,   -14,
     -12,   -10,   -9,    -7,    -6,    -4,    -3,    -2,    -2,    -1,    -1,
     0,     0,     0,     0,     0,     0,     0};
+
+/* These functions allocate out of a static array rather than calling
+   calloc/realloc/free if the NO_MALLOC flag is defined.  Otherwise, call
+   calloc/realloc/free as usual.  This is useful for running on small
+   microcontrollers. */
+#ifndef SONIC_NO_MALLOC
+
+/* Just call calloc. */
+static void *sonicCalloc(int num, int size) {
+  return calloc(num, size);
+}
+
+/* Just call realloc */
+static void *sonicRealloc(void *p, int oldNum, int newNum, int size) {
+  return realloc(p, newNum * size);
+}
+
+/* Just call free. */
+static void sonicFree(void *p) {
+  free(p);
+}
+
+#else
+
+#ifndef SONIC_MAX_MEMORY
+/* Large enough for speedup/slowdown at 48,000 16-bit mono samples/second. */
+#define SONIC_MAX_MEMORY (32 * 1024)
+#endif
+
+/* This static buffer is used to hold data allocated for the sonicStream struct
+   and its buffers.  There should never be more than one sonicStream in use at a
+   time when using SONIC_NO_MALLOC mode.  Calls to realloc move the data to the
+   end of memoryBuffer.  Calls to free reset the memory buffer to empty. */
+static void *memoryBufferAlligned[(SONIC_MAX_MEMORY + sizeof(void) -
+    1)/sizeof(void*)]; static unsigned char *memoryBuffer = (unsigned
+      char*)memoryBufferAlligned;
+static int memoryBufferPos = 0;
+
+/* Allocate elements from a static memory buffer. */
+static void *sonicCalloc(int num, int size) {
+  int len = num * size;
+
+  if (memoryBufferPos + len > SONIC_MAX_MEMORY) {
+    return 0;
+  }
+  unsigned char *p = memoryBuffer + memoryBufferPos;
+  memoryBufferPos += len;
+  memset(p, 0, len);
+  return p;
+}
+
+/* Preferably, SONIC_MAX_MEMORY has been set large enough that this is never
+ * called. */
+static void *sonicRealloc(void *p, int oldNum, int newNum, int size) {
+  if (newNum <= oldNum) {
+    return p;
+  }
+  void *newBuffer = sonicCalloc(newNum, size);
+  memcpy(newBuffer, p, oldNum * size);
+  return newBuffer;
+}
+
+/* Reset memoryBufferPos to 0.  We asssume all data is freed at the same time. */
+static void sonicFree(void *p) {
+  memoryBufferPos = 0;
+}
+
+#endif
 
 struct sonicStreamStruct {
 #ifdef SONIC_SPECTROGRAM
@@ -231,16 +297,16 @@ void sonicSetVolume(sonicStream stream, float volume) {
 /* Free stream buffers. */
 static void freeStreamBuffers(sonicStream stream) {
   if (stream->inputBuffer != NULL) {
-    free(stream->inputBuffer);
+    sonicFree(stream->inputBuffer);
   }
   if (stream->outputBuffer != NULL) {
-    free(stream->outputBuffer);
+    sonicFree(stream->outputBuffer);
   }
   if (stream->pitchBuffer != NULL) {
-    free(stream->pitchBuffer);
+    sonicFree(stream->pitchBuffer);
   }
   if (stream->downSampleBuffer != NULL) {
-    free(stream->downSampleBuffer);
+    sonicFree(stream->downSampleBuffer);
   }
 }
 
@@ -252,7 +318,16 @@ void sonicDestroyStream(sonicStream stream) {
   }
 #endif  /* SONIC_SPECTROGRAM */
   freeStreamBuffers(stream);
-  free(stream);
+  sonicFree(stream);
+}
+
+/* Compute the number of samples to skip to down-sample the input. */
+static int computeSkip(sonicStream stream) {
+  int skip = 1;
+  if (stream->sampleRate > SONIC_AMDF_FREQ && stream->quality == 0) {
+    skip = stream->sampleRate / SONIC_AMDF_FREQ;
+  }
+  return skip;
 }
 
 /* Allocate stream buffers. */
@@ -261,29 +336,34 @@ static int allocateStreamBuffers(sonicStream stream, int sampleRate,
   int minPeriod = sampleRate / SONIC_MAX_PITCH;
   int maxPeriod = sampleRate / SONIC_MIN_PITCH;
   int maxRequired = 2 * maxPeriod;
+  int skip = computeSkip(stream);
 
-  stream->inputBufferSize = maxRequired;
+  /* Allocate 25% more than needed so we hopefully won't grow. */
+  stream->inputBufferSize = maxRequired + (maxRequired >> 2);;
   stream->inputBuffer =
-      (short*)calloc(maxRequired, sizeof(short) * numChannels);
+      (short*)sonicCalloc(stream->inputBufferSize, sizeof(short) * numChannels);
   if (stream->inputBuffer == NULL) {
     sonicDestroyStream(stream);
     return 0;
   }
-  stream->outputBufferSize = maxRequired;
+  /* Allocate 25% more than needed so we hopefully won't grow. */
+  stream->outputBufferSize = maxRequired + (maxRequired >> 2);
   stream->outputBuffer =
-      (short*)calloc(maxRequired, sizeof(short) * numChannels);
+      (short*)sonicCalloc(stream->outputBufferSize, sizeof(short) * numChannels);
   if (stream->outputBuffer == NULL) {
     sonicDestroyStream(stream);
     return 0;
   }
-  stream->pitchBufferSize = maxRequired;
+  /* Allocate 25% more than needed so we hopefully won't grow. */
+  stream->pitchBufferSize = maxRequired + (maxRequired >> 1);
   stream->pitchBuffer =
-      (short*)calloc(maxRequired, sizeof(short) * numChannels);
+      (short*)sonicCalloc(maxRequired, sizeof(short) * numChannels);
   if (stream->pitchBuffer == NULL) {
     sonicDestroyStream(stream);
     return 0;
   }
-  stream->downSampleBuffer = (short*)calloc(maxRequired, sizeof(short));
+  int downSampleBufferSize = (maxRequired + skip - 1)/ skip;
+  stream->downSampleBuffer = (short*)sonicCalloc(downSampleBufferSize, sizeof(short));
   if (stream->downSampleBuffer == NULL) {
     sonicDestroyStream(stream);
     return 0;
@@ -302,7 +382,8 @@ static int allocateStreamBuffers(sonicStream stream, int sampleRate,
 /* Create a sonic stream.  Return NULL only if we are out of memory and cannot
    allocate the stream. */
 sonicStream sonicCreateStream(int sampleRate, int numChannels) {
-  sonicStream stream = (sonicStream)calloc(1, sizeof(struct sonicStreamStruct));
+  sonicStream stream = (sonicStream)sonicCalloc(
+      1, sizeof(struct sonicStreamStruct));
 
   if (stream == NULL) {
     return NULL;
@@ -344,11 +425,15 @@ void sonicSetNumChannels(sonicStream stream, int numChannels) {
 
 /* Enlarge the output buffer if needed. */
 static int enlargeOutputBufferIfNeeded(sonicStream stream, int numSamples) {
-  if (stream->numOutputSamples + numSamples > stream->outputBufferSize) {
-    stream->outputBufferSize += (stream->outputBufferSize >> 1) + numSamples;
-    stream->outputBuffer = (short*)realloc(
+  int outputBufferSize = stream->outputBufferSize;
+
+  if (stream->numOutputSamples + numSamples > outputBufferSize) {
+    stream->outputBufferSize += (outputBufferSize >> 1) + numSamples;
+    stream->outputBuffer = (short*)sonicRealloc(
         stream->outputBuffer,
-        stream->outputBufferSize * sizeof(short) * stream->numChannels);
+        outputBufferSize,
+        stream->outputBufferSize,
+        sizeof(short) * stream->numChannels);
     if (stream->outputBuffer == NULL) {
       return 0;
     }
@@ -358,11 +443,15 @@ static int enlargeOutputBufferIfNeeded(sonicStream stream, int numSamples) {
 
 /* Enlarge the input buffer if needed. */
 static int enlargeInputBufferIfNeeded(sonicStream stream, int numSamples) {
-  if (stream->numInputSamples + numSamples > stream->inputBufferSize) {
-    stream->inputBufferSize += (stream->inputBufferSize >> 1) + numSamples;
-    stream->inputBuffer = (short*)realloc(
+  int inputBufferSize = stream->inputBufferSize;
+
+  if (stream->numInputSamples + numSamples > inputBufferSize) {
+    stream->inputBufferSize += (inputBufferSize >> 1) + numSamples;
+    stream->inputBuffer = (short*)sonicRealloc(
         stream->inputBuffer,
-        stream->inputBufferSize * sizeof(short) * stream->numChannels);
+        inputBufferSize,
+        stream->inputBufferSize,
+        sizeof(short) * stream->numChannels);
     if (stream->inputBuffer == NULL) {
       return 0;
     }
@@ -683,14 +772,10 @@ static int findPitchPeriod(sonicStream stream, short* samples,
                            int preferNewPeriod) {
   int minPeriod = stream->minPeriod;
   int maxPeriod = stream->maxPeriod;
-  int sampleRate = stream->sampleRate;
   int minDiff, maxDiff, retPeriod;
-  int skip = 1;
+  int skip = computeSkip(stream);
   int period;
 
-  if (sampleRate > SONIC_AMDF_FREQ && stream->quality == 0) {
-    skip = sampleRate / SONIC_AMDF_FREQ;
-  }
   if (stream->numChannels == 1 && skip == 1) {
     period = findPitchPeriodInRange(samples, minPeriod, maxPeriod, &minDiff,
                                     &maxDiff);
@@ -791,10 +876,13 @@ static int moveNewSamplesToPitchBuffer(sonicStream stream,
   int numChannels = stream->numChannels;
 
   if (stream->numPitchSamples + numSamples > stream->pitchBufferSize) {
-    stream->pitchBufferSize += (stream->pitchBufferSize >> 1) + numSamples;
-    stream->pitchBuffer =
-        (short*)realloc(stream->pitchBuffer,
-                        stream->pitchBufferSize * sizeof(short) * numChannels);
+    int pitchBufferSize = stream->pitchBufferSize;
+    stream->pitchBufferSize += (pitchBufferSize >> 1) + numSamples;
+    stream->pitchBuffer = (short*)sonicRealloc(
+        stream->pitchBuffer,
+        pitchBufferSize,
+        stream->pitchBufferSize,
+        sizeof(short) * numChannels);
     if (stream->pitchBuffer == NULL) {
       return 0;
     }
@@ -958,11 +1046,6 @@ static int adjustRate(sonicStream stream, float rate,
     stream->oldRatePosition++;
     if (stream->oldRatePosition == oldSampleRate) {
       stream->oldRatePosition = 0;
-      if (stream->newRatePosition != newSampleRate) {
-        fprintf(stderr,
-                "Assertion failed: stream->newRatePosition != newSampleRate\n");
-        exit(1);
-      }
       stream->newRatePosition = 0;
     }
   }

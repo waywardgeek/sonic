@@ -94,7 +94,7 @@ static void usage(void) {
       "                  faster or slower.\n"
       "    -n         -- Enable nonlinear speedup\n"
       "    -o         -- Override the sample rate of the output.  -o 44200\n"
-      "                  on an input file at 22100 KHz will paly twice as fast\n"
+      "                  on an input file at 22100 KHz will play twice as fast\n"
       "                  and have twice the pitch.\n"
       "    -p pitch   -- Set pitch scaling factor.  1.3 means 30%% higher.\n"
       "    -q         -- Disable speed-up heuristics.  May increase quality.\n"
