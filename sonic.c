@@ -219,7 +219,6 @@ struct sonicStreamStruct {
   int sampleRate;
   int prevPeriod;
   int prevMinDiff;
-  float avePower;
 };
 
 #ifdef SONIC_SPECTROGRAM
@@ -410,7 +409,6 @@ sonicStream sonicCreateStream(int sampleRate, int numChannels) {
   stream->newRatePosition = 0;
   stream->useChordPitch = 0;
   stream->quality = 0;
-  stream->avePower = 50.0f;
   return stream;
 }
 
@@ -733,8 +731,6 @@ static int findPitchPeriodInRange(short* samples, int minPeriod, int maxPeriod,
     /* Note that the highest number of samples we add into diff will be less
        than 256, since we skip samples.  Thus, diff is a 24 bit number, and
        we can safely multiply by numSamples without overflow */
-    /* if (bestPeriod == 0 || (bestPeriod*3/2 > period && diff*bestPeriod <
-       minDiff*period) || diff*bestPeriod < (minDiff >> 1)*period) {*/
     if (bestPeriod == 0 || diff * bestPeriod < minDiff * period) {
       minDiff = diff;
       bestPeriod = period;

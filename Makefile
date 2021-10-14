@@ -70,10 +70,13 @@ ifeq ($(USE_SPECTROGRAM), 1)
 endif
 OBJ=$(SRC:.c=.o)
 
-all: sonic $(LIB_NAME)$(LIB_TAG) libsonic.a
+all: sonic sonic_lite $(LIB_NAME)$(LIB_TAG) libsonic.a
 
 sonic: wave.o main.o libsonic.a
 	$(CC) $(CFLAGS) $(LDFLAGS) -o sonic wave.o main.o libsonic.a -lm $(FFTLIB)
+
+sonic_lite: wave.c main_lite.c sonic_lite.c sonic_lite.h
+	$(CC) $(CFLAGS) $(LDFLAGS) -o sonic_lite sonic_lite.c wave.c main_lite.c
 
 sonic.o: sonic.c sonic.h
 	$(CC) $(CPPFLAGS) $(CFLAGS) -c sonic.c
@@ -117,7 +120,7 @@ uninstall:
 	rm -f $(DESTDIR)$(LIBDIR)/$(LIB_NAME)
 
 clean:
-	rm -f *.o sonic $(LIB_NAME)* libsonic.a test.wav
+	rm -f *.o sonic sonic_lite $(LIB_NAME)* libsonic.a test.wav
 
 check:
 	./sonic -s 2.0 ./samples/talking.wav ./test.wav

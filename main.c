@@ -106,9 +106,6 @@ static void usage(void) {
   exit(1);
 }
 
-#include <limits.h>
-double findSincCoefficient(int N, double x);
-
 int main(int argc, char** argv) {
   char* inFileName;
   char* outFileName;
