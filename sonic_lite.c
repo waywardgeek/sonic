@@ -13,12 +13,12 @@
 #define SONIC_MAX_PERIOD (SONIC_SAMPLE_RATE / SONIC_MIN_PITCH)
 #define SONIC_MIN_PERIOD (SONIC_SAMPLE_RATE / SONIC_MAX_PITCH)
 #define SONIC_SKIP (SONIC_SAMPLE_RATE / SONIC_AMDF_FREQ)
-#define SONIC_INOUT_BUFFER_SIZE (2 * SONIC_MAX_PERIOD + SONIC_INPUT_SAMPLES)
+#define SONIC_INPUT_BUFFER_SIZE (2 * SONIC_MAX_PERIOD + SONIC_INPUT_SAMPLES)
 
 struct sonicStruct {
-  short inputBuffer[SONIC_INOUT_BUFFER_SIZE];
-  short outputBuffer [SONIC_INOUT_BUFFER_SIZE];
-  short downSampleBuffer[SONIC_INOUT_BUFFER_SIZE / SONIC_SKIP];
+  short inputBuffer[SONIC_INPUT_BUFFER_SIZE];
+  short outputBuffer [2 * SONIC_MAX_PERIOD];
+  short downSampleBuffer[(2 * SONIC_MAX_PERIOD) / SONIC_SKIP];
   float speed;
   float volume;
   int numInputSamples;
@@ -101,8 +101,8 @@ static void copyToOutput(short *samples, int numSamples) {
 static int copyInputToOutput(int position) {
   int numSamples = sonicStream.remainingInputToCopy;
 
-  if (numSamples > SONIC_INOUT_BUFFER_SIZE) {
-    numSamples = SONIC_INOUT_BUFFER_SIZE;
+  if (numSamples > 2 * SONIC_MAX_PERIOD) {
+    numSamples = 2 * SONIC_MAX_PERIOD;
   }
   copyToOutput(sonicStream.inputBuffer + position, numSamples);
   sonicStream.remainingInputToCopy -= numSamples;
@@ -141,7 +141,7 @@ void sonicFlushStream(void) {
   int expectedOutputSamples = sonicStream.numOutputSamples + (int)((remainingSamples / speed) + 0.5f);
 
   memset(sonicStream.inputBuffer + remainingSamples, 0,
-      sizeof(short) * (SONIC_INOUT_BUFFER_SIZE - remainingSamples));
+      sizeof(short) * (SONIC_INPUT_BUFFER_SIZE - remainingSamples));
   sonicStream.numInputSamples += 2 * maxRequired;
   sonicWriteShortToStream(NULL, 0);
   /* Throw away any extra samples we generated due to the silence we added */
@@ -161,7 +161,7 @@ int sonicSamplesAvailable(void) {
 /* If skip is greater than one, average skip samples together and write them to
    the down-sample buffer. */
 static void downSampleInput(short *samples) {
-  int numSamples = SONIC_INOUT_BUFFER_SIZE / SONIC_SKIP;
+  int numSamples = 2 * SONIC_MAX_PERIOD / SONIC_SKIP;
   int i, j;
   int value;
   short *downSamples = sonicStream.downSampleBuffer;

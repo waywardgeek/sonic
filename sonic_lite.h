@@ -17,7 +17,7 @@ extern "C" {
 
 /* Use a minimum pitch of 80 to reduce buffer sizes.  Set it back to 65 if you
    have the room in memory and find it sounds better. */
-#define SONIC_MIN_PITCH 80
+#define SONIC_MIN_PITCH 65
 #define SONIC_MAX_PITCH 400
 
 /* These are used to down-sample some inputs to improve speed */
