@@ -8,9 +8,6 @@
 
 #include "sonic_lite.h"
 
-#include <limits.h>
-#include <math.h>
-#include <stdlib.h>
 #include <string.h>
 
 #define SONIC_MAX_PERIOD (SONIC_SAMPLE_RATE / SONIC_MIN_PITCH)
