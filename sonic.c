@@ -13,6 +13,10 @@
 #include <stdlib.h>
 #include <string.h>
 
+/* If not using the pitch-changing feature, you can save some memory by defining
+   SOINC_NO_PITCH.  This might help when porting Sonic to a microcontroller. */
+
+#ifndef SONIC_NO_PITCH
 /*
     The following code was used to generate the following sinc lookup table.
 
@@ -112,6 +116,8 @@ static short sincTable[SINC_TABLE_SIZE] = {
     -12,   -10,   -9,    -7,    -6,    -4,    -3,    -2,    -2,    -1,    -1,
     0,     0,     0,     0,     0,     0,     0};
 
+#endif  /* SONIC_NO_PITCH */
+
 /* These functions allocate out of a static array rather than calling
    calloc/realloc/free if the NO_MALLOC flag is defined.  Otherwise, call
    calloc/realloc/free as usual.  This is useful for running on small
@@ -169,6 +175,9 @@ static void *sonicRealloc(void *p, int oldNum, int newNum, int size) {
     return p;
   }
   void *newBuffer = sonicCalloc(newNum, size);
+  if (newBuffer == NULL) {
+    return NULL;
+  }
   memcpy(newBuffer, p, oldNum * size);
   return newBuffer;
 }
@@ -354,6 +363,7 @@ static int allocateStreamBuffers(sonicStream stream, int sampleRate,
     sonicDestroyStream(stream);
     return 0;
   }
+#ifndef SONIC_NO_PITCH
   /* Allocate 25% more than needed so we hopefully won't grow. */
   stream->pitchBufferSize = maxRequired + (maxRequired >> 1);
   stream->pitchBuffer =
@@ -362,6 +372,7 @@ static int allocateStreamBuffers(sonicStream stream, int sampleRate,
     sonicDestroyStream(stream);
     return 0;
   }
+#endif  /* SONIC_NO_PITCH */
   int downSampleBufferSize = (maxRequired + skip - 1)/ skip;
   stream->downSampleBuffer = (short*)sonicCalloc(downSampleBufferSize, sizeof(short));
   if (stream->downSampleBuffer == NULL) {
@@ -883,9 +894,6 @@ static int moveNewSamplesToPitchBuffer(sonicStream stream,
         pitchBufferSize,
         stream->pitchBufferSize,
         sizeof(short) * numChannels);
-    if (stream->pitchBuffer == NULL) {
-      return 0;
-    }
   }
   memcpy(stream->pitchBuffer + stream->numPitchSamples * numChannels,
          stream->outputBuffer + originalNumOutputSamples * numChannels,
@@ -955,6 +963,7 @@ static int adjustPitch(sonicStream stream, int originalNumOutputSamples) {
   return 1;
 }
 
+#ifndef SONIC_NO_PITCH
 /* Aproximate the sinc function times a Hann window from the sinc table. */
 static int findSincCoefficient(int i, int ratio, int width) {
   int lobePoints = (SINC_TABLE_SIZE - 1) / SINC_FILTER_POINTS;
@@ -1052,6 +1061,8 @@ static int adjustRate(sonicStream stream, float rate,
   removePitchSamples(stream, position);
   return 1;
 }
+
+#endif  /* SONIC_NO_PITCH */
 
 /* Skip over a pitch period, and copy period/speed samples to the output */
 static int skipPitchPeriod(sonicStream stream, short* samples, float speed,
@@ -1170,10 +1181,12 @@ static int processStreamInput(sonicStream stream) {
         return 0;
       }
     }
+#ifndef SONIC_NO_PITCH
   } else if (rate != 1.0f) {
     if (!adjustRate(stream, rate, originalNumOutputSamples)) {
       return 0;
     }
+ #endif  /* SONIC_NO_PITCH */
   }
   if (stream->volume != 1.0f) {
     /* Adjust output volume. */

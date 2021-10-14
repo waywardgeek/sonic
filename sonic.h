@@ -57,8 +57,12 @@ extern "C" {
 
 /* This specifies the range of voice pitches we try to match.
    Note that if we go lower than 65, we could overflow in findPitchInRange */
+#ifndef SONIC_MIN_PITCH
 #define SONIC_MIN_PITCH 65
+#endif  /* SONIC_MIN_PITCH */
+#ifndef SONIC_MAX_PITCH
 #define SONIC_MAX_PITCH 400
+#endif  /* SONIC_MAX_PITCH */
 
 /* These are used to down-sample some inputs to improve speed */
 #define SONIC_AMDF_FREQ 4000
