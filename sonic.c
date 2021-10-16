@@ -239,11 +239,12 @@ sonicSpectrogram sonicGetSpectrogram(sonicStream stream) {
 
 /* Scale the samples by the factor. */
 static void scaleSamples(short* samples, int numSamples, float volume) {
-  int fixedPointVolume = volume * 4096.0f;
+  /* This is 24-bit integer and 8-bit fraction fixed-point representation. */
+  int fixedPointVolume = volume * 256.0f;
   int value;
 
   while (numSamples--) {
-    value = (*samples * fixedPointVolume) >> 12;
+    value = (*samples * fixedPointVolume) >> 8;
     if (value > 32767) {
       value = 32767;
     } else if (value < -32767) {

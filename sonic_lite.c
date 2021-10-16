@@ -30,13 +30,19 @@ struct sonicStruct {
 
 static struct sonicStruct sonicStream;
 
-/* Scale the samples by the factor. */
+/* Scale the samples by the factor.  Volume should be no greater than 127X, or
+   it is possible to overflow the fixed-point mathi. */
 static void scaleSamples(short *samples, int numSamples, float volume) {
-  int fixedPointVolume = volume * 4096.0f;
+  /* This is 24-bit integer and 8-bit fraction fixed-point representation. */
+  int fixedPointVolume;
   int value;
 
+  if (volume > 127.0) {
+    volume = 127.0;
+  }
+  fixedPointVolume = volume * 256.0f;
   while (numSamples--) {
-    value = (*samples * fixedPointVolume) >> 12;
+    value = (*samples * fixedPointVolume) >> 8;
     if (value > 32767) {
       value = 32767;
     } else if (value < -32767) {
