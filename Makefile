@@ -52,10 +52,6 @@ ifeq ($(NO_MALLOC), 1)
   endif
 endif
 
-ifdef NO_PITCH
-  CFLAGS+= -DSONIC_NO_PITCH
-endif
-
 ifdef MIN_PITCH
   CFLAGS+= -DSONIC_MIN_PITCH=$(MIN_PITCH)
 endif
