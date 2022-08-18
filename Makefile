@@ -75,10 +75,10 @@ sonic_lite: wave.c main_lite.c sonic_lite.c sonic_lite.h
 	$(CC) $(CFLAGS) $(LDFLAGS) -o sonic_lite sonic_lite.c wave.c main_lite.c
 
 sonic.o: sonic.c sonic.h
-	$(CC) $(CPPFLAGS) $(CFLAGS) -c sonic.c
+	$(CC) $(CPPFLAGS) $(CFLAGS) -c sonic.c -DSONIC_EXPORTS
 
 wave.o: wave.c wave.h
-	$(CC) $(CPPFLAGS) $(CFLAGS) -c wave.c
+	$(CC) $(CPPFLAGS) $(CFLAGS) -c wave.c -DSONIC_EXPORTS
 
 main.o: main.c sonic.h wave.h
 	$(CC) $(CPPFLAGS) $(CFLAGS) -c main.c
