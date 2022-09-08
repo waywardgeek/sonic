@@ -144,9 +144,9 @@ static void sonicFree(void *p) {
    and its buffers.  There should never be more than one sonicStream in use at a
    time when using SONIC_NO_MALLOC mode.  Calls to realloc move the data to the
    end of memoryBuffer.  Calls to free reset the memory buffer to empty. */
-static void *memoryBufferAlligned[(SONIC_MAX_MEMORY + sizeof(void) -
-    1)/sizeof(void*)]; static unsigned char *memoryBuffer = (unsigned
-      char*)memoryBufferAlligned;
+static void*
+    memoryBufferAligned[(SONIC_MAX_MEMORY + sizeof(void) - 1) / sizeof(void*)];
+static unsigned char* memoryBuffer = (unsigned char*)memoryBufferAligned;
 static int memoryBufferPos = 0;
 
 /* Allocate elements from a static memory buffer. */
@@ -191,6 +191,7 @@ struct sonicStreamStruct {
   short* outputBuffer;
   short* pitchBuffer;
   short* downSampleBuffer;
+  void* userData;
   float speed;
   float volume;
   float pitch;
@@ -235,6 +236,16 @@ struct sonicStreamStruct {
 };
 
 #ifdef SONIC_SPECTROGRAM
+
+/* Attach user data to the stream. */
+void sonicSetUserData(sonicStream stream, void *userData) {
+  stream->userData = userData;
+}
+
+/* Retrieve user data attached to the stream. */
+void *sonicGetUserData(sonicStream stream) {
+  return stream->userData;
+}
 
 /* Compute a spectrogram on the fly. */
 void sonicComputeSpectrogram(sonicStream stream) {
@@ -871,35 +882,6 @@ static void overlapAdd(int numSamples, int numChannels, short* out,
   }
 }
 
-/* Overlap two sound segments, ramp the volume of one down, while ramping the
-   other one from zero up, and add them, storing the result at the output. */
-static void overlapAddWithSeparation(int numSamples, int numChannels,
-                                     int separation, short* out,
-                                     short* rampDown, short* rampUp) {
-  short *o, *u, *d;
-  int i, t;
-
-  for (i = 0; i < numChannels; i++) {
-    o = out + i;
-    u = rampUp + i;
-    d = rampDown + i;
-    for (t = 0; t < numSamples + separation; t++) {
-      if (t < separation) {
-        *o = *d * (numSamples - t) / numSamples;
-        d += numChannels;
-      } else if (t < numSamples) {
-        *o = (*d * (numSamples - t) + *u * (t - separation)) / numSamples;
-        d += numChannels;
-        u += numChannels;
-      } else {
-        *o = *u * (t - separation) / numSamples;
-        u += numChannels;
-      }
-      o += numChannels;
-    }
-  }
-}
-
 /* Just move the new samples in the output buffer to the pitch buffer */
 static int moveNewSamplesToPitchBuffer(sonicStream stream,
                                        int originalNumOutputSamples) {
@@ -939,51 +921,7 @@ static void removePitchSamples(sonicStream stream, int numSamples) {
   stream->numPitchSamples -= numSamples;
 }
 
-/* Change the pitch.  The latency this introduces could be reduced by looking at
-   past samples to determine pitch, rather than future. */
-static int adjustPitch(sonicStream stream, int originalNumOutputSamples) {
-  float pitch = stream->pitch;
-  int numChannels = stream->numChannels;
-  int period, newPeriod, separation;
-  int position = 0;
-  short* out;
-  short* rampDown;
-  short* rampUp;
-
-  if (stream->numOutputSamples == originalNumOutputSamples) {
-    return 1;
-  }
-  if (!moveNewSamplesToPitchBuffer(stream, originalNumOutputSamples)) {
-    return 0;
-  }
-  while (stream->numPitchSamples - position >= stream->maxRequired) {
-    period = findPitchPeriod(stream,
-                             stream->pitchBuffer + position * numChannels, 0);
-    newPeriod = period / pitch;
-    if (!enlargeOutputBufferIfNeeded(stream, newPeriod)) {
-      return 0;
-    }
-    out = stream->outputBuffer + stream->numOutputSamples * numChannels;
-    if (pitch >= 1.0f) {
-      rampDown = stream->pitchBuffer + position * numChannels;
-      rampUp =
-          stream->pitchBuffer + (position + period - newPeriod) * numChannels;
-      overlapAdd(newPeriod, numChannels, out, rampDown, rampUp);
-    } else {
-      rampDown = stream->pitchBuffer + position * numChannels;
-      rampUp = stream->pitchBuffer + position * numChannels;
-      separation = newPeriod - period;
-      overlapAddWithSeparation(period, numChannels, separation, out, rampDown,
-                               rampUp);
-    }
-    stream->numOutputSamples += newPeriod;
-    position += period;
-  }
-  removePitchSamples(stream, position);
-  return 1;
-}
-
-/* Aproximate the sinc function times a Hann window from the sinc table. */
+/* Approximate the sinc function times a Hann window from the sinc table. */
 static int findSincCoefficient(int i, int ratio, int width) {
   int lobePoints = (SINC_TABLE_SIZE - 1) / SINC_FILTER_POINTS;
   int left = i * lobePoints + (ratio * lobePoints) / width;

@@ -78,6 +78,10 @@ typedef struct sonicStreamStruct* sonicStream;
 sonicStream sonicCreateStream(int sampleRate, int numChannels);
 /* Destroy the sonic stream. */
 void sonicDestroyStream(sonicStream stream);
+/* Attach user data to the stream. */
+void sonicSetUserData(sonicStream stream, void *userData);
+/* Retrieve user data attached to the stream. */
+void *sonicGetUserData(sonicStream stream);
 /* Use this to write floating point data to be speed up or down into the stream.
    Values must be between -1 and 1.  Return 0 if memory realloc failed,
    otherwise 1 */
@@ -123,6 +127,8 @@ void sonicSetRate(sonicStream stream, float rate);
 float sonicGetVolume(sonicStream stream);
 /* Set the scaling factor of the stream. */
 void sonicSetVolume(sonicStream stream, float volume);
+/* Chord pitch is DEPRECATED.  AFAIK, it was never used by anyone.  These
+   functions still exist to avoid breaking existing code. */
 /* Get the chord pitch setting. */
 int sonicGetChordPitch(sonicStream stream);
 /* Set chord pitch mode on or off.  Default is off.  See the documentation
@@ -222,7 +228,7 @@ int sonicWritePGM(sonicBitmap bitmap, char* fileName);
    2*period samples.  Time should advance one pitch period for each call to
    this function. */
 void sonicAddPitchPeriodToSpectrogram(sonicSpectrogram spectrogram,
-                                      short* samples, int period,
+                                      short* samples, int numSamples,
                                       int numChannels);
 #endif  /* SONIC_SPECTROGRAM */
 

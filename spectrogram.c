@@ -7,7 +7,9 @@
 */
 
 #ifdef  KISS_FFT
+#include <stddef.h>  /* kiss_fft.h failes to load this */
 #include <kiss_fft.h>
+#include <kiss_fft_impl.h>
 #else
 #include <fftw3.h>
 #endif
@@ -56,7 +58,7 @@ static void dumpSpectrum(sonicSpectrum spectrum) {
 }
 
 /* Print out spectrogram data for debugging. */
-static void dumpSpectrogram(sonicSpectrogram spectrogram) {
+void dumpSpectrogram(sonicSpectrogram spectrogram) {
   printf(
       "spectrogram minPower:%f maxPower:%f numSpectrums:%d totalSamples:%d\n",
       spectrogram->minPower, spectrogram->maxPower, spectrogram->numSpectrums,

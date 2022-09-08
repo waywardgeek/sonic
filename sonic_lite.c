@@ -6,6 +6,9 @@
    This file is licensed under the Apache 2.0 license.
 */
 
+/* This file is designed for low-powered microcontrollers, minimizing memory
+   compared to the fuller sonic.c implementation. */
+
 #include "sonic_lite.h"
 
 #include <string.h>

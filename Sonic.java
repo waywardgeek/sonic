@@ -19,6 +19,7 @@ public class Sonic {
     private static final int SINC_TABLE_SIZE = 601;
 
     // Lookup table for windowed sinc function of SINC_FILTER_POINTS points.
+    // The code to generate this is in the header comment of sonic.c.
     private static final short sincTable[] = {
         0, 0, 0, 0, 0, 0, 0, -1, -1, -2, -2, -3, -4, -6, -7, -9, -10, -12, -14,
         -17, -19, -21, -24, -26, -29, -32, -34, -37, -40, -42, -44, -47, -48, -50,
@@ -130,11 +131,13 @@ public class Sonic {
         int numSamples,
         float volume)
     {
+        // Convert volume to fixed-point, with a 12 bit fraction.
         int fixedPointVolume = (int)(volume*4096.0f);
         int start = position*numChannels;
         int stop = start + numSamples*numChannels;
 
         for(int xSample = start; xSample < stop; xSample++) {
+            // Convert back from fixed point to 16-bit integer.
             int value = (samples[xSample]*fixedPointVolume) >> 12;
             if(value > 32767) {
                 value = 32767;
@@ -787,7 +790,7 @@ public class Sonic {
         removePitchSamples(position);
     }
 
-    // Aproximate the sinc function times a Hann window from the sinc table.
+    // Approximate the sinc function times a Hann window from the sinc table.
     private int findSincCoefficient(int i, int ratio, int width) {
         int lobePoints = (SINC_TABLE_SIZE-1)/SINC_FILTER_POINTS;
         int left = i*lobePoints + (ratio*lobePoints)/width;

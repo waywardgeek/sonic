@@ -226,7 +226,7 @@ static void closeFile(waveFile file) {
 
 /* Open a 16-bit little-endian wav file for reading.  It may be mono or stereo.
  */
-waveFile openInputWaveFile(char* fileName, int* sampleRate, int* numChannels) {
+waveFile openInputWaveFile(const char* fileName, int* sampleRate, int* numChannels) {
   waveFile file;
   FILE* soundFile = fopen(fileName, "rb");
 
@@ -248,7 +248,7 @@ waveFile openInputWaveFile(char* fileName, int* sampleRate, int* numChannels) {
 
 /* Open a 16-bit little-endian wav file for writing.  It may be mono or stereo.
  */
-waveFile openOutputWaveFile(char* fileName, int sampleRate, int numChannels) {
+waveFile openOutputWaveFile(const char* fileName, int sampleRate, int numChannels) {
   waveFile file;
   FILE* soundFile = fopen(fileName, "wb");
 
@@ -301,7 +301,8 @@ int closeWaveFile(waveFile file) {
   return passed;
 }
 
-/* Read from the wave file.  Return the number of samples read. */
+/* Read from the wave file.  Return the number of samples read.
+   numSamples and maxSamples are the number of **multi-channel** samples */
 int readFromWaveFile(waveFile file, short* buffer, int maxSamples) {
   int i, bytesRead, samplesRead;
   int bytePos = 0;
