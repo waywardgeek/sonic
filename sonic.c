@@ -389,7 +389,7 @@ static int allocateStreamBuffers(sonicStream stream, int sampleRate,
     return 0;
   }
   /* Allocate 25% more than needed so we hopefully won't grow. */
-  stream->pitchBufferSize = maxRequired + (maxRequired >> 1);
+  stream->pitchBufferSize = maxRequired + (maxRequired >> 2);
   stream->pitchBuffer =
       (short*)sonicCalloc(maxRequired, sizeof(short) * numChannels);
   if (stream->pitchBuffer == NULL) {
