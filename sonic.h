@@ -1,3 +1,6 @@
+#ifndef SONIC_H_
+#define SONIC_H_
+
 /* Sonic library
    Copyright 2010
    Bill Cox
@@ -283,3 +286,5 @@ void sonicAddPitchPeriodToSpectrogram(sonicSpectrogram spectrogram,
 #ifdef __cplusplus
 }
 #endif
+
+#endif  /* SONIC_H_ */
