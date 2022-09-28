@@ -55,6 +55,54 @@ similar to high speed factors is used.
 extern "C" {
 #endif
 
+#ifdef SONIC_INTERNAL
+/* The following #define's are used to change the names of the routines defined
+ * here so that a new library (sonic2) can reuse these names, and then call
+ * the original names.  We do this for two reasons: 1) we don't want to change
+ * the original API, and 2) we want to add a shim, using the original names and
+ * still call these routines.
+ *
+ * Original users of this API and the libsonic library need to do nothing.  The
+ * original behavior remains.
+ *
+ * A new user that add some additional functionality above this library (a shim)
+ * should #define SONIC_INTERNAL before including this file, undefine all these
+ * symbols and call the sonicIntXXX functions directly.
+ */
+#define sonicCreateStream sonicIntCreateStream
+#define sonicDestroyStream sonicIntDestroyStream
+#define sonicWriteFloatToStream sonicIntWriteFloatToStream
+#define sonicWriteShortToStream sonicIntWriteShortToStream
+#define sonicWriteUnsignedCharToStream sonicIntWriteUnsignedCharToStream
+#define sonicReadFloatFromStream sonicIntReadFloatFromStream
+#define sonicReadShortFromStream sonicIntReadShortFromStream
+#define sonicReadUnsignedCharFromStream sonicIntReadUnsignedCharFromStream
+#define sonicFlushStream sonicIntFlushStream
+#define sonicSamplesAvailable sonicIntSamplesAvailable
+#define sonicGetSpeed sonicIntGetSpeed
+#define sonicSetSpeed sonicIntSetSpeed
+#define sonicGetPitch sonicIntGetPitch
+#define sonicSetPitch sonicIntSetPitch
+#define sonicGetRate sonicIntGetRate
+#define sonicSetRate sonicIntSetRate
+#define sonicGetVolume sonicIntGetVolume
+#define sonicSetVolume sonicIntSetVolume
+#define sonicGetQuality sonicIntGetQuality
+#define sonicSetQuality sonicIntSetQuality
+#define sonicGetSampleRate sonicIntGetSampleRate
+#define sonicSetSampleRate sonicIntSetSampleRate
+#define sonicGetNumChannels sonicIntGetNumChannels
+#define sonicGetUserData sonicIntGetUserData
+#define sonicSetUserData sonicIntSetUserData
+#define sonicSetNumChannels sonicIntSetNumChannels
+#define sonicChangeFloatSpeed sonicIntChangeFloatSpeed
+#define sonicChangeShortSpeed sonicIntChangeShortSpeed
+#define sonicEnableNonlinearSpeedup sonicIntEnableNonlinearSpeedup
+#define sonicComputeSpectrogram sonicIntComputeSpectrogram
+#define sonicGetSpectrogram sonicIntGetSpectrogram
+
+#endif /* SONIC_INTERNAL */
+
 /* This specifies the range of voice pitches we try to match.
    Note that if we go lower than 65, we could overflow in findPitchInRange */
 #ifndef SONIC_MIN_PITCH
