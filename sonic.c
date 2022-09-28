@@ -503,7 +503,7 @@ static void updateNumInputSamples(sonicStream stream, int numSamples) {
 }
 
 /* Add the input samples to the input buffer. */
-static int addFloatSamplesToInputBuffer(sonicStream stream, float* samples,
+static int addFloatSamplesToInputBuffer(sonicStream stream, const float* samples,
                                         int numSamples) {
   short* buffer;
   int count = numSamples * stream->numChannels;
@@ -523,7 +523,7 @@ static int addFloatSamplesToInputBuffer(sonicStream stream, float* samples,
 }
 
 /* Add the input samples to the input buffer. */
-static int addShortSamplesToInputBuffer(sonicStream stream, short* samples,
+static int addShortSamplesToInputBuffer(sonicStream stream, const short* samples,
                                         int numSamples) {
   if (numSamples == 0) {
     return 1;
@@ -539,7 +539,7 @@ static int addShortSamplesToInputBuffer(sonicStream stream, short* samples,
 
 /* Add the input samples to the input buffer. */
 static int addUnsignedCharSamplesToInputBuffer(sonicStream stream,
-                                               unsigned char* samples,
+                                               const unsigned char* samples,
                                                int numSamples) {
   short* buffer;
   int count = numSamples * stream->numChannels;
@@ -1181,7 +1181,7 @@ static int processStreamInput(sonicStream stream) {
 }
 
 /* Write floating point data to the input buffer and process it. */
-int sonicWriteFloatToStream(sonicStream stream, float* samples,
+int sonicWriteFloatToStream(sonicStream stream, const float* samples,
                             int numSamples) {
   if (!addFloatSamplesToInputBuffer(stream, samples, numSamples)) {
     return 0;
@@ -1191,7 +1191,7 @@ int sonicWriteFloatToStream(sonicStream stream, float* samples,
 
 /* Simple wrapper around sonicWriteFloatToStream that does the short to float
    conversion for you. */
-int sonicWriteShortToStream(sonicStream stream, short* samples,
+int sonicWriteShortToStream(sonicStream stream, const short* samples,
                             int numSamples) {
   if (!addShortSamplesToInputBuffer(stream, samples, numSamples)) {
     return 0;
@@ -1201,7 +1201,7 @@ int sonicWriteShortToStream(sonicStream stream, short* samples,
 
 /* Simple wrapper around sonicWriteFloatToStream that does the unsigned char to
    float conversion for you. */
-int sonicWriteUnsignedCharToStream(sonicStream stream, unsigned char* samples,
+int sonicWriteUnsignedCharToStream(sonicStream stream, const unsigned char* samples,
                                    int numSamples) {
   if (!addUnsignedCharSamplesToInputBuffer(stream, samples, numSamples)) {
     return 0;
