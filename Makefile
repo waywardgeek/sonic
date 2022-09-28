@@ -56,15 +56,15 @@ ifdef MIN_PITCH
   CFLAGS+= -DSONIC_MIN_PITCH=$(MIN_PITCH)
 endif
 
-SRC=sonic.c
+EXTRA_SRC=
 # Set this to empty if not using spectrograms.
 FFTLIB=
 ifeq ($(USE_SPECTROGRAM), 1)
   CFLAGS+= -DSONIC_SPECTROGRAM
-  SRC+= spectrogram.c
+  EXTRA_SRC+= spectrogram.c
   FFTLIB= -L$(LIBDIR) -lfftw3
 endif
-OBJ=$(SRC:.c=.o)
+EXTRA_OBJ=$(EXTRA_SRC:.c=.o)
 
 all: sonic sonic_lite $(LIB_NAME)$(LIB_TAG) libsonic.a libsonic_internal.a
 
@@ -91,20 +91,20 @@ main.o: main.c sonic.h wave.h
 spectrogram.o: spectrogram.c sonic.h
 	$(CC) $(CPPFLAGS) $(CFLAGS) -c spectrogram.c
 
-$(LIB_NAME)$(LIB_TAG): $(OBJ)
-	$(CC) $(CFLAGS) $(LDFLAGS) $(SHARED_OPT) -Wl,$(SONAME)$(LIB_NAME) $(OBJ) -o $(LIB_NAME)$(LIB_TAG) $(FFTLIB)
+$(LIB_NAME)$(LIB_TAG): $(EXTRA_OBJ) sonic.o
+	$(CC) $(CFLAGS) $(LDFLAGS) $(SHARED_OPT) -Wl,$(SONAME)$(LIB_NAME) $(EXTRA_OBJ) sonic.o -o $(LIB_NAME)$(LIB_TAG) $(FFTLIB)
 ifneq ($(UNAME), Darwin)
 	ln -sf $(LIB_NAME)$(LIB_TAG) $(LIB_NAME)
 	ln -sf $(LIB_NAME)$(LIB_TAG) $(LIB_NAME).0
 endif
 
-libsonic.a: $(OBJ)
-	$(AR) cqs libsonic.a $(OBJ)
+libsonic.a: $(EXTRA_OBJ) sonic.o
+	$(AR) cqs libsonic.a $(EXTRA_OBJ) sonic.o
 
 # Define a version of sonic with the internal names defined so others (i.e. Speedy)
 # can build new APIs that superscede the default API.
-libsonic_internal.a: $(OBJ) sonic_internal.o
-	$(AR) cqs libsonic.a $(OBJ) sonic_internal.o
+libsonic_internal.a: $(EXTRA_OBJ) sonic_internal.o
+	$(AR) cqs libsonic_internal.a $(EXTRA_OBJ) sonic_internal.o
 
 install: sonic $(LIB_NAME)$(LIB_TAG) sonic.h
 	install -d $(DESTDIR)$(BINDIR) $(DESTDIR)$(INCDIR) $(DESTDIR)$(LIBDIR)
@@ -126,7 +126,7 @@ uninstall:
 	rm -f $(DESTDIR)$(LIBDIR)/$(LIB_NAME)
 
 clean:
-	rm -f *.o sonic sonic_lite $(LIB_NAME)* libsonic.a test.wav
+	rm -f *.o sonic sonic_lite $(LIB_NAME)* libsonic.a libsonic_internal.a test.wav
 
 check:
 	./sonic -s 2.0 ./samples/talking.wav ./test.wav
