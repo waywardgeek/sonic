@@ -66,7 +66,7 @@ ifeq ($(USE_SPECTROGRAM), 1)
 endif
 OBJ=$(SRC:.c=.o)
 
-all: sonic sonic_lite $(LIB_NAME)$(LIB_TAG) libsonic.a
+all: sonic sonic_lite $(LIB_NAME)$(LIB_TAG) libsonic.a libsonic_internal.a
 
 sonic: wave.o main.o libsonic.a
 	$(CC) $(CFLAGS) $(LDFLAGS) -o sonic wave.o main.o libsonic.a -lm $(FFTLIB)
@@ -76,6 +76,11 @@ sonic_lite: wave.c main_lite.c sonic_lite.c sonic_lite.h
 
 sonic.o: sonic.c sonic.h
 	$(CC) $(CPPFLAGS) $(CFLAGS) -c sonic.c
+
+# Define a version of sonic with the internal names defined so others (i.e. Speedy)
+# can build new APIs that superscede the default API.
+sonic_internal.o: sonic.c sonic.h
+	$(CC) $(CPPFLAGS) $(CFLAGS) -DSONIC_INTERNAL -c sonic.c -o sonic_internal.o
 
 wave.o: wave.c wave.h
 	$(CC) $(CPPFLAGS) $(CFLAGS) -c wave.c
@@ -95,6 +100,11 @@ endif
 
 libsonic.a: $(OBJ)
 	$(AR) cqs libsonic.a $(OBJ)
+
+# Define a version of sonic with the internal names defined so others (i.e. Speedy)
+# can build new APIs that superscede the default API.
+libsonic_internal.a: $(OBJ) sonic_internal.o
+	$(AR) cqs libsonic.a $(OBJ) sonic_internal.o
 
 install: sonic $(LIB_NAME)$(LIB_TAG) sonic.h
 	install -d $(DESTDIR)$(BINDIR) $(DESTDIR)$(INCDIR) $(DESTDIR)$(LIBDIR)
