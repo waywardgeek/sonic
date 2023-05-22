@@ -391,7 +391,7 @@ static int allocateStreamBuffers(sonicStream stream, int sampleRate,
   /* Allocate 25% more than needed so we hopefully won't grow. */
   stream->pitchBufferSize = maxRequired + (maxRequired >> 2);
   stream->pitchBuffer =
-      (short*)sonicCalloc(maxRequired, sizeof(short) * numChannels);
+      (short*)sonicCalloc(stream->pitchBufferSize, sizeof(short) * numChannels);
   if (stream->pitchBuffer == NULL) {
     sonicDestroyStream(stream);
     return 0;
@@ -887,15 +887,12 @@ static int moveNewSamplesToPitchBuffer(sonicStream stream,
                                        int originalNumOutputSamples) {
   int numSamples = stream->numOutputSamples - originalNumOutputSamples;
   int numChannels = stream->numChannels;
+  int pitchBufferSize = stream->pitchBufferSize;
 
-  if (stream->numPitchSamples + numSamples > stream->pitchBufferSize) {
-    int pitchBufferSize = stream->pitchBufferSize;
+  if (stream->numPitchSamples + numSamples > pitchBufferSize) {
     stream->pitchBufferSize += (pitchBufferSize >> 1) + numSamples;
-    stream->pitchBuffer = (short*)sonicRealloc(
-        stream->pitchBuffer,
-        pitchBufferSize,
-        stream->pitchBufferSize,
-        sizeof(short) * numChannels);
+    stream->pitchBuffer = (short*)sonicRealloc(stream->pitchBuffer,
+        pitchBufferSize, stream->pitchBufferSize, sizeof(short) * numChannels);
   }
   memcpy(stream->pitchBuffer + stream->numPitchSamples * numChannels,
          stream->outputBuffer + originalNumOutputSamples * numChannels,
