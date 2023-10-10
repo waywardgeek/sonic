@@ -60,7 +60,7 @@ extern "C" {
 
 #ifdef SONIC_INTERNAL
 /* The following #define's are used to change the names of the routines defined
- * here so that a new library (sonic2) can reuse these names, and then call
+ * here so that a new library (i.e. speedy) can reuse these names, and then call
  * the original names.  We do this for two reasons: 1) we don't want to change
  * the original API, and 2) we want to add a shim, using the original names and
  * still call these routines.

@@ -177,7 +177,7 @@ static int readHeader(waveFile file) {
   data = readShort(file); /* 20 - what is the audio format? 1 for PCM = Pulse
                              Code Modulation */
   if (data != 1) {
-    fprintf(stderr, "Only PCM wave files are supported\n");
+    fprintf(stderr, "Only PCM wave files are supported (not %d)\n", data);
     return 0;
   }
   file->numChannels =
