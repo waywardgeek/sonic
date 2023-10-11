@@ -101,6 +101,7 @@ extern "C" {
 #define sonicChangeFloatSpeed sonicIntChangeFloatSpeed
 #define sonicChangeShortSpeed sonicIntChangeShortSpeed
 #define sonicEnableNonlinearSpeedup sonicIntEnableNonlinearSpeedup
+#define sonicSetDurationFeedbackStrength sonicIntSetDurationFeedbackStrength
 #define sonicComputeSpectrogram sonicIntComputeSpectrogram
 #define sonicGetSpectrogram sonicIntGetSpectrogram
 

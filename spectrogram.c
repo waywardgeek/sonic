@@ -7,8 +7,9 @@
 */
 
 #ifdef  KISS_FFT
-#include <stddef.h>  /* kiss_fft.h fails to load this */
+#include <stddef.h>  /* kiss_fft.h failes to load this */
 #include <kiss_fft.h>
+#include <kiss_fft_impl.h>
 #else
 #include <fftw3.h>
 #endif
@@ -369,9 +370,3 @@ int sonicWritePGM(sonicBitmap bitmap, char* fileName) {
   fclose(file);
   return 1;
 }
-
-#ifdef	MAIN
-main(){
-
-}
-#endif

@@ -235,8 +235,6 @@ struct sonicStreamStruct {
   int prevMinDiff;
 };
 
-#ifdef SONIC_SPECTROGRAM
-
 /* Attach user data to the stream. */
 void sonicSetUserData(sonicStream stream, void *userData) {
   stream->userData = userData;
@@ -246,6 +244,8 @@ void sonicSetUserData(sonicStream stream, void *userData) {
 void *sonicGetUserData(sonicStream stream) {
   return stream->userData;
 }
+
+#ifdef SONIC_SPECTROGRAM
 
 /* Compute a spectrogram on the fly. */
 void sonicComputeSpectrogram(sonicStream stream) {
@@ -391,7 +391,7 @@ static int allocateStreamBuffers(sonicStream stream, int sampleRate,
   /* Allocate 25% more than needed so we hopefully won't grow. */
   stream->pitchBufferSize = maxRequired + (maxRequired >> 2);
   stream->pitchBuffer =
-      (short*)sonicCalloc(stream->pitchBufferSize, sizeof(short) * numChannels);
+      (short*)sonicCalloc(maxRequired, sizeof(short) * numChannels);
   if (stream->pitchBuffer == NULL) {
     sonicDestroyStream(stream);
     return 0;
@@ -887,12 +887,15 @@ static int moveNewSamplesToPitchBuffer(sonicStream stream,
                                        int originalNumOutputSamples) {
   int numSamples = stream->numOutputSamples - originalNumOutputSamples;
   int numChannels = stream->numChannels;
-  int pitchBufferSize = stream->pitchBufferSize;
 
-  if (stream->numPitchSamples + numSamples > pitchBufferSize) {
+  if (stream->numPitchSamples + numSamples > stream->pitchBufferSize) {
+    int pitchBufferSize = stream->pitchBufferSize;
     stream->pitchBufferSize += (pitchBufferSize >> 1) + numSamples;
-    stream->pitchBuffer = (short*)sonicRealloc(stream->pitchBuffer,
-        pitchBufferSize, stream->pitchBufferSize, sizeof(short) * numChannels);
+    stream->pitchBuffer = (short*)sonicRealloc(
+        stream->pitchBuffer,
+        pitchBufferSize,
+        stream->pitchBufferSize,
+        sizeof(short) * numChannels);
   }
   memcpy(stream->pitchBuffer + stream->numPitchSamples * numChannels,
          stream->outputBuffer + originalNumOutputSamples * numChannels,
