@@ -138,3 +138,13 @@ clean:
 
 check:
 	./sonic -s 2.0 ./samples/talking.wav ./test.wav
+
+
+libspeedy.so:
+	cd speedy; make libspeedy.so  SONIC_DIR=.. FFTW_DIR=../../fftw
+
+speedy_wave: libsonic_internal.so
+	cd speedy; make speedy_wave SONIC_DIR=.. FFTW_DIR=../../fftw
+	# You will probably also need to set the LDPATH.  For example
+	#    export LD_LIBRARY_PATH=/usr/local/lib:../kissfft:speedy:.
+
