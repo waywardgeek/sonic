@@ -69,8 +69,8 @@ EXTRA_OBJ=$(EXTRA_SRC:.c=.o)
 
 all: sonic sonic_lite $(LIB_NAME)$(LIB_TAG) libsonic.a libsonic_internal.a $(LIB_INTERNAL_NAME)$(LIB_TAG)
 
-sonic: wave.o main.o libsonic.a
-	$(CC) $(CFLAGS) $(LDFLAGS) -o sonic wave.o main.o libsonic.a -lm $(FFTLIB)
+sonic: main.o libsonic.a
+	$(CC) $(CFLAGS) $(LDFLAGS) -o sonic main.o libsonic.a -lm $(FFTLIB)
 
 sonic_lite: wave.c main_lite.c sonic_lite.c sonic_lite.h
 	$(CC) $(CFLAGS) $(LDFLAGS) -o sonic_lite sonic_lite.c wave.c main_lite.c
