@@ -251,8 +251,6 @@ struct sonicBitmapStruct {
   int numCols;
 };
 
-typedef struct sonicBitmapStruct* sonicBitmap;
-
 /* Enable coomputation of a spectrogram on the fly. */
 void sonicComputeSpectrogram(sonicStream stream);
 
