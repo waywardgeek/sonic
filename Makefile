@@ -35,9 +35,9 @@ ifeq ($(UNAME), Darwin)
   LIB_TAG=
 endif
 
-#CFLAGS=-Wall -Wno-unused-function -g -ansi -fPIC -pthread
-CFLAGS ?= -O3
-CFLAGS += -Wall -Wno-unused-function -ansi -fPIC -pthread
+CFLAGS=-Wall -Wno-unused-function -g -ansi -fPIC -pthread
+#CFLAGS ?= -O3
+#CFLAGS += -Wall -Wno-unused-function -ansi -fPIC -pthread
 
 CC=gcc
 
@@ -67,13 +67,16 @@ ifeq ($(USE_SPECTROGRAM), 1)
 endif
 EXTRA_OBJ=$(EXTRA_SRC:.c=.o)
 
-all: sonic sonic_lite $(LIB_NAME)$(LIB_TAG) libsonic.a libsonic_internal.a $(LIB_INTERNAL_NAME)$(LIB_TAG)
+all: sonic sonic_lite sonic_experimental $(LIB_NAME)$(LIB_TAG) libsonic.a libsonic_internal.a $(LIB_INTERNAL_NAME)$(LIB_TAG)
 
 sonic: main.o libsonic.a
 	$(CC) $(CFLAGS) $(LDFLAGS) -o sonic main.o libsonic.a -lm $(FFTLIB)
 
 sonic_lite: wave.c main_lite.c sonic_lite.c sonic_lite.h
 	$(CC) $(CFLAGS) $(LDFLAGS) -o sonic_lite sonic_lite.c wave.c main_lite.c
+
+sonic_experimental: wave.c main_experimental.c sonic_experimental.c sonic_experimental.h
+	$(CC) $(CFLAGS) $(LDFLAGS) -o sonic_experimental sonic_experimental.c wave.c main_experimental.c
 
 sonic.o: sonic.c sonic.h
 	$(CC) $(CPPFLAGS) $(CFLAGS) -c sonic.c
@@ -134,7 +137,7 @@ uninstall:
 	rm -f $(DESTDIR)$(LIBDIR)/$(LIB_NAME)
 
 clean:
-	rm -f *.o sonic sonic_lite $(LIB_NAME)* libsonic.a libsonic_internal.a test.wav
+	rm -f *.o sonic sonic_lite sonic_experimental $(LIB_NAME)* libsonic.a libsonic_internal.a test.wav
 
 check:
 	./sonic -s 2.0 ./samples/talking.wav ./test.wav
