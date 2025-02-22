@@ -21,13 +21,18 @@
 static int sonicMinPeriod, sonicMaxPeriod;
 
 struct sonicStruct {
+  /* The input buffer will have at least 3 pitch periods.  The sample at
+     sonicMaxPeriod is the first new unprocessed sample.  We keep the prior
+     samples up to sonicMaxPeriod so we can find the snippet at this point for
+     any pitch period.  This is used when transitioning from the current
+     snippet to the next. */
   short inputBuffer[1000000];
   short outputBuffer[1000000];
   short downSampleBuffer[1000000];
   float speed;
   int sampleRate;
   int numInputSamples;
-  int inputPos;  /* This is the period of the current snippet. */
+  int snippetPeriod; 
   int snippetOffset; 
   int numOutputSamples;
   int prevPeriod;
@@ -70,7 +75,7 @@ void sonicInit(float speed, int sampleRate) {
   sonicStream.prevPeriod = 0;
   sonicStream.prevMinDiff = 0;
   sonicStream.numInputSamples = sonicMinPeriod;
-  sonicStream.inputPos = sonicMinPeriod;
+  sonicStream.snippetPeriod = sonicMinPeriod;
   sonicStream.snippetOffset = 0;
 }
 
@@ -97,16 +102,17 @@ for (i = 1; i < numSamples; i++) {
 }
 
 /* Remove input samples that we have already processed. */
-static void removeInputSamples(int position, int newInputPos) {
+static void removeInputSamples(int position) {
   int remainingSamples = sonicStream.numInputSamples - position;
+/* temp */
+assert(position >= sonicMaxPeriod);
 
   if (remainingSamples > 0) {
     memmove(sonicStream.inputBuffer,
-            sonicStream.inputBuffer + position - newInputPos,
-            (remainingSamples + newInputPos) * sizeof(short));
+            sonicStream.inputBuffer + position - sonicMaxPeriod,
+            (remainingSamples + sonicMaxPeriod) * sizeof(short));
   }
-  sonicStream.numInputSamples = newInputPos + remainingSamples;
-  sonicStream.inputPos = newInputPos;
+  sonicStream.numInputSamples = sonicMaxPeriod + remainingSamples;
 }
 
 /* Read short data out of the stream.  Sometimes no data will be available, and
@@ -135,12 +141,12 @@ int sonicReadShortFromStream(short *samples, int maxSamples) {
    has.  No extra delay will be added to the output, but flushing in the middle
    of words could introduce distortion. */
 void sonicFlushStream(void) {
-  int remainingSamples = sonicStream.numInputSamples - sonicStream.inputPos;
+  int remainingSamples = sonicStream.numInputSamples - sonicMaxPeriod;
   float speed = sonicStream.speed;
   int expectedOutputSamples = sonicStream.numOutputSamples + (int)((remainingSamples / speed) + 0.5f);
 
-  memset(sonicStream.inputBuffer + sonicStream.inputPos + remainingSamples, 0,
-      sizeof(short) * (SONIC_INPUT_BUFFER_SIZE - (remainingSamples + sonicStream.inputPos)));
+  memset(sonicStream.inputBuffer + sonicMaxPeriod + remainingSamples, 0,
+      sizeof(short) * (SONIC_INPUT_BUFFER_SIZE - (sonicMaxPeriod + remainingSamples)));
   sonicStream.numInputSamples = SONIC_INPUT_BUFFER_SIZE;
   sonicWriteShortToStream(NULL, 0);
   /* Throw away any extra samples we generated due to the silence we added */
@@ -302,6 +308,9 @@ static void setPeriod(sonicSnippet snippet, int period) {
   short* p = sonicStream.inputBuffer + pos;
   float fade;
   int i;
+/* temp */
+assert(p + period - 1 < sonicStream.inputBuffer + sonicStream.numInputSamples);
+assert(p - period >= sonicStream.inputBuffer);
 
   snippet->period = period;
   for (i = 0; i < period; i++) {
@@ -318,6 +327,7 @@ static short oldValue = 0;
 int diff = value - oldValue;
 diff = diff < 0? -diff : diff;
 oldValue = value;
+printf("diff = %d\n", diff);
 
   sonicStream.outputBuffer[sonicStream.numOutputSamples++] = value;
 }
@@ -350,6 +360,9 @@ static void fadeFromAToB(sonicSnippet A, sonicSnippet B) {
 /* temp maybe will sound better using B's period? */
     B->offset = A->offset;
   }
+/* temp */
+assert(A->offset < A->period);
+assert(B->offset < B->period);
   for (i = 0; i < numOutputSamples; i++) {
     if (!changedPeriod && A->offset == 0) {
 /* temp */
@@ -358,6 +371,10 @@ assert(B->offset == 0);
       setPeriod(B, periodB);
       changedPeriod = 1;
     }
+/* temp */
+assert(A->offset < A->period);
+assert(B->offset < B->period);
+assert(A->offset >= 0 && B->offset >= 0);
     fadeB = (float) i / numOutputSamples;
     fadeA = 1.0 - fadeB;
     outputSample(fadeA * A->samples[A->offset] +
@@ -378,23 +395,47 @@ static void setBOffset(sonicSnippet A, sonicSnippet B) {
   B->offset = offset;
 }
 
+/* Determine if two snippets are identical other than for inputPos. */
+static int snippetsEqual(sonicSnippet A, sonicSnippet B) {
+  int i;
+
+  if (A->period != B->period || A->offset != B->offset) {
+    return 0;
+  }
+  for (i = 0; i < A->period; i++) {
+    if (A->samples[i] != B->samples[i]) {
+      return 0;
+    }
+  }
+  return 1;
+}
+
 /* Process as many pitch periods as we have buffered on the input. */
 static void changeSpeed(float speed) {
-  struct sonicSnippetStruct A, B;
+/* temp */
+static struct sonicSnippetStruct A, B;
+/*  struct sonicSnippetStruct A, B; */
   int period;
+/* temp */
+static int firstTime = 1;
 
-  if (sonicStream.numInputSamples - sonicStream.inputPos < 2 * sonicMaxPeriod) {
+  if (sonicStream.numInputSamples < 3 * sonicMaxPeriod) {
     return;
   }
-  while (sonicStream.numInputSamples - sonicStream.inputPos >= 2 * sonicMaxPeriod) {
+  while (sonicStream.numInputSamples >= 3 * sonicMaxPeriod) {
     /* TODO: Don't recompute the snippet for A. */
-    A.inputPos = sonicStream.inputPos;
+    A.inputPos = sonicMaxPeriod;
     A.offset = sonicStream.snippetOffset;
-    setPeriod(&A, sonicStream.inputPos);
+    setPeriod(&A, sonicStream.snippetPeriod);
+/* temp */
+if (!firstTime) {
+  assert(snippetsEqual(&A, &B));
+}
+firstTime = 0;
 /* temp */
 assert(A.offset < A.period);
-    period = findPitchPeriod(sonicStream.inputBuffer + sonicStream.inputPos, 1);
-    B.inputPos = sonicStream.inputPos + period;
+    period = findPitchPeriod(sonicStream.inputBuffer + sonicMaxPeriod, 1);
+    B.inputPos = sonicMaxPeriod + period;
     setPeriod(&B, period);
     setBOffset(&A, &B);
 /* temp */
@@ -403,7 +444,9 @@ assert(B.offset < B.period);
 /* temp */
 assert(A.offset < A.period);
 assert(B.offset < B.period);
-    removeInputSamples(B.inputPos, period);
+assert(B.period == period);
+    removeInputSamples(B.inputPos);
+    sonicStream.snippetPeriod = B.period;
     sonicStream.snippetOffset = B.offset;
   }
 }
@@ -423,9 +466,9 @@ static void processStreamInput(void) {
   if (speed > 1.00001 || speed < 0.99999) {
     changeSpeed(speed);
   } else {
-    copyToOutput(sonicStream.inputBuffer + sonicStream.inputPos,
-        sonicStream.numInputSamples - sonicStream.inputPos);
-    sonicStream.numInputSamples = sonicStream.inputPos;
+    copyToOutput(sonicStream.inputBuffer + sonicMaxPeriod,
+        sonicStream.numInputSamples - sonicMaxPeriod);
+    sonicStream.numInputSamples = sonicMaxPeriod;
   }
 }
 
@@ -439,4 +482,3 @@ void sonicWriteShortToStream(short *samples, int numSamples) {
 /* This is ignored. */
 void sonicSetVolume(float volume) {
 }
-
