@@ -11,15 +11,19 @@
 
 #include "sonic_experimental.h"
 
+/* temp */
+#include <stdio.h>
+#include <assert.h>
+
 #include <string.h>
 
 #define SONIC_INPUT_BUFFER_SIZE (3 * (SONIC_MAX_SAMPLE_RATE / SONIC_MIN_PITCH) + SONIC_INPUT_SAMPLES)
 static int sonicMinPeriod, sonicMaxPeriod;
 
 struct sonicStruct {
-  short inputBuffer[SONIC_INPUT_BUFFER_SIZE];
-  short outputBuffer [2 * sonicMaxPeriod];
-  short downSampleBuffer[(2 * sonicMaxPeriod)];
+  short inputBuffer[1000000];
+  short outputBuffer[1000000];
+  short downSampleBuffer[1000000];
   float speed;
   int sampleRate;
   int numInputSamples;
@@ -36,7 +40,7 @@ static struct sonicStruct sonicStream;
    a 2-period Hann window, and then overlap-adding the left half to the right.
    It should essentially sound like the input at that point in time. */
 struct sonicSnippetStruct {
-  short samples[sonicMaxPeriod];
+  short samples[100000];
   int inputPos;  /* Index into input buffer. */
   int offset;
   int period;
@@ -49,17 +53,19 @@ void sonicSetSpeed(float speed) { sonicStream.speed = speed; }
 
 /* Set the sample rate of the stream. */
 void sonicSetSampleRate(int sampleRate) {
-  sonicStream.sampleRate = sampleRate;
-  sonicMinPeriod = sampleRate / SONIC_MAX_PITCH;
-  sonicMaxPeriod = sampleRate / SONIC_MIN_PITCH;
 }
 
 /* Create a sonic stream.  Return NULL only if we are out of memory and cannot
    allocate the stream. */
-void sonicInit(void) {
+void sonicInit(float speed, int sampleRate) {
+  sonicStream.speed = speed;
+  sonicStream.sampleRate = sampleRate;
+  sonicMinPeriod = sampleRate / SONIC_MAX_PITCH;
+  sonicMaxPeriod = sampleRate / SONIC_MIN_PITCH;
   memset(&sonicStream, 0, sizeof(struct sonicStruct));
-  sonicStream.speed = 1.0;
-  sonicStream.numInputSamples = 0;;
+  sonicStream.speed = speed;
+  sonicStream.sampleRate = sampleRate;
+  sonicStream.numInputSamples = 0;
   sonicStream.numOutputSamples = 0;
   sonicStream.prevPeriod = 0;
   sonicStream.prevMinDiff = 0;
@@ -77,6 +83,13 @@ static int addShortSamplesToInputBuffer(short *samples,
   if (sonicStream.numInputSamples + numSamples > SONIC_INPUT_BUFFER_SIZE) {
     return 0;
   }
+/* temp */
+{
+int i;
+for (i = 1; i < numSamples; i++) {
+  printf("%d %d\n", samples[i], samples[i] - samples[i-1]);
+}
+}
   memcpy(sonicStream.inputBuffer + sonicStream.numInputSamples,
          samples, numSamples * sizeof(short));
   sonicStream.numInputSamples += numSamples;
@@ -300,6 +313,12 @@ static void setPeriod(sonicSnippet snippet, int period) {
 
 /* Write the output sample. */
 static void outputSample(short value) {
+/* temp */
+static short oldValue = 0;
+int diff = value - oldValue;
+diff = diff < 0? -diff : diff;
+oldValue = value;
+
   sonicStream.outputBuffer[sonicStream.numOutputSamples++] = value;
 }
 
@@ -328,6 +347,8 @@ static void fadeFromAToB(sonicSnippet A, sonicSnippet B) {
   } else {
     /* Play B using A’s period until we reset the offset to 0. */
     setPeriod(B, A->period);
+/* temp maybe will sound better using B's period? */
+    B->offset = A->offset;
   }
   for (i = 0; i < numOutputSamples; i++) {
     if (!changedPeriod && A->offset == 0) {
@@ -368,11 +389,18 @@ static void changeSpeed(float speed) {
     A.inputPos = sonicStream.inputPos;
     A.offset = sonicStream.snippetOffset;
     setPeriod(&A, sonicStream.inputPos);
+/* temp */
+assert(A.offset < A.period);
     period = findPitchPeriod(sonicStream.inputBuffer + sonicStream.inputPos, 1);
     B.inputPos = sonicStream.inputPos + period;
     setPeriod(&B, period);
     setBOffset(&A, &B);
+/* temp */
+assert(B.offset < B.period);
     fadeFromAToB(&A, &B);
+/* temp */
+assert(A.offset < A.period);
+assert(B.offset < B.period);
     removeInputSamples(B.inputPos, period);
     sonicStream.snippetOffset = B.offset;
   }

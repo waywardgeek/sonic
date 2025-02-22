@@ -29,7 +29,7 @@ extern "C" {
 #define SONIC_INPUT_SAMPLES 80
 
 /* Initialize Sonic. */
-void sonicInit(void);
+void sonicInit(float speed, int sampleRate);
 /* Write input samples to the stream.  numSamples must be <= SONIC_INPUT_SAMPLES */
 void sonicWriteShortToStream(short *samples, int numSamples);
 /* Use this to read 16-bit data out of the stream.  Sometimes no data will
@@ -41,12 +41,6 @@ int sonicReadShortFromStream(short *samples, int maxSamples);
 void sonicFlushStream(void);
 /* Return the number of samples in the output buffer */
 int sonicSamplesAvailable(void);
-/* Set the speed of the stream. */
-void sonicSetSpeed(float speed);
-/* Set the sample rate. */
-void sonicSetSampleRate(int sampleRate);
-/* Set the scaling factor of the stream. */
-void sonicSetVolume(float volume);
 
 #ifdef __cplusplus
 }

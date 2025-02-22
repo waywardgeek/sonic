@@ -15,7 +15,7 @@
 static int counter = 0;
 
 /* Run the experimental version of sonic. */
-static void runSonic(char* inFileName, char* outFileName, float speed, float volume) {
+static void runSonic(char* inFileName, char* outFileName, float speed) {
   waveFile inFile, outFile = NULL;
   short inBuffer[SONIC_INPUT_SAMPLES], outBuffer[SONIC_INPUT_SAMPLES];
   int samplesRead, samplesWritten, sampleRate, numChannels;
@@ -30,16 +30,14 @@ static void runSonic(char* inFileName, char* outFileName, float speed, float vol
     fprintf(stderr, "Unable to read wave file %s\n", inFileName);
     exit(1);
   }
+  printf("Sample rate %d\n", sampleRate);
   outFile = openOutputWaveFile(outFileName, sampleRate, 1);
   if (outFile == NULL) {
     closeWaveFile(inFile);
     fprintf(stderr, "Unable to open wave file %s for writing\n", outFileName);
     exit(1);
   }
-  sonicInit();
-  sonicSetSpeed(speed);
-  sonicSetSampleRate(sampleRate);
-  sonicSetVolume(volume);
+  sonicInit(speed, sampleRate);
   do {
     samplesRead = readFromWaveFile(inFile, inBuffer, SONIC_INPUT_SAMPLES);
     if (samplesRead == 0) {
@@ -65,8 +63,7 @@ static void usage(void) {
   fprintf(
       stderr,
       "Usage: sonic_experimental [OPTION]... infile outfile\n"
-      "    -s speed   -- Set speed up factor.  2.0 means 2X faster.\n"
-      "    -v volume  -- Scale volume by a constant factor.\n");
+      "    -s speed   -- Set speed up factor.  2.0 means 2X faster.\n");
   exit(1);
 }
 
@@ -74,7 +71,6 @@ int main(int argc, char** argv) {
   char* inFileName;
   char* outFileName;
   float speed = 1.0f;
-  float volume = 1.0f;
   int xArg = 1;
 
   while (xArg < argc && *(argv[xArg]) == '-') {
@@ -84,12 +80,6 @@ int main(int argc, char** argv) {
         speed = atof(argv[xArg]);
         printf("Setting speed to %0.2fX\n", speed);
       }
-    } else if (!strcmp(argv[xArg], "-v")) {
-      xArg++;
-      if (xArg < argc) {
-        volume = atof(argv[xArg]);
-        printf("Setting volume to %0.2f\n", volume);
-      }
     }
     xArg++;
   }
@@ -98,6 +88,6 @@ int main(int argc, char** argv) {
   }
   inFileName = argv[xArg];
   outFileName = argv[xArg + 1];
-  runSonic(inFileName, outFileName, speed, volume);
+  runSonic(inFileName, outFileName, speed);
   return 0;
 }
