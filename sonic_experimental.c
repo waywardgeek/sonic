@@ -352,6 +352,8 @@ static void fadeFromAToB(sonicSnippet A, sonicSnippet B) {
   }
   for (i = 0; i < numOutputSamples; i++) {
     if (!changedPeriod && A->offset == 0) {
+/* temp */
+assert(B->offset == 0);
       setPeriod(A, periodB);
       setPeriod(B, periodB);
       changedPeriod = 1;
