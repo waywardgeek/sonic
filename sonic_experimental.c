@@ -301,6 +301,12 @@ static void overlapAdd(int numSamples, short *out, short *rampDown, short *rampU
   }
 }
 
+/* temp: comput on the fly */
+#include <math.h>
+#ifndef M_PI
+# define M_PI		3.1415926535897932384
+#endif
+
 /* Compute the sound snippet from the current input, and the prior input if
    needed. */
 static void setPeriod(sonicSnippet snippet, int period) {
@@ -315,7 +321,9 @@ assert(p - period >= sonicStream.inputBuffer);
   snippet->period = period;
   for (i = 0; i < period; i++) {
     /* TODO: Make this a Hann window. */
-    fade = (float)i / period;
+/* temp */
+/*    fade = (float)i / period; */
+fade = 0.5*(1.0 - cos(M_PI*i/period));
     snippet->samples[i] = (1.0f - fade) * p[i] + fade * p[i - period];
   }
 }

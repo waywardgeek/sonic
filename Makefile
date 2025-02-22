@@ -76,7 +76,7 @@ sonic_lite: wave.c wave.h main_lite.c sonic_lite.c sonic_lite.h
 	$(CC) $(CFLAGS) $(LDFLAGS) -o sonic_lite sonic_lite.c wave.c main_lite.c
 
 sonic_experimental: wave.c wave.h main_experimental.c sonic_experimental.c sonic_experimental.h
-	$(CC) $(CFLAGS) $(LDFLAGS) -o sonic_experimental sonic_experimental.c wave.c main_experimental.c
+	$(CC) $(CFLAGS) $(LDFLAGS) -o sonic_experimental sonic_experimental.c wave.c main_experimental.c -lm
 
 genwave: wave.c wave.h wave.h genwave.c 
 	$(CC) $(CFLAGS) $(LDFLAGS) -o genwave genwave.c wave.c -lm
