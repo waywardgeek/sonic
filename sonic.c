@@ -49,6 +49,23 @@
     }
 */
 
+/* The following values are used to clamp inputs such as speed to sane values.
+ */
+#define CLAMP(val, min, max) \
+  ((val) < (min) ? (min) : (val) > (max) ? (max) : (val))
+#define MIN_VOLUME 0.01
+#define MAX_VOLUME 100.0
+#define MIN_SPEED 0.05
+#define MAX_SPEED 20.0
+#define MIN_PITCH 0.05
+#define MAX_PITCH 20.0
+#define MIN_RATE 0.05
+#define MAX_RATE 20.0
+#define MIN_SAMPLE_RATE 1000
+#define MAX_SAMPLE_RATE 500000
+#define MIN_CHANNELS 1
+#define MAX_CHANNELS 32
+
 /* The number of points to use in the sinc FIR filter for resampling. */
 #define SINC_FILTER_POINTS \
   12 /* I am not able to hear improvement with higher N. */
@@ -119,19 +136,15 @@ static short sincTable[SINC_TABLE_SIZE] = {
 #ifndef SONIC_NO_MALLOC
 
 /* Just call calloc. */
-static void *sonicCalloc(int num, int size) {
-  return calloc(num, size);
-}
+static void* sonicCalloc(int num, int size) { return calloc(num, size); }
 
 /* Just call realloc */
-static void *sonicRealloc(void *p, int oldNum, int newNum, int size) {
+static void* sonicRealloc(void* p, int oldNum, int newNum, int size) {
   return realloc(p, newNum * size);
 }
 
 /* Just call free. */
-static void sonicFree(void *p) {
-  free(p);
-}
+static void sonicFree(void* p) { free(p); }
 
 #else
 
@@ -150,13 +163,13 @@ static unsigned char* memoryBuffer = (unsigned char*)memoryBufferAligned;
 static int memoryBufferPos = 0;
 
 /* Allocate elements from a static memory buffer. */
-static void *sonicCalloc(int num, int size) {
+static void* sonicCalloc(int num, int size) {
   int len = num * size;
 
   if (memoryBufferPos + len > SONIC_MAX_MEMORY) {
     return 0;
   }
-  unsigned char *p = memoryBuffer + memoryBufferPos;
+  unsigned char* p = memoryBuffer + memoryBufferPos;
   memoryBufferPos += len;
   memset(p, 0, len);
   return p;
@@ -164,11 +177,11 @@ static void *sonicCalloc(int num, int size) {
 
 /* Preferably, SONIC_MAX_MEMORY has been set large enough that this is never
  * called. */
-static void *sonicRealloc(void *p, int oldNum, int newNum, int size) {
+static void* sonicRealloc(void* p, int oldNum, int newNum, int size) {
   if (newNum <= oldNum) {
     return p;
   }
-  void *newBuffer = sonicCalloc(newNum, size);
+  void* newBuffer = sonicCalloc(newNum, size);
   if (newBuffer == NULL) {
     return NULL;
   }
@@ -176,17 +189,16 @@ static void *sonicRealloc(void *p, int oldNum, int newNum, int size) {
   return newBuffer;
 }
 
-/* Reset memoryBufferPos to 0.  We asssume all data is freed at the same time. */
-static void sonicFree(void *p) {
-  memoryBufferPos = 0;
-}
+/* Reset memoryBufferPos to 0.  We asssume all data is freed at the same time.
+ */
+static void sonicFree(void* p) { memoryBufferPos = 0; }
 
 #endif
 
 struct sonicStreamStruct {
 #ifdef SONIC_SPECTROGRAM
   sonicSpectrogram spectrogram;
-#endif  /* SONIC_SPECTROGRAM */
+#endif /* SONIC_SPECTROGRAM */
   short* inputBuffer;
   short* outputBuffer;
   short* pitchBuffer;
@@ -211,10 +223,11 @@ struct sonicStreamStruct {
      timeError is >= 0 again.  If slowing down, and the error is <= 0.0,
      then add a pitch period, and play samples unmodified until timeError is <=
      0 again. */
-  float samplePeriod;  /* How long each output sample takes to play. */
+  float samplePeriod; /* How long each output sample takes to play. */
   /* How long we expect the entire input buffer to take to play. */
   float inputPlayTime;
-  /* The difference in when the latest output sample was played vs when we wanted.  */
+  /* The difference in when the latest output sample was played vs when we
+   * wanted.  */
   float timeError;
   int oldRatePosition;
   int newRatePosition;
@@ -236,14 +249,12 @@ struct sonicStreamStruct {
 };
 
 /* Attach user data to the stream. */
-void sonicSetUserData(sonicStream stream, void *userData) {
+void sonicSetUserData(sonicStream stream, void* userData) {
   stream->userData = userData;
 }
 
 /* Retrieve user data attached to the stream. */
-void *sonicGetUserData(sonicStream stream) {
-  return stream->userData;
-}
+void* sonicGetUserData(sonicStream stream) { return stream->userData; }
 
 #ifdef SONIC_SPECTROGRAM
 
@@ -282,13 +293,17 @@ static void scaleSamples(short* samples, int numSamples, float volume) {
 float sonicGetSpeed(sonicStream stream) { return stream->speed; }
 
 /* Set the speed of the stream. */
-void sonicSetSpeed(sonicStream stream, float speed) { stream->speed = speed; }
+void sonicSetSpeed(sonicStream stream, float speed) {
+  stream->speed = CLAMP(speed, MIN_SPEED, MAX_SPEED);
+}
 
 /* Get the pitch of the stream. */
 float sonicGetPitch(sonicStream stream) { return stream->pitch; }
 
 /* Set the pitch of the stream. */
-void sonicSetPitch(sonicStream stream, float pitch) { stream->pitch = pitch; }
+void sonicSetPitch(sonicStream stream, float pitch) {
+  stream->pitch = CLAMP(pitch, MIN_PITCH, MAX_PITCH);
+}
 
 /* Get the rate of the stream. */
 float sonicGetRate(sonicStream stream) { return stream->rate; }
@@ -296,20 +311,18 @@ float sonicGetRate(sonicStream stream) { return stream->rate; }
 /* Set the playback rate of the stream. This scales pitch and speed at the same
    time. */
 void sonicSetRate(sonicStream stream, float rate) {
-  stream->rate = rate;
+  stream->rate = CLAMP(rate, MIN_RATE, MAX_RATE);
 
   stream->oldRatePosition = 0;
   stream->newRatePosition = 0;
 }
 
 /* DEPRECATED.  Get the vocal chord pitch setting. */
-int sonicGetChordPitch(sonicStream stream) {
-  return 0;
-}
+int sonicGetChordPitch(sonicStream stream) { return 0; }
 
-/* DEPRECATED. Set the vocal chord mode for pitch computation.  Default is off. */
-void sonicSetChordPitch(sonicStream stream, int useChordPitch) {
-}
+/* DEPRECATED. Set the vocal chord mode for pitch computation.  Default is off.
+ */
+void sonicSetChordPitch(sonicStream stream, int useChordPitch) {}
 
 /* Get the quality setting. */
 int sonicGetQuality(sonicStream stream) { return stream->quality; }
@@ -317,7 +330,7 @@ int sonicGetQuality(sonicStream stream) { return stream->quality; }
 /* Set the "quality".  Default 0 is virtually as good as 1, but very much
    faster. */
 void sonicSetQuality(sonicStream stream, int quality) {
-  stream->quality = quality;
+  stream->quality = quality != 0? 1 : 0;
 }
 
 /* Get the scaling factor of the stream. */
@@ -325,7 +338,7 @@ float sonicGetVolume(sonicStream stream) { return stream->volume; }
 
 /* Set the scaling factor of the stream. */
 void sonicSetVolume(sonicStream stream, float volume) {
-  stream->volume = volume;
+  stream->volume = CLAMP(volume, MIN_VOLUME, MAX_VOLUME);
 }
 
 /* Free stream buffers. */
@@ -350,7 +363,7 @@ void sonicDestroyStream(sonicStream stream) {
   if (stream->spectrogram != NULL) {
     sonicDestroySpectrogram(stream->spectrogram);
   }
-#endif  /* SONIC_SPECTROGRAM */
+#endif /* SONIC_SPECTROGRAM */
   freeStreamBuffers(stream);
   sonicFree(stream);
 }
@@ -373,7 +386,8 @@ static int allocateStreamBuffers(sonicStream stream, int sampleRate,
   int skip = computeSkip(stream);
 
   /* Allocate 25% more than needed so we hopefully won't grow. */
-  stream->inputBufferSize = maxRequired + (maxRequired >> 2);;
+  stream->inputBufferSize = maxRequired + (maxRequired >> 2);
+  ;
   stream->inputBuffer =
       (short*)sonicCalloc(stream->inputBufferSize, sizeof(short) * numChannels);
   if (stream->inputBuffer == NULL) {
@@ -382,8 +396,8 @@ static int allocateStreamBuffers(sonicStream stream, int sampleRate,
   }
   /* Allocate 25% more than needed so we hopefully won't grow. */
   stream->outputBufferSize = maxRequired + (maxRequired >> 2);
-  stream->outputBuffer =
-      (short*)sonicCalloc(stream->outputBufferSize, sizeof(short) * numChannels);
+  stream->outputBuffer = (short*)sonicCalloc(stream->outputBufferSize,
+                                             sizeof(short) * numChannels);
   if (stream->outputBuffer == NULL) {
     sonicDestroyStream(stream);
     return 0;
@@ -396,8 +410,9 @@ static int allocateStreamBuffers(sonicStream stream, int sampleRate,
     sonicDestroyStream(stream);
     return 0;
   }
-  int downSampleBufferSize = (maxRequired + skip - 1)/ skip;
-  stream->downSampleBuffer = (short*)sonicCalloc(downSampleBufferSize, sizeof(short));
+  int downSampleBufferSize = (maxRequired + skip - 1) / skip;
+  stream->downSampleBuffer =
+      (short*)sonicCalloc(downSampleBufferSize, sizeof(short));
   if (stream->downSampleBuffer == NULL) {
     sonicDestroyStream(stream);
     return 0;
@@ -417,8 +432,8 @@ static int allocateStreamBuffers(sonicStream stream, int sampleRate,
 /* Create a sonic stream.  Return NULL only if we are out of memory and cannot
    allocate the stream. */
 sonicStream sonicCreateStream(int sampleRate, int numChannels) {
-  sonicStream stream = (sonicStream)sonicCalloc(
-      1, sizeof(struct sonicStreamStruct));
+  sonicStream stream =
+      (sonicStream)sonicCalloc(1, sizeof(struct sonicStreamStruct));
 
   if (stream == NULL) {
     return NULL;
@@ -442,6 +457,7 @@ int sonicGetSampleRate(sonicStream stream) { return stream->sampleRate; }
 /* Set the sample rate of the stream.  This will cause samples buffered in the
    stream to be lost. */
 void sonicSetSampleRate(sonicStream stream, int sampleRate) {
+  sampleRate = CLAMP(sampleRate, MIN_SAMPLE_RATE, MAX_SAMPLE_RATE);
   freeStreamBuffers(stream);
   allocateStreamBuffers(stream, sampleRate, stream->numChannels);
 }
@@ -452,6 +468,7 @@ int sonicGetNumChannels(sonicStream stream) { return stream->numChannels; }
 /* Set the num channels of the stream.  This will cause samples buffered in the
    stream to be lost. */
 void sonicSetNumChannels(sonicStream stream, int numChannels) {
+  numChannels = CLAMP(numChannels, MIN_CHANNELS, MAX_CHANNELS);
   freeStreamBuffers(stream);
   allocateStreamBuffers(stream, stream->sampleRate, numChannels);
 }
@@ -463,9 +480,7 @@ static int enlargeOutputBufferIfNeeded(sonicStream stream, int numSamples) {
   if (stream->numOutputSamples + numSamples > outputBufferSize) {
     stream->outputBufferSize += (outputBufferSize >> 1) + numSamples;
     stream->outputBuffer = (short*)sonicRealloc(
-        stream->outputBuffer,
-        outputBufferSize,
-        stream->outputBufferSize,
+        stream->outputBuffer, outputBufferSize, stream->outputBufferSize,
         sizeof(short) * stream->numChannels);
     if (stream->outputBuffer == NULL) {
       return 0;
@@ -481,9 +496,7 @@ static int enlargeInputBufferIfNeeded(sonicStream stream, int numSamples) {
   if (stream->numInputSamples + numSamples > inputBufferSize) {
     stream->inputBufferSize += (inputBufferSize >> 1) + numSamples;
     stream->inputBuffer = (short*)sonicRealloc(
-        stream->inputBuffer,
-        inputBufferSize,
-        stream->inputBufferSize,
+        stream->inputBuffer, inputBufferSize, stream->inputBufferSize,
         sizeof(short) * stream->numChannels);
     if (stream->inputBuffer == NULL) {
       return 0;
@@ -503,8 +516,8 @@ static void updateNumInputSamples(sonicStream stream, int numSamples) {
 }
 
 /* Add the input samples to the input buffer. */
-static int addFloatSamplesToInputBuffer(sonicStream stream, const float* samples,
-                                        int numSamples) {
+static int addFloatSamplesToInputBuffer(sonicStream stream,
+                                        const float* samples, int numSamples) {
   short* buffer;
   int count = numSamples * stream->numChannels;
 
@@ -523,8 +536,8 @@ static int addFloatSamplesToInputBuffer(sonicStream stream, const float* samples
 }
 
 /* Add the input samples to the input buffer. */
-static int addShortSamplesToInputBuffer(sonicStream stream, const short* samples,
-                                        int numSamples) {
+static int addShortSamplesToInputBuffer(sonicStream stream,
+                                        const short* samples, int numSamples) {
   if (numSamples == 0) {
     return 1;
   }
@@ -783,8 +796,8 @@ static int findPitchPeriodInRange(short* samples, int minPeriod, int maxPeriod,
 /* At abrupt ends of voiced words, we can have pitch periods that are better
    approximated by the previous pitch period estimate.  Try to detect this case.
  */
-static int prevPeriodBetter(sonicStream stream, int minDiff,
-                            int maxDiff, int preferNewPeriod) {
+static int prevPeriodBetter(sonicStream stream, int minDiff, int maxDiff,
+                            int preferNewPeriod) {
   if (minDiff == 0 || stream->prevPeriod == 0) {
     return 0;
   }
@@ -891,8 +904,9 @@ static int moveNewSamplesToPitchBuffer(sonicStream stream,
 
   if (stream->numPitchSamples + numSamples > pitchBufferSize) {
     stream->pitchBufferSize += (pitchBufferSize >> 1) + numSamples;
-    stream->pitchBuffer = (short*)sonicRealloc(stream->pitchBuffer,
-        pitchBufferSize, stream->pitchBufferSize, sizeof(short) * numChannels);
+    stream->pitchBuffer = (short*)sonicRealloc(
+        stream->pitchBuffer, pitchBufferSize, stream->pitchBufferSize,
+        sizeof(short) * numChannels);
   }
   memcpy(stream->pitchBuffer + stream->numPitchSamples * numChannels,
          stream->outputBuffer + originalNumOutputSamples * numChannels,
@@ -1198,7 +1212,8 @@ int sonicWriteShortToStream(sonicStream stream, const short* samples,
 
 /* Simple wrapper around sonicWriteFloatToStream that does the unsigned char to
    float conversion for you. */
-int sonicWriteUnsignedCharToStream(sonicStream stream, const unsigned char* samples,
+int sonicWriteUnsignedCharToStream(sonicStream stream,
+                                   const unsigned char* samples,
                                    int numSamples) {
   if (!addUnsignedCharSamplesToInputBuffer(stream, samples, numSamples)) {
     return 0;
@@ -1211,8 +1226,16 @@ int sonicWriteUnsignedCharToStream(sonicStream stream, const unsigned char* samp
 int sonicChangeFloatSpeed(float* samples, int numSamples, float speed,
                           float pitch, float rate, float volume,
                           int useChordPitch, int sampleRate, int numChannels) {
-  sonicStream stream = sonicCreateStream(sampleRate, numChannels);
+  sonicStream stream;
 
+  speed = CLAMP(speed, MIN_SPEED, MAX_SPEED);
+  pitch = CLAMP(pitch, MIN_PITCH, MAX_PITCH);
+  rate = CLAMP(rate, MIN_RATE, MAX_RATE);
+  volume = CLAMP(volume, MIN_VOLUME, MAX_VOLUME);
+  sampleRate = CLAMP(sampleRate, MIN_SAMPLE_RATE, MAX_SAMPLE_RATE);
+  numChannels = CLAMP(numChannels, MIN_CHANNELS, MAX_CHANNELS);
+
+  stream = sonicCreateStream(sampleRate, numChannels);
   sonicSetSpeed(stream, speed);
   sonicSetPitch(stream, pitch);
   sonicSetRate(stream, rate);
@@ -1230,7 +1253,16 @@ int sonicChangeFloatSpeed(float* samples, int numSamples, float speed,
 int sonicChangeShortSpeed(short* samples, int numSamples, float speed,
                           float pitch, float rate, float volume,
                           int useChordPitch, int sampleRate, int numChannels) {
-  sonicStream stream = sonicCreateStream(sampleRate, numChannels);
+  sonicStream stream;
+
+  speed = CLAMP(speed, MIN_SPEED, MAX_SPEED);
+  pitch = CLAMP(pitch, MIN_PITCH, MAX_PITCH);
+  rate = CLAMP(rate, MIN_RATE, MAX_RATE);
+  volume = CLAMP(volume, MIN_VOLUME, MAX_VOLUME);
+  sampleRate = CLAMP(sampleRate, MIN_SAMPLE_RATE, MAX_SAMPLE_RATE);
+  numChannels = CLAMP(numChannels, MIN_CHANNELS, MAX_CHANNELS);
+
+  stream = sonicCreateStream(sampleRate, numChannels);
 
   sonicSetSpeed(stream, speed);
   sonicSetPitch(stream, pitch);
