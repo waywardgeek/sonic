@@ -11,10 +11,6 @@
 
 #include "sonic_experimental.h"
 
-/* temp */
-#include <stdio.h>
-#include <assert.h>
-
 #include <string.h>
 
 #define SONIC_INPUT_BUFFER_SIZE (3 * (SONIC_MAX_SAMPLE_RATE / SONIC_MIN_PITCH) + SONIC_INPUT_SAMPLES)
@@ -88,13 +84,6 @@ static int addShortSamplesToInputBuffer(short *samples,
   if (sonicStream.numInputSamples + numSamples > SONIC_INPUT_BUFFER_SIZE) {
     return 0;
   }
-/* temp */
-{
-int i;
-for (i = 1; i < numSamples; i++) {
-  printf("%d %d\n", samples[i], samples[i] - samples[i-1]);
-}
-}
   memcpy(sonicStream.inputBuffer + sonicStream.numInputSamples,
          samples, numSamples * sizeof(short));
   sonicStream.numInputSamples += numSamples;
@@ -104,8 +93,6 @@ for (i = 1; i < numSamples; i++) {
 /* Remove input samples that we have already processed. */
 static void removeInputSamples(int position) {
   int remainingSamples = sonicStream.numInputSamples - position;
-/* temp */
-assert(position >= sonicMaxPeriod);
 
   if (remainingSamples > 0) {
     memmove(sonicStream.inputBuffer,
@@ -314,29 +301,17 @@ static void setPeriod(sonicSnippet snippet, int period) {
   short* p = sonicStream.inputBuffer + pos;
   float fade;
   int i;
-/* temp */
-assert(p + period - 1 < sonicStream.inputBuffer + sonicStream.numInputSamples);
-assert(p - period >= sonicStream.inputBuffer);
 
   snippet->period = period;
   for (i = 0; i < period; i++) {
     /* TODO: Make this a Hann window. */
-/* temp */
-/*    fade = (float)i / period; */
-fade = 0.5*(1.0 - cos(M_PI*i/period));
+    fade = 0.5*(1.0 - cos(M_PI*i/period));
     snippet->samples[i] = (1.0f - fade) * p[i] + fade * p[i - period];
   }
 }
 
 /* Write the output sample. */
 static void outputSample(short value) {
-/* temp */
-static short oldValue = 0;
-int diff = value - oldValue;
-diff = diff < 0? -diff : diff;
-oldValue = value;
-printf("diff = %d\n", diff);
-
   sonicStream.outputBuffer[sonicStream.numOutputSamples++] = value;
 }
 
@@ -365,24 +340,14 @@ static void fadeFromAToB(sonicSnippet A, sonicSnippet B) {
   } else {
     /* Play B using A’s period until we reset the offset to 0. */
     setPeriod(B, A->period);
-/* temp maybe will sound better using B's period? */
     B->offset = A->offset;
   }
-/* temp */
-assert(A->offset < A->period);
-assert(B->offset < B->period);
   for (i = 0; i < numOutputSamples; i++) {
     if (!changedPeriod && A->offset == 0) {
-/* temp */
-assert(B->offset == 0);
       setPeriod(A, periodB);
       setPeriod(B, periodB);
       changedPeriod = 1;
     }
-/* temp */
-assert(A->offset < A->period);
-assert(B->offset < B->period);
-assert(A->offset >= 0 && B->offset >= 0);
     fadeB = (float) i / numOutputSamples;
     fadeA = 1.0 - fadeB;
     outputSample(fadeA * A->samples[A->offset] +
@@ -420,12 +385,8 @@ static int snippetsEqual(sonicSnippet A, sonicSnippet B) {
 
 /* Process as many pitch periods as we have buffered on the input. */
 static void changeSpeed(float speed) {
-/* temp */
-static struct sonicSnippetStruct A, B;
-/*  struct sonicSnippetStruct A, B; */
+  struct sonicSnippetStruct A, B;
   int period;
-/* temp */
-static int firstTime = 1;
 
   if (sonicStream.numInputSamples < 3 * sonicMaxPeriod) {
     return;
@@ -435,24 +396,11 @@ static int firstTime = 1;
     A.inputPos = sonicMaxPeriod;
     A.offset = sonicStream.snippetOffset;
     setPeriod(&A, sonicStream.snippetPeriod);
-/* temp */
-if (!firstTime) {
-  assert(snippetsEqual(&A, &B));
-}
-firstTime = 0;
-/* temp */
-assert(A.offset < A.period);
     period = findPitchPeriod(sonicStream.inputBuffer + sonicMaxPeriod, 1);
     B.inputPos = sonicMaxPeriod + period;
     setPeriod(&B, period);
     setBOffset(&A, &B);
-/* temp */
-assert(B.offset < B.period);
     fadeFromAToB(&A, &B);
-/* temp */
-assert(A.offset < A.period);
-assert(B.offset < B.period);
-assert(B.period == period);
     removeInputSamples(B.inputPos);
     sonicStream.snippetPeriod = B.period;
     sonicStream.snippetOffset = B.offset;
