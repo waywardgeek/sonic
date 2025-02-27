@@ -342,5 +342,5 @@ int writeToWaveFile(waveFile file, short* buffer, int numSamples) {
   if (bytePos != 0) {
     writeBytes(file, bytes, bytePos);
   }
-  return file->failed;
+  return !file->failed;
 }

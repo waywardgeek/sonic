@@ -49,22 +49,8 @@
     }
 */
 
-/* The following values are used to clamp inputs such as speed to sane values.
- */
 #define CLAMP(val, min, max) \
   ((val) < (min) ? (min) : (val) > (max) ? (max) : (val))
-#define MIN_VOLUME 0.01
-#define MAX_VOLUME 100.0
-#define MIN_SPEED 0.05
-#define MAX_SPEED 20.0
-#define MIN_PITCH 0.05
-#define MAX_PITCH 20.0
-#define MIN_RATE 0.05
-#define MAX_RATE 20.0
-#define MIN_SAMPLE_RATE 1000
-#define MAX_SAMPLE_RATE 500000
-#define MIN_CHANNELS 1
-#define MAX_CHANNELS 32
 
 /* The number of points to use in the sinc FIR filter for resampling. */
 #define SINC_FILTER_POINTS \
@@ -294,7 +280,7 @@ float sonicGetSpeed(sonicStream stream) { return stream->speed; }
 
 /* Set the speed of the stream. */
 void sonicSetSpeed(sonicStream stream, float speed) {
-  stream->speed = CLAMP(speed, MIN_SPEED, MAX_SPEED);
+  stream->speed = CLAMP(speed, SONIC_MIN_SPEED, SONIC_MAX_SPEED);
 }
 
 /* Get the pitch of the stream. */
@@ -302,7 +288,7 @@ float sonicGetPitch(sonicStream stream) { return stream->pitch; }
 
 /* Set the pitch of the stream. */
 void sonicSetPitch(sonicStream stream, float pitch) {
-  stream->pitch = CLAMP(pitch, MIN_PITCH, MAX_PITCH);
+  stream->pitch = CLAMP(pitch, SONIC_MIN_PITCH_SETTING, SONIC_MAX_PITCH_SETTING);
 }
 
 /* Get the rate of the stream. */
@@ -311,7 +297,7 @@ float sonicGetRate(sonicStream stream) { return stream->rate; }
 /* Set the playback rate of the stream. This scales pitch and speed at the same
    time. */
 void sonicSetRate(sonicStream stream, float rate) {
-  stream->rate = CLAMP(rate, MIN_RATE, MAX_RATE);
+  stream->rate = CLAMP(rate, SONIC_MIN_RATE, SONIC_MAX_RATE);
 
   stream->oldRatePosition = 0;
   stream->newRatePosition = 0;
@@ -338,7 +324,7 @@ float sonicGetVolume(sonicStream stream) { return stream->volume; }
 
 /* Set the scaling factor of the stream. */
 void sonicSetVolume(sonicStream stream, float volume) {
-  stream->volume = CLAMP(volume, MIN_VOLUME, MAX_VOLUME);
+  stream->volume = CLAMP(volume, SONIC_MIN_VOLUME, SONIC_MAX_VOLUME);
 }
 
 /* Free stream buffers. */
@@ -387,7 +373,7 @@ static int allocateStreamBuffers(sonicStream stream, int sampleRate,
 
   /* Allocate 25% more than needed so we hopefully won't grow. */
   stream->inputBufferSize = maxRequired + (maxRequired >> 2);
-  ;
+
   stream->inputBuffer =
       (short*)sonicCalloc(stream->inputBufferSize, sizeof(short) * numChannels);
   if (stream->inputBuffer == NULL) {
@@ -435,6 +421,8 @@ sonicStream sonicCreateStream(int sampleRate, int numChannels) {
   sonicStream stream =
       (sonicStream)sonicCalloc(1, sizeof(struct sonicStreamStruct));
 
+  sampleRate = CLAMP(sampleRate, SONIC_MIN_SAMPLE_RATE, SONIC_MAX_SAMPLE_RATE);
+  numChannels = CLAMP(numChannels, SONIC_MIN_CHANNELS, SONIC_MAX_CHANNELS);
   if (stream == NULL) {
     return NULL;
   }
@@ -457,7 +445,7 @@ int sonicGetSampleRate(sonicStream stream) { return stream->sampleRate; }
 /* Set the sample rate of the stream.  This will cause samples buffered in the
    stream to be lost. */
 void sonicSetSampleRate(sonicStream stream, int sampleRate) {
-  sampleRate = CLAMP(sampleRate, MIN_SAMPLE_RATE, MAX_SAMPLE_RATE);
+  sampleRate = CLAMP(sampleRate, SONIC_MIN_SAMPLE_RATE, SONIC_MAX_SAMPLE_RATE);
   freeStreamBuffers(stream);
   allocateStreamBuffers(stream, sampleRate, stream->numChannels);
 }
@@ -468,7 +456,7 @@ int sonicGetNumChannels(sonicStream stream) { return stream->numChannels; }
 /* Set the num channels of the stream.  This will cause samples buffered in the
    stream to be lost. */
 void sonicSetNumChannels(sonicStream stream, int numChannels) {
-  numChannels = CLAMP(numChannels, MIN_CHANNELS, MAX_CHANNELS);
+  numChannels = CLAMP(numChannels, SONIC_MIN_CHANNELS, SONIC_MAX_CHANNELS);
   freeStreamBuffers(stream);
   allocateStreamBuffers(stream, stream->sampleRate, numChannels);
 }
@@ -1226,16 +1214,8 @@ int sonicWriteUnsignedCharToStream(sonicStream stream,
 int sonicChangeFloatSpeed(float* samples, int numSamples, float speed,
                           float pitch, float rate, float volume,
                           int useChordPitch, int sampleRate, int numChannels) {
-  sonicStream stream;
+  sonicStream stream = sonicCreateStream(sampleRate, numChannels);
 
-  speed = CLAMP(speed, MIN_SPEED, MAX_SPEED);
-  pitch = CLAMP(pitch, MIN_PITCH, MAX_PITCH);
-  rate = CLAMP(rate, MIN_RATE, MAX_RATE);
-  volume = CLAMP(volume, MIN_VOLUME, MAX_VOLUME);
-  sampleRate = CLAMP(sampleRate, MIN_SAMPLE_RATE, MAX_SAMPLE_RATE);
-  numChannels = CLAMP(numChannels, MIN_CHANNELS, MAX_CHANNELS);
-
-  stream = sonicCreateStream(sampleRate, numChannels);
   sonicSetSpeed(stream, speed);
   sonicSetPitch(stream, pitch);
   sonicSetRate(stream, rate);
@@ -1253,16 +1233,7 @@ int sonicChangeFloatSpeed(float* samples, int numSamples, float speed,
 int sonicChangeShortSpeed(short* samples, int numSamples, float speed,
                           float pitch, float rate, float volume,
                           int useChordPitch, int sampleRate, int numChannels) {
-  sonicStream stream;
-
-  speed = CLAMP(speed, MIN_SPEED, MAX_SPEED);
-  pitch = CLAMP(pitch, MIN_PITCH, MAX_PITCH);
-  rate = CLAMP(rate, MIN_RATE, MAX_RATE);
-  volume = CLAMP(volume, MIN_VOLUME, MAX_VOLUME);
-  sampleRate = CLAMP(sampleRate, MIN_SAMPLE_RATE, MAX_SAMPLE_RATE);
-  numChannels = CLAMP(numChannels, MIN_CHANNELS, MAX_CHANNELS);
-
-  stream = sonicCreateStream(sampleRate, numChannels);
+  sonicStream stream = sonicCreateStream(sampleRate, numChannels);
 
   sonicSetSpeed(stream, speed);
   sonicSetPitch(stream, pitch);

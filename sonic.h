@@ -116,6 +116,21 @@ extern "C" {
 #define SONIC_MAX_PITCH 400
 #endif  /* SONIC_MAX_PITCH */
 
+/* The following values are used to clamp inputs such as speed to sane values.
+ */
+#define SONIC_MIN_VOLUME 0.01f
+#define SONIC_MAX_VOLUME 100.0f
+#define SONIC_MIN_SPEED 0.05f
+#define SONIC_MAX_SPEED 20.0f
+#define SONIC_MIN_PITCH_SETTING 0.05f
+#define SONIC_MAX_PITCH_SETTING 20.0f
+#define SONIC_MIN_RATE 0.05f
+#define SONIC_MAX_RATE 20.0f
+#define SONIC_MIN_SAMPLE_RATE 1000
+#define SONIC_MAX_SAMPLE_RATE 500000
+#define SONIC_MIN_CHANNELS 1
+#define SONIC_MAX_CHANNELS 32
+
 /* These are used to down-sample some inputs to improve speed */
 #define SONIC_AMDF_FREQ 4000
 

@@ -67,7 +67,7 @@ ifeq ($(USE_SPECTROGRAM), 1)
 endif
 EXTRA_OBJ=$(EXTRA_SRC:.c=.o)
 
-all: sonic sonic_lite sonic_experimental genwave $(LIB_NAME)$(LIB_TAG) libsonic.a libsonic_internal.a $(LIB_INTERNAL_NAME)$(LIB_TAG)
+all: sonic sonic_lite sonic_experimental $(LIB_NAME)$(LIB_TAG) libsonic.a libsonic_internal.a $(LIB_INTERNAL_NAME)$(LIB_TAG)
 
 sonic: main.o libsonic.a
 	$(CC) $(CFLAGS) $(LDFLAGS) -o sonic main.o libsonic.a -lm $(FFTLIB)
@@ -77,9 +77,6 @@ sonic_lite: wave.c wave.h main_lite.c sonic_lite.c sonic_lite.h
 
 sonic_experimental: wave.c wave.h main_experimental.c sonic_experimental.c sonic_experimental.h
 	$(CC) $(CFLAGS) $(LDFLAGS) -o sonic_experimental sonic_experimental.c wave.c main_experimental.c -lm
-
-genwave: wave.c wave.h wave.h genwave.c 
-	$(CC) $(CFLAGS) $(LDFLAGS) -o genwave genwave.c wave.c -lm
 
 sonic.o: sonic.c sonic.h
 	$(CC) $(CPPFLAGS) $(CFLAGS) -c sonic.c
@@ -140,7 +137,7 @@ uninstall:
 	rm -f $(DESTDIR)$(LIBDIR)/$(LIB_NAME)
 
 clean:
-	rm -f *.o sonic sonic_lite sonic_experimental genwave $(LIB_NAME)* libsonic.a libsonic_internal.a test.wav
+	rm -f *.o sonic sonic_lite sonic_experimental $(LIB_NAME)* libsonic.a libsonic_internal.a test.wav
 
 check:
 	./sonic -s 2.0 ./samples/talking.wav ./test.wav

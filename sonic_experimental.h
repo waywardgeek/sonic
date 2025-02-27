@@ -30,7 +30,8 @@ extern "C" {
 
 /* Initialize Sonic. */
 void sonicInit(float speed, int sampleRate);
-/* Write input samples to the stream.  numSamples must be <= SONIC_INPUT_SAMPLES */
+/* Write input samples to the stream.  numSamples must be <= SONIC_INPUT_SAMPLES
+ */
 void sonicWriteShortToStream(short *samples, int numSamples);
 /* Use this to read 16-bit data out of the stream.  Sometimes no data will
    be available, and zero is returned, which is not an error condition. */
