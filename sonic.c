@@ -355,10 +355,10 @@ void sonicDestroyStream(sonicStream stream) {
 }
 
 /* Compute the number of samples to skip to down-sample the input. */
-static int computeSkip(sonicStream stream) {
+static int computeSkip(sonicStream stream, int sampleRate) {
   int skip = 1;
-  if (stream->sampleRate > SONIC_AMDF_FREQ && stream->quality == 0) {
-    skip = stream->sampleRate / SONIC_AMDF_FREQ;
+  if (sampleRate > SONIC_AMDF_FREQ && stream->quality == 0) {
+    skip = sampleRate / SONIC_AMDF_FREQ;
   }
   return skip;
 }
@@ -369,7 +369,7 @@ static int allocateStreamBuffers(sonicStream stream, int sampleRate,
   int minPeriod = sampleRate / SONIC_MAX_PITCH;
   int maxPeriod = sampleRate / SONIC_MIN_PITCH;
   int maxRequired = 2 * maxPeriod;
-  int skip = computeSkip(stream);
+  int skip = computeSkip(stream, sampleRate);
 
   /* Allocate 25% more than needed so we hopefully won't grow. */
   stream->inputBufferSize = maxRequired + (maxRequired >> 2);
@@ -816,7 +816,7 @@ static int findPitchPeriod(sonicStream stream, short* samples,
   int minPeriod = stream->minPeriod;
   int maxPeriod = stream->maxPeriod;
   int minDiff, maxDiff, retPeriod;
-  int skip = computeSkip(stream);
+  int skip = computeSkip(stream, stream->sampleRate);
   int period;
 
   if (stream->numChannels == 1 && skip == 1) {
