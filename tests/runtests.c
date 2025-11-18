@@ -16,6 +16,10 @@
 int main(int argc, char** argv) {
   assert(sonicTestInputClamping());
   assert(sonicTestInputsDontCrash());
+  assert(sonicTestStreamCreation());
+  assert(sonicTestParameters());
+  assert(sonicTestFlush());
+  assert(sonicTestSimpleProcessing());
   printf("All tests passed.\n");
   return 0;
 }

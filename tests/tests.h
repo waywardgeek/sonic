@@ -11,7 +11,12 @@ extern "C" {
 #endif
 
 int sonicTestInputClamping(void);
+int sonicTestInputClamping(void);
 int sonicTestInputsDontCrash(void);
+int sonicTestStreamCreation(void);
+int sonicTestParameters(void);
+int sonicTestFlush(void);
+int sonicTestSimpleProcessing(void);
 
 #ifdef __cplusplus
 }
