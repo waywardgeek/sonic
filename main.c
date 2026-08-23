@@ -40,6 +40,14 @@ static void runSonic(char* inFileName, char* outFileName, float speed,
     }
   }
   stream = sonicCreateStream(sampleRate, numChannels);
+  if (stream == NULL) {
+    closeWaveFile(inFile);
+    if (outFile != NULL) {
+      closeWaveFile(outFile);
+    }
+    fprintf(stderr, "Unable to allocate a sonic stream\n");
+    exit(1);
+  }
   sonicSetSpeed(stream, speed);
   sonicSetPitch(stream, pitch);
   sonicSetRate(stream, rate);

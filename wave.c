@@ -182,6 +182,10 @@ static int readHeader(waveFile file) {
   }
   file->numChannels =
       readShort(file); /* 22 - mono or stereo? 1 or 2?  (or 5 or ???) */
+  if (file->numChannels <= 0) {
+    fprintf(stderr, "Invalid number of channels: %d\n", file->numChannels);
+    return 0;
+  }
   file->sampleRate =
       readInt(file); /* 24 - samples per second (numbers per second) */
   readInt(file);     /* 28 - bytes per second */
