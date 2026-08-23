@@ -20,6 +20,7 @@ int main(int argc, char** argv) {
   assert(sonicTestParameters());
   assert(sonicTestFlush());
   assert(sonicTestSimpleProcessing());
+  assert(sonicTestSlowdownFlushProducesExpectedDuration());
   printf("All tests passed.\n");
   return 0;
 }

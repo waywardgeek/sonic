@@ -702,6 +702,13 @@ int sonicFlushStream(sonicStream stream) {
   memset(stream->inputBuffer + remainingSamples * stream->numChannels, 0,
          2 * maxRequired * sizeof(short) * stream->numChannels);
   stream->numInputSamples += 2 * maxRequired;
+  /* Keep inputPlayTime in step with numInputSamples, matching how a real
+     write of this many samples would have updated it (see
+     updateNumInputSamples). Otherwise processStreamInput's localSpeed --
+     numInputSamples * samplePeriod / inputPlayTime -- comes out higher
+     than the caller's requested speed for the rest of this flush, since
+     the numerator just grew but the denominator didn't. */
+  stream->inputPlayTime += 2 * maxRequired * stream->samplePeriod / speed;
   if (!sonicWriteShortToStream(stream, NULL, 0)) {
     return 0;
   }
