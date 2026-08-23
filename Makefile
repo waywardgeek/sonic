@@ -27,12 +27,14 @@ SHARED_OPT=-shared
 LIB_NAME=libsonic.so
 LIB_INTERNAL_NAME=libsonic_internal.so
 LIB_TAG=.0.3.0
+SONAME_SUFFIX=.0
 
 ifeq ($(UNAME), Darwin)
   SONAME=-install_name,$(LIBDIR)/
   SHARED_OPT=-dynamiclib
   LIB_NAME=libsonic.dylib
   LIB_TAG=
+  SONAME_SUFFIX=
 endif
 
 CFLAGS=-Wall -Wno-unused-function -g -ansi -fPIC -pthread
@@ -96,14 +98,14 @@ spectrogram.o: spectrogram.c sonic.h
 	$(CC) $(CPPFLAGS) $(CFLAGS) -DSONIC_SPECTROGRAM -c spectrogram.c
 
 $(LIB_NAME)$(LIB_TAG): $(EXTRA_OBJ) sonic.o wave.o
-	$(CC) $(CFLAGS) $(LDFLAGS) $(SHARED_OPT) -Wl,$(SONAME)$(LIB_NAME) $(EXTRA_OBJ) sonic.o -o $(LIB_NAME)$(LIB_TAG) $(FFTLIB) wave.o
+	$(CC) $(CFLAGS) $(LDFLAGS) $(SHARED_OPT) -Wl,$(SONAME)$(LIB_NAME)$(SONAME_SUFFIX) $(EXTRA_OBJ) sonic.o -o $(LIB_NAME)$(LIB_TAG) $(FFTLIB) wave.o
 ifneq ($(UNAME), Darwin)
 	ln -sf $(LIB_NAME)$(LIB_TAG) $(LIB_NAME)
 	ln -sf $(LIB_NAME)$(LIB_TAG) $(LIB_NAME).0
 endif
 
 $(LIB_INTERNAL_NAME)$(LIB_TAG): $(EXTRA_OBJ) sonic_internal.o wave.o  # No spectrogram needed here.
-	$(CC) $(CFLAGS) $(LDFLAGS) $(SHARED_OPT) -Wl,$(SONAME)$(LIB_INTERNAL_NAME) $(EXTRA_OBJ) sonic_internal.o -o $(LIB_INTERNAL_NAME)$(LIB_TAG) $(FFTLIB)  wave.o
+	$(CC) $(CFLAGS) $(LDFLAGS) $(SHARED_OPT) -Wl,$(SONAME)$(LIB_INTERNAL_NAME)$(SONAME_SUFFIX) $(EXTRA_OBJ) sonic_internal.o -o $(LIB_INTERNAL_NAME)$(LIB_TAG) $(FFTLIB)  wave.o
 ifneq ($(UNAME), Darwin)
 	ln -sf $(LIB_INTERNAL_NAME)$(LIB_TAG) $(LIB_INTERNAL_NAME)
 	ln -sf $(LIB_INTERNAL_NAME)$(LIB_TAG) $(LIB_INTERNAL_NAME).0
