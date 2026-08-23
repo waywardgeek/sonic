@@ -931,41 +931,42 @@ static int findSincCoefficient(int i, int ratio, int width) {
   return ((leftVal * (width - position) + rightVal * position) << 1) / width;
 }
 
-/* Return 1 if value >= 0, else -1.  This represents the sign of value. */
-static int getSign(int value) { return value >= 0 ? 1 : -1; }
-
-/* Interpolate the new output sample. */
-static short interpolate(sonicStream stream, short* in, int oldSampleRate,
-                         int newSampleRate) {
-  /* Compute N-point sinc FIR-filter here.  Clip rather than overflow. */
+/* Interpolate the new output sample. Not static: exercised directly by the
+   white-box overflow test in tests/interpolate_overflow_test.c. */
+short interpolate(sonicStream stream, short* in, int oldSampleRate,
+                  int newSampleRate) {
+  /* Compute N-point sinc FIR-filter here.  Clip rather than overflow.
+     Accumulate in long: the sum of SINC_FILTER_POINTS taps can exceed int
+     range (each tap's product alone can approach INT_MAX, since a sinc
+     coefficient can be nearly twice SHRT_MAX in magnitude), and the
+     previous sign-flip overflow *detection* relied on signed overflow
+     having already happened, which is undefined behavior in C. long is
+     wide enough to hold the true sum without overflowing, so the result
+     can be clamped by comparing against real bounds instead. */
   int i;
-  int total = 0;
+  long total = 0;
   int position = stream->newRatePosition * oldSampleRate;
   int leftPosition = stream->oldRatePosition * newSampleRate;
   int rightPosition = (stream->oldRatePosition + 1) * newSampleRate;
   int ratio = rightPosition - position - 1;
   int width = rightPosition - leftPosition;
-  int weight, value;
-  int oldSign;
-  int overflowCount = 0;
+  int weight;
+  long value;
 
   for (i = 0; i < SINC_FILTER_POINTS; i++) {
     weight = findSincCoefficient(i, ratio, width);
-    value = in[i * stream->numChannels] * weight;
-    oldSign = getSign(total);
+    value = (long)in[i * stream->numChannels] * weight;
     total += value;
-    if (oldSign != getSign(total) && getSign(value) == oldSign) {
-      /* We must have overflowed.  This can happen with a sinc filter. */
-      overflowCount += oldSign;
-    }
   }
-  /* It is better to clip than to wrap if there was a overflow. */
-  if (overflowCount > 0) {
+  /* It is better to clip than to wrap if there was a overflow. Computed via
+     multiplication, not left-shift: SHRT_MIN is negative, and left-shifting
+     a negative value is undefined behavior. */
+  if (total > (long)SHRT_MAX * 65536L) {
     return SHRT_MAX;
-  } else if (overflowCount < 0) {
+  } else if (total < (long)SHRT_MIN * 65536L) {
     return SHRT_MIN;
   }
-  return total >> 16;
+  return (short)(total >> 16);
 }
 
 /* Change the rate.  Interpolate with a sinc FIR filter using a Hann window. */
