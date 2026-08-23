@@ -232,6 +232,7 @@ struct sonicStreamStruct {
   int sampleRate;
   int prevPeriod;
   int prevMinDiff;
+  int useChordPitch;
 };
 
 /* Attach user data to the stream. */
@@ -303,12 +304,13 @@ void sonicSetRate(sonicStream stream, float rate) {
   stream->newRatePosition = 0;
 }
 
-/* DEPRECATED.  Get the vocal chord pitch setting. */
-int sonicGetChordPitch(sonicStream stream) { return 0; }
+/* Get the vocal chord pitch setting. */
+int sonicGetChordPitch(sonicStream stream) { return stream->useChordPitch; }
 
-/* DEPRECATED. Set the vocal chord mode for pitch computation.  Default is off.
- */
-void sonicSetChordPitch(sonicStream stream, int useChordPitch) {}
+/* Set the vocal chord mode for pitch computation.  Default is off. */
+void sonicSetChordPitch(sonicStream stream, int useChordPitch) {
+  stream->useChordPitch = useChordPitch;
+}
 
 /* Get the quality setting. */
 int sonicGetQuality(sonicStream stream) { return stream->quality; }
@@ -882,6 +884,35 @@ static void overlapAdd(int numSamples, int numChannels, short* out,
   }
 }
 
+/* Overlap two sound segments, ramp the volume of one down, while ramping the
+   other one from zero up, and add them, storing the result at the output. */
+static void overlapAddWithSeparation(int numSamples, int numChannels,
+                                     int separation, short* out,
+                                     short* rampDown, short* rampUp) {
+  short *o, *u, *d;
+  int i, t;
+
+  for (i = 0; i < numChannels; i++) {
+    o = out + i;
+    u = rampUp + i;
+    d = rampDown + i;
+    for (t = 0; t < numSamples + separation; t++) {
+      if (t < separation) {
+        *o = *d * (numSamples - t) / numSamples;
+        d += numChannels;
+      } else if (t < numSamples) {
+        *o = (*d * (numSamples - t) + *u * (t - separation)) / numSamples;
+        d += numChannels;
+        u += numChannels;
+      } else {
+        *o = *u * (t - separation) / numSamples;
+        u += numChannels;
+      }
+      o += numChannels;
+    }
+  }
+}
+
 /* Just move the new samples in the output buffer to the pitch buffer */
 static int moveNewSamplesToPitchBuffer(sonicStream stream,
                                        int originalNumOutputSamples) {
@@ -917,6 +948,60 @@ static void removePitchSamples(sonicStream stream, int numSamples) {
         (stream->numPitchSamples - numSamples) * sizeof(short) * numChannels);
   }
   stream->numPitchSamples -= numSamples;
+}
+
+/* Change the pitch.  The latency this introduces could be reduced by looking at
+   past samples to determine pitch, rather than future. */
+static int adjustPitch(sonicStream stream, int originalNumOutputSamples) {
+  float pitch = stream->pitch;
+  int numChannels = stream->numChannels;
+  int period, newPeriod, separation;
+  int position = 0;
+  short* out;
+  short* rampDown;
+  short* rampUp;
+
+  if (stream->numOutputSamples == originalNumOutputSamples) {
+    return 1;
+  }
+  if (!moveNewSamplesToPitchBuffer(stream, originalNumOutputSamples)) {
+    return 0;
+  }
+  while (stream->numPitchSamples - position >= stream->maxRequired) {
+    period = findPitchPeriod(stream,
+                             stream->pitchBuffer + position * numChannels, 0);
+    newPeriod = period / pitch;
+    /* Clip rather than overflow: at extreme pitch settings, an unclamped
+       newPeriod can hit 0 (dividing by it below) or, in the opposite
+       direction, exceed how many samples are actually buffered ahead of
+       position (only maxRequired is guaranteed, by the while condition
+       above), which would read/write past pitchBuffer/outputBuffer. */
+    if (newPeriod < 1) {
+      newPeriod = 1;
+    } else if (newPeriod > stream->maxRequired) {
+      newPeriod = stream->maxRequired;
+    }
+    if (!enlargeOutputBufferIfNeeded(stream, newPeriod)) {
+      return 0;
+    }
+    out = stream->outputBuffer + stream->numOutputSamples * numChannels;
+    if (pitch >= 1.0f) {
+      rampDown = stream->pitchBuffer + position * numChannels;
+      rampUp =
+          stream->pitchBuffer + (position + period - newPeriod) * numChannels;
+      overlapAdd(newPeriod, numChannels, out, rampDown, rampUp);
+    } else {
+      rampDown = stream->pitchBuffer + position * numChannels;
+      rampUp = stream->pitchBuffer + position * numChannels;
+      separation = newPeriod - period;
+      overlapAddWithSeparation(period, numChannels, separation, out, rampDown,
+                               rampUp);
+    }
+    stream->numOutputSamples += newPeriod;
+    position += period;
+  }
+  removePitchSamples(stream, position);
+  return 1;
 }
 
 /* Approximate the sinc function times a Hann window from the sinc table. */
@@ -1162,7 +1247,13 @@ static int processStreamInput(sonicStream stream) {
       return 0;
     }
   }
-  if (rate != 1.0f) {
+  if (stream->useChordPitch) {
+    if (stream->pitch != 1.0f) {
+      if (!adjustPitch(stream, originalNumOutputSamples)) {
+        return 0;
+      }
+    }
+  } else if (rate != 1.0f) {
     if (!adjustRate(stream, rate, originalNumOutputSamples)) {
       return 0;
     }

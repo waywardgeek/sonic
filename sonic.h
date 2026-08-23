@@ -194,8 +194,6 @@ void sonicSetRate(sonicStream stream, float rate);
 float sonicGetVolume(sonicStream stream);
 /* Set the scaling factor of the stream. */
 void sonicSetVolume(sonicStream stream, float volume);
-/* Chord pitch is DEPRECATED.  AFAIK, it was never used by anyone.  These
-   functions still exist to avoid breaking existing code. */
 /* Get the chord pitch setting. */
 int sonicGetChordPitch(sonicStream stream);
 /* Set chord pitch mode on or off.  Default is off.  See the documentation
