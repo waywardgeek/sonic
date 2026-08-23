@@ -16,7 +16,8 @@ CFLAGS=-Wall -Wno-unused-function -g -ansi -fPIC -pthread -I ..
 #CFLAGS += -Wall -Wno-unused-function -ansi -fPIC -pthread -I ..
 
 TEST_SRC = \
-input_clamping_test.c
+input_clamping_test.c \
+sonic_api_test.c
 
 CC=gcc
 
