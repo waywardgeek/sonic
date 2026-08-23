@@ -81,6 +81,39 @@ int sonicTestInputClamping(void) {
   return 1;
 }
 
+/* Verify out-of-range float samples are clamped to [-1, 1] before being
+   scaled to short, instead of undergoing undefined-behavior float-to-short
+   conversion. With default speed/pitch/rate/volume (all 1.0), sonic takes a
+   bit-exact passthrough path, so the clamp is the only thing that can
+   explain the output values here. */
+int sonicTestFloatSampleClamping(void) {
+  sonicStream stream = sonicCreateStream(44100, 1);
+  float input[4];
+  short output[4];
+  int samplesRead;
+
+  input[0] = 2.0f;
+  input[1] = -3.0f;
+  input[2] = 1.0f;
+  input[3] = -1.0f;
+  if (!sonicWriteFloatToStream(stream, input, 4)) {
+    return 0;
+  }
+  if (!sonicFlushStream(stream)) {
+    return 0;
+  }
+  samplesRead = sonicReadShortFromStream(stream, output, 4);
+  if (samplesRead != 4) {
+    return 0;
+  }
+  if (output[0] != 32767 || output[1] != -32767 || output[2] != 32767 ||
+      output[3] != -32767) {
+    return 0;
+  }
+  sonicDestroyStream(stream);
+  return 1;
+}
+
 /* Used as the read buffer length when processing audio. */
 #define READ_BUF_LEN 1000
 

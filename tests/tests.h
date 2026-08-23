@@ -17,6 +17,7 @@ int sonicTestStreamCreation(void);
 int sonicTestParameters(void);
 int sonicTestFlush(void);
 int sonicTestSimpleProcessing(void);
+int sonicTestFloatSampleClamping(void);
 
 #ifdef __cplusplus
 }

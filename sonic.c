@@ -507,6 +507,7 @@ static int addFloatSamplesToInputBuffer(sonicStream stream,
                                         const float* samples, int numSamples) {
   short* buffer;
   int count = numSamples * stream->numChannels;
+  float sample;
 
   if (numSamples == 0) {
     return 1;
@@ -516,7 +517,14 @@ static int addFloatSamplesToInputBuffer(sonicStream stream,
   }
   buffer = stream->inputBuffer + stream->numInputSamples * stream->numChannels;
   while (count--) {
-    *buffer++ = (*samples++) * 32767.0f;
+    /* sonic.h documents samples must be in [-1, 1], but converting an
+       out-of-range float to short is undefined behavior, not just lossy, so
+       clamp defensively like every other input path in this file does.
+       CLAMP expands its argument multiple times, so *samples++ can't be
+       passed directly -- that would increment samples more than once. */
+    sample = CLAMP(*samples, -1.0f, 1.0f);
+    samples++;
+    *buffer++ = sample * 32767.0f;
   }
   updateNumInputSamples(stream, numSamples);
   return 1;
