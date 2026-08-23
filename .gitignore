@@ -1,1 +1,16 @@
 *.obj
+*.o
+*.a
+*.so
+*.so.*
+*.dylib
+sonic
+sonic_lite
+sonic_experimental
+sonic_unit_test
+sonic_coverage
+fuzz_sonic
+*.gcda
+*.gcno
+*.gcov
+crash-*

@@ -36,9 +36,15 @@ int LLVMFuzzerTestOneInput(const uint8_t *Data, size_t Size) {
         if (numSamples > 0) {
             sonicWriteShortToStream(stream, (short*)(Data + 4), numSamples);
             
-            /* Read out some data to exercise processing */
+            /* Read out some data to exercise processing. maxSamples in
+               sonicReadShortFromStream is a per-channel count, so the cap
+               passed here must account for numChannels or a stereo stream
+               overflows outBuffer (sizeof(outBuffer) / sizeof(short) is
+               1024 shorts total, not 1024 per channel). */
             short outBuffer[1024];
-            while (sonicReadShortFromStream(stream, outBuffer, 1024) > 0) {}
+            int maxSamplesPerChannel = 1024 / numChannels;
+            while (sonicReadShortFromStream(stream, outBuffer,
+                                            maxSamplesPerChannel) > 0) {}
         }
     }
     

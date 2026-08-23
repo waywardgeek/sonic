@@ -928,7 +928,7 @@ static int findSincCoefficient(int i, int ratio, int width) {
   int leftVal = sincTable[left];
   int rightVal = sincTable[right];
 
-  return ((leftVal * (width - position) + rightVal * position) << 1) / width;
+  return ((leftVal * (width - position) + rightVal * position) * 2) / width;
 }
 
 /* Return 1 if value >= 0, else -1.  This represents the sign of value. */

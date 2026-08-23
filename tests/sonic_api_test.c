@@ -58,8 +58,7 @@ int sonicTestParameters(void) {
 int sonicTestFlush(void) {
     sonicStream stream = sonicCreateStream(SAMPLE_RATE, 1);
     short samples[100] = {0};
-    short outSamples[100];
-    
+
     sonicWriteShortToStream(stream, samples, 100);
     sonicFlushStream(stream);
     
