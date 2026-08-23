@@ -289,6 +289,9 @@ float sonicGetPitch(sonicStream stream) { return stream->pitch; }
 /* Set the pitch of the stream. */
 void sonicSetPitch(sonicStream stream, float pitch) {
   stream->pitch = CLAMP(pitch, SONIC_MIN_PITCH_SETTING, SONIC_MAX_PITCH_SETTING);
+
+  stream->oldRatePosition = 0;
+  stream->newRatePosition = 0;
 }
 
 /* Get the rate of the stream. */
