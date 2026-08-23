@@ -460,12 +460,23 @@ void sonicSetNumChannels(sonicStream stream, int numChannels) {
   allocateStreamBuffers(stream, stream->sampleRate, numChannels);
 }
 
-/* Enlarge the output buffer if needed. */
-static int enlargeOutputBufferIfNeeded(sonicStream stream, int numSamples) {
+/* Enlarge the output buffer if needed. Not static: exercised directly by
+   the white-box overflow tests in tests/overflow_test.c. */
+int enlargeOutputBufferIfNeeded(sonicStream stream, int numSamples) {
   int outputBufferSize = stream->outputBufferSize;
+  int growth;
 
-  if (stream->numOutputSamples + numSamples > outputBufferSize) {
-    stream->outputBufferSize += (outputBufferSize >> 1) + numSamples;
+  if (numSamples < 0) {
+    return 0;
+  }
+  /* Written as a subtraction, not "numOutputSamples + numSamples", so the
+     comparison itself can't signed-overflow when numSamples is huge. */
+  if (stream->numOutputSamples > outputBufferSize - numSamples) {
+    growth = outputBufferSize >> 1;
+    if (numSamples > INT_MAX - outputBufferSize - growth) {
+      return 0;
+    }
+    stream->outputBufferSize = outputBufferSize + growth + numSamples;
     stream->outputBuffer = (short*)sonicRealloc(
         stream->outputBuffer, outputBufferSize, stream->outputBufferSize,
         sizeof(short) * stream->numChannels);
@@ -1039,10 +1050,13 @@ static int skipPitchPeriod(sonicStream stream, short* samples, float speed,
   return newSamples;
 }
 
-/* Insert a pitch period, and determine how much input to copy directly. */
-static int insertPitchPeriod(sonicStream stream, short* samples, float speed,
-                             int period) {
+/* Insert a pitch period, and determine how much input to copy directly. Not
+   static: exercised directly by the white-box overflow tests in
+   tests/overflow_test.c. */
+int insertPitchPeriod(sonicStream stream, short* samples, float speed,
+                      int period) {
   long newSamples;
+  long totalSamples;
   short* out;
   int numChannels = stream->numChannels;
 
@@ -1051,7 +1065,14 @@ static int insertPitchPeriod(sonicStream stream, short* samples, float speed,
   } else {
     newSamples = period;
   }
-  if (!enlargeOutputBufferIfNeeded(stream, period + newSamples)) {
+  /* period + newSamples is computed in long above, but
+     enlargeOutputBufferIfNeeded takes an int; reject here instead of
+     silently truncating a huge period into a small/negative int. */
+  totalSamples = (long)period + newSamples;
+  if (totalSamples < 0 || totalSamples > INT_MAX) {
+    return 0;
+  }
+  if (!enlargeOutputBufferIfNeeded(stream, (int)totalSamples)) {
     return 0;
   }
   out = stream->outputBuffer + stream->numOutputSamples * numChannels;

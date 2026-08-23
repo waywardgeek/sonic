@@ -20,6 +20,9 @@ int main(int argc, char** argv) {
   assert(sonicTestParameters());
   assert(sonicTestFlush());
   assert(sonicTestSimpleProcessing());
+  assert(sonicTestEnlargeOutputBufferRejectsOverflow());
+  assert(sonicTestEnlargeOutputBufferAcceptsNormalRequest());
+  assert(sonicTestInsertPitchPeriodRejectsOverflow());
   printf("All tests passed.\n");
   return 0;
 }

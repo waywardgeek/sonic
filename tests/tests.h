@@ -17,6 +17,9 @@ int sonicTestStreamCreation(void);
 int sonicTestParameters(void);
 int sonicTestFlush(void);
 int sonicTestSimpleProcessing(void);
+int sonicTestEnlargeOutputBufferRejectsOverflow(void);
+int sonicTestEnlargeOutputBufferAcceptsNormalRequest(void);
+int sonicTestInsertPitchPeriodRejectsOverflow(void);
 
 #ifdef __cplusplus
 }
