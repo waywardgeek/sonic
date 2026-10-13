@@ -145,11 +145,11 @@ check:
 test: sonic_unit_test
 	./sonic_unit_test
 
-sonic_unit_test: tests/runtests.c tests/sonic_api_test.c tests/input_clamping_test.c tests/genwave.c sonic.c sonic.h tests/tests.h tests/genwave.h
-	$(CC) $(CFLAGS) -I. -o sonic_unit_test tests/runtests.c tests/sonic_api_test.c tests/input_clamping_test.c tests/genwave.c sonic.c -lm
+sonic_unit_test: tests/runtests.c tests/sonic_api_test.c tests/input_clamping_test.c tests/chord_pitch_test.c tests/genwave.c sonic.c sonic.h tests/tests.h tests/genwave.h
+	$(CC) $(CFLAGS) -I. -o sonic_unit_test tests/runtests.c tests/sonic_api_test.c tests/input_clamping_test.c tests/chord_pitch_test.c tests/genwave.c sonic.c -lm
 
 coverage:
-	$(CC) $(CFLAGS) -I. -fprofile-arcs -ftest-coverage -o sonic_coverage tests/runtests.c tests/sonic_api_test.c tests/input_clamping_test.c tests/genwave.c sonic.c -lm
+	$(CC) $(CFLAGS) -I. -fprofile-arcs -ftest-coverage -o sonic_coverage tests/runtests.c tests/sonic_api_test.c tests/input_clamping_test.c tests/chord_pitch_test.c tests/genwave.c sonic.c -lm
 	./sonic_coverage
 	gcov -o sonic_coverage-sonic.gcno sonic.c
 
