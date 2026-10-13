@@ -132,3 +132,128 @@ int sonicTestChordPitchExtremeRatioDoesNotOverflow(void) {
 
     return 1;
 }
+
+#define CONSTANT_LEVEL 1000
+
+/* Samples at the end of a flushed stream blend toward the silence flush pads
+   with, so only the stream's body is held to the input level. */
+#define FLUSH_TAIL 2000
+
+/* Feed numSamples of a constant signal through a chord-pitch stream and read
+   everything back.  Returns the number of samples read, or -1 if any sample
+   before the flush tail differs from the input level: a constant input must
+   come out constant, whatever the pitch period, because the crossfade
+   weights sum to one. */
+static int runConstantSignal(float pitch, float rate, int numSamples) {
+    static short samples[NUM_SAMPLES];
+    short readBuf[READ_BUF_LEN];
+    sonicStream stream = sonicCreateStream(SAMPLE_RATE, 1);
+    int total = 0;
+    int firstBad = -1;
+    int samplesRead, i;
+
+    for (i = 0; i < numSamples; i++) {
+        samples[i] = CONSTANT_LEVEL;
+    }
+    sonicSetChordPitch(stream, 1);
+    sonicSetPitch(stream, pitch);
+    sonicSetRate(stream, rate);
+    sonicWriteShortToStream(stream, samples, numSamples);
+    sonicFlushStream(stream);
+    while ((samplesRead = sonicReadShortFromStream(stream, readBuf,
+                                                    READ_BUF_LEN)) != 0) {
+        for (i = 0; i < samplesRead; i++) {
+            if (readBuf[i] != CONSTANT_LEVEL && firstBad < 0) {
+                firstBad = total + i;
+            }
+        }
+        total += samplesRead;
+    }
+    sonicDestroyStream(stream);
+    if (firstBad >= 0 && firstBad < total - FLUSH_TAIL) {
+        return -1;
+    }
+    return total;
+}
+
+/* A pitch below 1 repeats each input period.  The repeats must be crossfaded
+   with weights summing to one, and a gap (pitch <= 0.5) must be filled by
+   repeating the period, so a constant input never dips or goes negative. */
+int sonicTestChordPitchPreservesConstantSignal(void) {
+    static const float pitches[] = {0.05f, 0.3f, 0.5f, 0.75f, 1.0f, 1.5f, 4.0f};
+    int i;
+
+    for (i = 0; i < (int)(sizeof(pitches) / sizeof(pitches[0])); i++) {
+        if (runConstantSignal(pitches[i], 1.0f, NUM_SAMPLES) < 0) {
+            fprintf(stderr, "constant signal changed at chord pitch %f\n",
+                    pitches[i]);
+            return 0;
+        }
+    }
+    return 1;
+}
+
+/* sonicSetRate must change the output length in chord-pitch mode too:
+   rate 2 plays the stream twice as fast. */
+int sonicTestChordPitchAppliesRate(void) {
+    int normal = runConstantSignal(1.0f, 1.0f, NUM_SAMPLES);
+    int doubled = runConstantSignal(1.0f, 2.0f, NUM_SAMPLES);
+
+    if (normal < 0 || doubled < 0) {
+        fprintf(stderr, "constant signal changed with chord pitch rate\n");
+        return 0;
+    }
+    if (doubled < normal * 45 / 100 || doubled > normal * 55 / 100) {
+        fprintf(stderr, "rate 2 gave %d samples, expected about half of %d\n",
+                doubled, normal);
+        return 0;
+    }
+    return 1;
+}
+
+/* A NaN pitch must not reach the period / pitch float-to-int conversion. */
+int sonicTestSetPitchRejectsNaN(void) {
+    volatile float zero = 0.0f;
+    float nan = zero / zero;
+    sonicStream stream = sonicCreateStream(SAMPLE_RATE, 1);
+    float pitch;
+
+    sonicSetPitch(stream, nan);
+    pitch = sonicGetPitch(stream);
+    sonicDestroyStream(stream);
+    return pitch >= SONIC_MIN_PITCH_SETTING && pitch <= SONIC_MAX_PITCH_SETTING;
+}
+
+/* Samples buffered for pitch adjustment must still be emitted after pitch
+   moves back to 1.0 mid-stream.  Dropping them lets flush's silence padding
+   reach the stream's last samples, so with a constant input every output
+   sample, tail included, must keep the input level. */
+int sonicTestChordPitchReturnToUnityDrainsBuffer(void) {
+    static short samples[NUM_SAMPLES];
+    short readBuf[READ_BUF_LEN];
+    sonicStream stream = sonicCreateStream(SAMPLE_RATE, 1);
+    int half = NUM_SAMPLES / 2;
+    int samplesRead, i;
+
+    for (i = 0; i < NUM_SAMPLES; i++) {
+        samples[i] = CONSTANT_LEVEL;
+    }
+    sonicSetChordPitch(stream, 1);
+    sonicSetPitch(stream, 1.3f);
+    sonicWriteShortToStream(stream, samples, half);
+    sonicSetPitch(stream, 1.0f);
+    sonicFlushStream(stream);
+    while ((samplesRead = sonicReadShortFromStream(stream, readBuf,
+                                                    READ_BUF_LEN)) != 0) {
+        for (i = 0; i < samplesRead; i++) {
+            if (readBuf[i] != CONSTANT_LEVEL) {
+                fprintf(stderr, "sample %d is %d, expected %d\n", i,
+                        readBuf[i], CONSTANT_LEVEL);
+                sonicDestroyStream(stream);
+                return 0;
+            }
+        }
+    }
+    sonicDestroyStream(stream);
+    return 1;
+}

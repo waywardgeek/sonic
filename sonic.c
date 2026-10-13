@@ -49,8 +49,9 @@
     }
 */
 
+/* Written so that a NaN float maps to min instead of passing through. */
 #define CLAMP(val, min, max) \
-  ((val) < (min) ? (min) : (val) > (max) ? (max) : (val))
+  ((val) >= (min) ? ((val) <= (max) ? (val) : (max)) : (min))
 
 /* The number of points to use in the sinc FIR filter for resampling. */
 #define SINC_FILTER_POINTS \
@@ -884,29 +885,32 @@ static void overlapAdd(int numSamples, int numChannels, short* out,
   }
 }
 
-/* Overlap two sound segments, ramp the volume of one down, while ramping the
-   other one from zero up, and add them, storing the result at the output. */
+/* Write numSamples + separation output samples from two copies of a segment,
+   the second starting separation samples after the first.  Where the copies
+   overlap, crossfade them so the weights sum to one; where they would leave a
+   gap (separation >= numSamples), repeat rampDown's segment instead.  Reads
+   at most numSamples samples from rampDown and rampUp. */
 static void overlapAddWithSeparation(int numSamples, int numChannels,
                                      int separation, short* out,
                                      short* rampDown, short* rampUp) {
-  short *o, *u, *d;
+  int overlap = numSamples - separation;
   int i, t;
 
   for (i = 0; i < numChannels; i++) {
-    o = out + i;
-    u = rampUp + i;
-    d = rampDown + i;
+    short* o = out + i;
+    short* u = rampUp + i;
+    short* d = rampDown + i;
     for (t = 0; t < numSamples + separation; t++) {
-      if (t < separation) {
-        *o = *d * (numSamples - t) / numSamples;
-        d += numChannels;
+      if (overlap <= 0) {
+        *o = d[(t % numSamples) * numChannels];
+      } else if (t < separation) {
+        *o = d[t * numChannels];
       } else if (t < numSamples) {
-        *o = (*d * (numSamples - t) + *u * (t - separation)) / numSamples;
-        d += numChannels;
-        u += numChannels;
+        *o = (d[t * numChannels] * (numSamples - t) +
+              u[(t - separation) * numChannels] * (t - separation)) /
+             overlap;
       } else {
-        *o = *u * (t - separation) / numSamples;
-        u += numChannels;
+        *o = u[(t - separation) * numChannels];
       }
       o += numChannels;
     }
@@ -952,8 +956,8 @@ static void removePitchSamples(sonicStream stream, int numSamples) {
 
 /* Change the pitch.  The latency this introduces could be reduced by looking at
    past samples to determine pitch, rather than future. */
-static int adjustPitch(sonicStream stream, int originalNumOutputSamples) {
-  float pitch = stream->pitch;
+static int adjustPitch(sonicStream stream, float pitch,
+                       int originalNumOutputSamples) {
   int numChannels = stream->numChannels;
   int period, newPeriod, separation;
   int position = 0;
@@ -971,15 +975,11 @@ static int adjustPitch(sonicStream stream, int originalNumOutputSamples) {
     period = findPitchPeriod(stream,
                              stream->pitchBuffer + position * numChannels, 0);
     newPeriod = period / pitch;
-    /* Clip rather than overflow: at extreme pitch settings, an unclamped
-       newPeriod can hit 0 (dividing by it below) or, in the opposite
-       direction, exceed how many samples are actually buffered ahead of
-       position (only maxRequired is guaranteed, by the while condition
-       above), which would read/write past pitchBuffer/outputBuffer. */
+    /* pitch >= 1 reads newPeriod <= period samples, and pitch < 1 reads only
+       period samples, so the pitch buffer is never overrun.  Only a period
+       that rounds down to 0 needs clipping. */
     if (newPeriod < 1) {
       newPeriod = 1;
-    } else if (newPeriod > stream->maxRequired) {
-      newPeriod = stream->maxRequired;
     }
     if (!enlargeOutputBufferIfNeeded(stream, newPeriod)) {
       return 0;
@@ -1248,8 +1248,9 @@ static int processStreamInput(sonicStream stream) {
     }
   }
   if (stream->useChordPitch) {
-    if (stream->pitch != 1.0f) {
-      if (!adjustPitch(stream, originalNumOutputSamples)) {
+    /* The chord emulation applies rate and pitch together, as rate does. */
+    if (rate != 1.0f || stream->numPitchSamples > 0) {
+      if (!adjustPitch(stream, rate, originalNumOutputSamples)) {
         return 0;
       }
     }
@@ -1310,6 +1311,7 @@ int sonicChangeFloatSpeed(float* samples, int numSamples, float speed,
   sonicSetPitch(stream, pitch);
   sonicSetRate(stream, rate);
   sonicSetVolume(stream, volume);
+  sonicSetChordPitch(stream, useChordPitch);
   sonicWriteFloatToStream(stream, samples, numSamples);
   sonicFlushStream(stream);
   numSamples = sonicSamplesAvailable(stream);
@@ -1329,6 +1331,7 @@ int sonicChangeShortSpeed(short* samples, int numSamples, float speed,
   sonicSetPitch(stream, pitch);
   sonicSetRate(stream, rate);
   sonicSetVolume(stream, volume);
+  sonicSetChordPitch(stream, useChordPitch);
   sonicWriteShortToStream(stream, samples, numSamples);
   sonicFlushStream(stream);
   numSamples = sonicSamplesAvailable(stream);
