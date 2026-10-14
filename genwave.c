@@ -29,6 +29,9 @@ int main(int argc, char** argv) {
   int amplitude = 6000;
   waveFile outFile = openOutputWaveFile("out.wav", sampleRate, 1);
 
+  if (outFile == NULL) {
+    return 1;
+  }
   genSineWave(outFile, sampleRate, period, amplitude, 500);
   closeWaveFile(outFile);
   return 0;

@@ -13,6 +13,9 @@
 
 #include <string.h>
 
+#define SONIC_OUTPUT_BUFFER_SIZE 1000000
+#define SONIC_EXP_MIN_SPEED 0.05f
+#define SONIC_EXP_MAX_SPEED 20.0f
 #define SONIC_INPUT_BUFFER_SIZE (3 * (SONIC_MAX_SAMPLE_RATE / SONIC_MIN_PITCH) + SONIC_INPUT_SAMPLES)
 static int sonicMinPeriod, sonicMaxPeriod;
 
@@ -23,7 +26,7 @@ struct sonicStruct {
      any pitch period.  This is used when transitioning from the current
      snippet to the next. */
   short inputBuffer[1000000];
-  short outputBuffer[1000000];
+  short outputBuffer[SONIC_OUTPUT_BUFFER_SIZE];
   short downSampleBuffer[1000000];
   float speed;
   int sampleRate;
@@ -50,7 +53,14 @@ struct sonicSnippetStruct {
 typedef struct sonicSnippetStruct* sonicSnippet;
 
 /* Set the speed of the stream. */
-void sonicSetSpeed(float speed) { sonicStream.speed = speed; }
+static float clampSpeed(float speed) {
+  if (!(speed >= SONIC_EXP_MIN_SPEED)) {
+    return SONIC_EXP_MIN_SPEED;
+  }
+  return speed > SONIC_EXP_MAX_SPEED ? SONIC_EXP_MAX_SPEED : speed;
+}
+
+void sonicSetSpeed(float speed) { sonicStream.speed = clampSpeed(speed); }
 
 /* Set the sample rate of the stream. */
 void sonicSetSampleRate(int sampleRate) {
@@ -59,8 +69,12 @@ void sonicSetSampleRate(int sampleRate) {
 /* Create a sonic stream.  Return NULL only if we are out of memory and cannot
    allocate the stream. */
 void sonicInit(float speed, int sampleRate) {
-  sonicStream.speed = speed;
-  sonicStream.sampleRate = sampleRate;
+  if (sampleRate < SONIC_MIN_SAMPLE_RATE) {
+    sampleRate = SONIC_MIN_SAMPLE_RATE;
+  } else if (sampleRate > SONIC_MAX_SAMPLE_RATE) {
+    sampleRate = SONIC_MAX_SAMPLE_RATE;
+  }
+  speed = clampSpeed(speed);
   sonicMinPeriod = sampleRate / SONIC_MAX_PITCH;
   sonicMaxPeriod = sampleRate / SONIC_MIN_PITCH;
   memset(&sonicStream, 0, sizeof(struct sonicStruct));
@@ -70,7 +84,7 @@ void sonicInit(float speed, int sampleRate) {
   sonicStream.numOutputSamples = 0;
   sonicStream.prevPeriod = 0;
   sonicStream.prevMinDiff = 0;
-  sonicStream.numInputSamples = sonicMinPeriod;
+  sonicStream.numInputSamples = sonicMaxPeriod;
   sonicStream.snippetPeriod = sonicMinPeriod;
   sonicStream.snippetOffset = 0;
 }
@@ -141,7 +155,7 @@ void sonicFlushStream(void) {
     sonicStream.numOutputSamples = expectedOutputSamples;
   }
   /* Empty input buffer */
-  sonicStream.numInputSamples = sonicMinPeriod;
+  sonicStream.numInputSamples = sonicMaxPeriod;
   memset(sonicStream.inputBuffer, 0, SONIC_INPUT_BUFFER_SIZE * sizeof(short));
 }
 
@@ -153,11 +167,11 @@ int sonicSamplesAvailable(void) {
 /* If skip is greater than one, average skip samples together and write them to
    the down-sample buffer. */
 static void downSampleInput(short *samples) {
-  int numSamples = 2 * sonicMaxPeriod;
+  int skip = sonicStream.sampleRate / SONIC_AMDF_FREQ;
+  int numSamples = 2 * sonicMaxPeriod / skip;
   int i, j;
   int value;
   short *downSamples = sonicStream.downSampleBuffer;
-  int skip = sonicStream.sampleRate / SONIC_AMDF_FREQ;
 
   for (i = 0; i < numSamples; i++) {
     value = 0;
@@ -312,7 +326,9 @@ static void setPeriod(sonicSnippet snippet, int period) {
 
 /* Write the output sample. */
 static void outputSample(short value) {
-  sonicStream.outputBuffer[sonicStream.numOutputSamples++] = value;
+  if (sonicStream.numOutputSamples < SONIC_OUTPUT_BUFFER_SIZE) {
+    sonicStream.outputBuffer[sonicStream.numOutputSamples++] = value;
+  }
 }
 
 /* Increment the offset into the snippent.  Set to 0 if we reach the period. */
@@ -409,6 +425,14 @@ static void changeSpeed(float speed) {
 
 /* Just copy from the array to the output buffer */
 static void copyToOutput(short *samples, int numSamples) {
+  int room = SONIC_OUTPUT_BUFFER_SIZE - sonicStream.numOutputSamples;
+
+  if (numSamples > room) {
+    numSamples = room;
+  }
+  if (numSamples <= 0) {
+    return;
+  }
   memcpy(sonicStream.outputBuffer + sonicStream.numOutputSamples,
          samples, numSamples * sizeof(short));
   sonicStream.numOutputSamples += numSamples;

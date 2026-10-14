@@ -110,12 +110,12 @@ ifneq ($(UNAME), Darwin)
 endif
 
 libsonic.a: $(EXTRA_OBJ) sonic.o wave.o
-	$(AR) cqs libsonic.a $(EXTRA_OBJ) sonic.o wave.o
+	$(AR) rcs libsonic.a $(EXTRA_OBJ) sonic.o wave.o
 
 # Define a version of sonic with the internal names defined so others (i.e. Speedy)
 # can build new APIs that superscede the default API.
 libsonic_internal.a: $(EXTRA_OBJ) sonic_internal.o wave.o
-	$(AR) cqs libsonic_internal.a $(EXTRA_OBJ) sonic_internal.o wave.o
+	$(AR) rcs libsonic_internal.a $(EXTRA_OBJ) sonic_internal.o wave.o
 
 install: sonic $(LIB_NAME)$(LIB_TAG) sonic.h
 	install -d $(DESTDIR)$(BINDIR) $(DESTDIR)$(INCDIR) $(DESTDIR)$(LIBDIR)
@@ -137,7 +137,7 @@ uninstall:
 	rm -f $(DESTDIR)$(LIBDIR)/$(LIB_NAME)
 
 clean:
-	rm -f *.o sonic sonic_lite sonic_experimental $(LIB_NAME)* libsonic.a libsonic_internal.a test.wav
+	rm -f *.o sonic sonic_lite sonic_experimental $(LIB_NAME)* $(LIB_INTERNAL_NAME)* libsonic.a libsonic_internal.a test.wav sonic_unit_test sonic_coverage fuzz_sonic *.gcda *.gcno *.gcov
 
 check:
 	./sonic -s 2.0 ./samples/talking.wav ./test.wav

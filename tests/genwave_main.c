@@ -14,8 +14,17 @@
 /* Write samples to the outFile. */
 static void writeSamplesToFile(char* fileName, int sampleRate, short* samples, int numSamples) {
   waveFile outFile = openOutputWaveFile(fileName, sampleRate, 1);
+  int written;
 
-  assert(writeToWaveFile(outFile, samples, numSamples));
+  if (outFile == NULL) {
+    fprintf(stderr, "Unable to open %s\n", fileName);
+    abort();
+  }
+  written = writeToWaveFile(outFile, samples, numSamples);
+  if (!written) {
+    fprintf(stderr, "Unable to write %s\n", fileName);
+    abort();
+  }
   closeWaveFile(outFile);
 }
 

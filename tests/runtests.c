@@ -10,16 +10,24 @@
 
 #include "tests.h"
 
-#include <assert.h>
 #include <stdio.h>
 
+/* Unlike assert(), stays active under -DNDEBUG. */
+#define CHECK(test)                              \
+  do {                                           \
+    if (!(test)) {                               \
+      fprintf(stderr, "FAILED: %s\n", #test);    \
+      return 1;                                  \
+    }                                            \
+  } while (0)
+
 int main(int argc, char** argv) {
-  assert(sonicTestInputClamping());
-  assert(sonicTestInputsDontCrash());
-  assert(sonicTestStreamCreation());
-  assert(sonicTestParameters());
-  assert(sonicTestFlush());
-  assert(sonicTestSimpleProcessing());
+  CHECK(sonicTestInputClamping());
+  CHECK(sonicTestInputsDontCrash());
+  CHECK(sonicTestStreamCreation());
+  CHECK(sonicTestParameters());
+  CHECK(sonicTestFlush());
+  CHECK(sonicTestSimpleProcessing());
   printf("All tests passed.\n");
   return 0;
 }

@@ -31,6 +31,12 @@ static void runSonic(char* inFileName, char* outFileName, float speed,
     fprintf(stderr, "Unable to read wave file %s\n", inFileName);
     exit(1);
   }
+  if (numChannels > SONIC_MAX_CHANNELS) {
+    fprintf(stderr, "At most %d channels are supported; %s has %d\n",
+            SONIC_MAX_CHANNELS, inFileName, numChannels);
+    closeWaveFile(inFile);
+    exit(1);
+  }
   if (!computeSpectrogram) {
     outFile = openOutputWaveFile(outFileName, sampleRate, numChannels);
     if (outFile == NULL) {
@@ -73,8 +79,12 @@ static void runSonic(char* inFileName, char* outFileName, float speed,
     sonicSpectrogram spectrogram = sonicGetSpectrogram(stream);
     sonicBitmap bitmap =
         sonicConvertSpectrogramToBitmap(spectrogram, numRows, numCols);
-    sonicWritePGM(bitmap, outFileName);
-    sonicDestroyBitmap(bitmap);
+    if (bitmap == NULL) {
+      fprintf(stderr, "Not enough audio to build a spectrogram\n");
+    } else {
+      sonicWritePGM(bitmap, outFileName);
+      sonicDestroyBitmap(bitmap);
+    }
   }
 #endif  /* SONIC_SPECTROGRAM */
   sonicDestroyStream(stream);
