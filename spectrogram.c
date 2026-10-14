@@ -257,9 +257,13 @@ static double interpolateSpectrum(sonicSpectrum spectrum, int row,
   double rowFreqSpacing = SONIC_MAX_SPECTRUM_FREQ / (numRows - 1);
   double targetFreq = row * rowFreqSpacing;
   int bottomIndex = targetFreq / spectrumFreqSpacing;
-  double bottomPower = spectrum->power[bottomIndex];
-  double topPower = spectrum->power[bottomIndex + 1];
-  double position =
+  double bottomPower, topPower, position;
+  if (bottomIndex >= spectrum->numFreqs - 1) {
+    return spectrum->power[spectrum->numFreqs - 1];
+  }
+  bottomPower = spectrum->power[bottomIndex];
+  topPower = spectrum->power[bottomIndex + 1];
+  position =
       (targetFreq - bottomIndex * spectrumFreqSpacing) / spectrumFreqSpacing;
   return (1.0 - position) * bottomPower + position * topPower;
 }
