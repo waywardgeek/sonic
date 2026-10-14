@@ -18,6 +18,10 @@ static void runSonic(char* inFileName, char* outFileName, float speed, float vol
   int samplesRead, samplesWritten, sampleRate, numChannels;
 
   inFile = openInputWaveFile(inFileName, &sampleRate, &numChannels);
+  if (inFile == NULL) {
+    fprintf(stderr, "Unable to read wave file %s\n", inFileName);
+    exit(1);
+  }
   if (numChannels != 1) {
     fprintf(stderr, "sonic_lite only processes mono wave files.  This file has %d channels.\n",
         numChannels);
@@ -27,10 +31,6 @@ static void runSonic(char* inFileName, char* outFileName, float speed, float vol
     fprintf(stderr,
         "sonic_lite only processes wave files with a sample rate of %d Hz.  This file uses %d\n",
         SONIC_SAMPLE_RATE, sampleRate);
-    exit(1);
-  }
-  if (inFile == NULL) {
-    fprintf(stderr, "Unable to read wave file %s\n", inFileName);
     exit(1);
   }
   outFile = openOutputWaveFile(outFileName, sampleRate, 1);
