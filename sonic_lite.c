@@ -149,9 +149,21 @@ void sonicFlushStream(void) {
   float speed = sonicStream.speed;
   int expectedOutputSamples = sonicStream.numOutputSamples + (int)((remainingSamples / speed) + 0.5f);
 
+  if (speed <= 1.00001f) {
+    /* Input left over from an earlier, faster speed has not been output. */
+    int room = 2 * SONIC_MAX_PERIOD - sonicStream.numOutputSamples;
+    copyToOutput(sonicStream.inputBuffer,
+                 remainingSamples < room ? remainingSamples : room);
+    sonicStream.numInputSamples = 0;
+    sonicStream.remainingInputToCopy = 0;
+    return;
+  }
   memset(sonicStream.inputBuffer + remainingSamples, 0,
       sizeof(short) * (SONIC_INPUT_BUFFER_SIZE - remainingSamples));
   sonicStream.numInputSamples += 2 * maxRequired;
+  if (sonicStream.numInputSamples > SONIC_INPUT_BUFFER_SIZE) {
+    sonicStream.numInputSamples = SONIC_INPUT_BUFFER_SIZE;
+  }
   sonicWriteShortToStream(NULL, 0);
   /* Throw away any extra samples we generated due to the silence we added */
   if (sonicStream.numOutputSamples > expectedOutputSamples) {
