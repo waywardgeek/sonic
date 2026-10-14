@@ -154,7 +154,7 @@ coverage:
 	gcov -o sonic_coverage-sonic.gcno sonic.c
 
 fuzz:
-	clang -fsanitize=fuzzer -g -O1 -I. tests/fuzz_main.c sonic.c -o fuzz_sonic
+	clang -fsanitize=fuzzer,address,undefined -fno-sanitize-recover=undefined -fno-omit-frame-pointer -g -O1 -I. tests/fuzz_main.c sonic.c -o fuzz_sonic -lm
 
 
 libspeedy.so:
