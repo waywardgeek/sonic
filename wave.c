@@ -10,6 +10,7 @@
 This file supports read/write wave files.
 */
 #include "wave.h"
+#include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -94,14 +95,14 @@ static void readExactBytes(waveFile file, void* bytes, int length) {
 /* Read an integer from the input file */
 static int readInt(waveFile file) {
   unsigned char bytes[4];
-  int value = 0, i;
+  unsigned long value = 0;
+  int i;
 
   readExactBytes(file, bytes, 4);
   for (i = 3; i >= 0; i--) {
-    value <<= 8;
-    value |= bytes[i];
+    value = (value << 8) | bytes[i];
   }
-  return value;
+  return value > INT_MAX ? INT_MAX : (int)value;
 }
 
 /* Read a short from the input file */
@@ -188,6 +189,10 @@ static int readHeader(waveFile file) {
   readShort(file);   /* 32 - # of bytes in one sample, for all channels */
   data = readShort(
       file); /* 34 - how many bits in a sample(number)?  usually 16 or 24 */
+  if (file->failed) {
+    fprintf(stderr, "Truncated wave header\n");
+    return 0;
+  }
   if (data != 16) {
     fprintf(stderr, "Only 16 bit PCM wave files are supported\n");
     return 0;
@@ -203,10 +208,14 @@ static int readHeader(waveFile file) {
   while (1) {
     readExactBytes(file, chunk, 4);  /* chunk id */
     int size = readInt(file);        /* how big is this data chunk */
+    if (file->failed) {
+      fprintf(stderr, "No data chunk found in input file\n");
+      return 0;
+    }
     if (strcmp(chunk, "data") == 0) {
       return 1;
     }
-    if (fseek(file->soundFile, size, SEEK_CUR) != 0) {
+    if (size < 0 || fseek(file->soundFile, size, SEEK_CUR) != 0) {
       fprintf(stderr, "Failed to seek on input file.\n");
       return 0;
     }
